@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
 import com.ruskserver.deepwither_V2.modules.skill.provider.PlayerSkillSlotProvider;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillCooldownService;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillRegistry;
+import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -45,6 +46,7 @@ public class SkillAssignmentGui implements Listener {
     private final SkillRegistry registry;
     private final ManaManager manaManager;
     private final SkillCooldownService cooldownService;
+    private final SkillTreeService skillTreeService;
     private final Map<UUID, String> selectedSkillMap = new HashMap<>();
     private final Map<UUID, Integer> playerPages = new HashMap<>();
 
@@ -53,12 +55,14 @@ public class SkillAssignmentGui implements Listener {
             PlayerDataRepository repository,
             SkillRegistry registry,
             ManaManager manaManager,
-            SkillCooldownService cooldownService
+            SkillCooldownService cooldownService,
+            SkillTreeService skillTreeService
     ) {
         this.repository = repository;
         this.registry = registry;
         this.manaManager = manaManager;
         this.cooldownService = cooldownService;
+        this.skillTreeService = skillTreeService;
     }
 
     public void open(Player player) {
@@ -71,6 +75,7 @@ public class SkillAssignmentGui implements Listener {
             String selectedId = selectedSkillMap.get(uuid);
 
             List<Skill> skills = new ArrayList<>(registry.getAll());
+            skills.removeIf(skill -> !skillTreeService.isSkillUnlocked(player, skill.getId()));
             skills.sort(Comparator.comparing(Skill::getId));
 
             int maxPage = Math.max(0, (skills.size() - 1) / SKILLS_PER_PAGE);
@@ -119,7 +124,7 @@ public class SkillAssignmentGui implements Listener {
         }
         meta.displayName(name);
 
-        SkillContext context = new SkillContext(player, skill, 1, manaManager, cooldownService);
+        SkillContext context = new SkillContext(player, skill, skillTreeService.getSkillLevel(player, skill.getId()), manaManager, cooldownService);
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("ID: " + skill.getId(), NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("種別: " + skill.getCategory() + " / 対象: " + skill.getTargetType(), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
@@ -264,6 +269,11 @@ public class SkillAssignmentGui implements Listener {
             PlayerSkillSlotProvider.SkillSlotData slotData = data.get(PlayerSkillSlotProvider.KEY);
             Skill skill = registry.get(skillId);
             if (skill == null || slotData == null) return;
+            if (!skillTreeService.isSkillUnlocked(player, skillId)) {
+                player.sendMessage(Component.text("このスキルはまだ解放されていません。", NamedTextColor.RED));
+                player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+                return;
+            }
 
             String conflict = getConflictName(skill, slotData);
             if (conflict != null) {
@@ -301,6 +311,12 @@ public class SkillAssignmentGui implements Listener {
 
             Skill selectedSkill = registry.get(selected);
             if (selectedSkill == null) return;
+            if (!skillTreeService.isSkillUnlocked(player, selected)) {
+                player.sendMessage(Component.text("このスキルはまだ解放されていません。", NamedTextColor.RED));
+                selectedSkillMap.remove(player.getUniqueId());
+                open(player);
+                return;
+            }
 
             String conflict = getConflictName(selectedSkill, slotData, slot);
             if (conflict != null) {

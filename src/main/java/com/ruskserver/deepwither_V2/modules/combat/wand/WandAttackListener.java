@@ -17,6 +17,7 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -139,7 +140,7 @@ public class WandAttackListener implements Listener {
                 }
 
                 // 弾の軌跡エフェクト
-                loc.getWorld().spawnParticle(particleType, loc, 1, 0, 0, 0, 0);
+                spawnParticle(loc.getWorld(), particleType, loc, 1, 0, 0, 0, 0, Color.WHITE);
 
                 // 当たり判定 (半径0.8ブロックの球体)
                 for (Entity target : loc.getWorld().getNearbyEntities(loc, 0.8, 0.8, 0.8)) {
@@ -151,7 +152,7 @@ public class WandAttackListener implements Listener {
 
                         // ヒット演出
                         livingTarget.getWorld().playSound(livingTarget.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 1.0f, 1.2f);
-                        livingTarget.getWorld().spawnParticle(Particle.FLASH, livingTarget.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0);
+                        spawnParticle(livingTarget.getWorld(), Particle.FLASH, livingTarget.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0, Color.WHITE);
 
                         this.cancel();
                         return;
@@ -159,5 +160,14 @@ public class WandAttackListener implements Listener {
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private void spawnParticle(World world, Particle particle, Location location, int count,
+                               double offsetX, double offsetY, double offsetZ, double extra, Color color) {
+        if (particle.getDataType() == Color.class) {
+            world.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra, color);
+            return;
+        }
+        world.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra);
     }
 }

@@ -15,6 +15,7 @@ import com.ruskserver.deepwither_V2.modules.skill.event.SkillCastStartEvent;
 import com.ruskserver.deepwither_V2.modules.skill.event.SkillCooldownApplyEvent;
 import com.ruskserver.deepwither_V2.modules.skill.event.SkillExecuteEvent;
 import com.ruskserver.deepwither_V2.modules.skill.event.SkillManaConsumeEvent;
+import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -34,13 +35,15 @@ public class SkillCastService implements Stoppable {
     private final Deepwither_V2 plugin;
     private final ManaManager manaManager;
     private final SkillCooldownService cooldownService;
+    private final SkillTreeService skillTreeService;
     private final Map<UUID, CastingState> casting = new HashMap<>();
 
     @Inject
-    public SkillCastService(Deepwither_V2 plugin, ManaManager manaManager, SkillCooldownService cooldownService) {
+    public SkillCastService(Deepwither_V2 plugin, ManaManager manaManager, SkillCooldownService cooldownService, SkillTreeService skillTreeService) {
         this.plugin = plugin;
         this.manaManager = manaManager;
         this.cooldownService = cooldownService;
+        this.skillTreeService = skillTreeService;
     }
 
     @Override
@@ -114,6 +117,11 @@ public class SkillCastService implements Stoppable {
     }
 
     private boolean canCast(Player player, Skill skill, SkillContext context, boolean notify) {
+        if (!skillTreeService.isSkillUnlocked(player, skill.getId())) {
+            if (notify) player.sendMessage(Component.text("このスキルはまだ解放されていません。", NamedTextColor.RED));
+            return false;
+        }
+
         if (isCasting(player)) {
             if (notify) player.sendMessage(Component.text("詠唱中です。", NamedTextColor.RED));
             return false;
@@ -189,7 +197,7 @@ public class SkillCastService implements Stoppable {
     }
 
     private SkillContext createContext(Player player, Skill skill) {
-        return new SkillContext(player, skill, 1, manaManager, cooldownService);
+        return new SkillContext(player, skill, skillTreeService.getSkillLevel(player, skill.getId()), manaManager, cooldownService);
     }
 
     private Duration sanitize(Duration duration) {

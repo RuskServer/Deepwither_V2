@@ -7,6 +7,7 @@ import com.ruskserver.deepwither_V2.core.stat.AttributeType;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerAttributeProvider;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
+import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeService;
 import com.ruskserver.deepwither_V2.modules.stat.ModifierType;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import net.kyori.adventure.text.Component;
@@ -54,11 +55,13 @@ public class PlayerManager implements Listener {
 
     private final PlayerDataRepository repository;
     private final StatManager statManager;
+    private final SkillTreeService skillTreeService;
 
     @Inject
-    public PlayerManager(PlayerDataRepository repository, StatManager statManager) {
+    public PlayerManager(PlayerDataRepository repository, StatManager statManager, SkillTreeService skillTreeService) {
         this.repository = repository;
         this.statManager = statManager;
+        this.skillTreeService = skillTreeService;
     }
 
     /**
@@ -108,6 +111,9 @@ public class PlayerManager implements Listener {
             repository.save(uuid, data);
 
             if (leveledUp) {
+                int gainedLevels = currentLevel - beforeLevel;
+                skillTreeService.grantLevelUpPoints(player, gainedLevels);
+
                 // タイトル表示
                 net.kyori.adventure.title.Title title = net.kyori.adventure.title.Title.title(
                         Component.text("LEVEL UP!", NamedTextColor.GOLD, net.kyori.adventure.text.format.TextDecoration.BOLD),
@@ -136,7 +142,10 @@ public class PlayerManager implements Listener {
                 player.sendMessage(Component.text("- 獲得したボーナス -", NamedTextColor.GRAY));
                 player.sendMessage(Component.text("  » ", NamedTextColor.RED)
                         .append(Component.text("属性ポイント: ", NamedTextColor.RED))
-                        .append(Component.text(POINTS_PER_LEVEL, NamedTextColor.WHITE, net.kyori.adventure.text.format.TextDecoration.BOLD)));
+                        .append(Component.text(gainedLevels * POINTS_PER_LEVEL, NamedTextColor.WHITE, net.kyori.adventure.text.format.TextDecoration.BOLD)));
+                player.sendMessage(Component.text("  » ", NamedTextColor.AQUA)
+                        .append(Component.text("スキルポイント: ", NamedTextColor.AQUA))
+                        .append(Component.text(gainedLevels * SkillTreeService.SKILL_POINTS_PER_LEVEL, NamedTextColor.WHITE, net.kyori.adventure.text.format.TextDecoration.BOLD)));
                 player.sendMessage(separator);
             }
 

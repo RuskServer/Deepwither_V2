@@ -10,6 +10,7 @@ import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
 import com.ruskserver.deepwither_V2.modules.skill.provider.PlayerSkillSlotProvider;
+import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -31,6 +32,7 @@ public class SkillSessionService implements Startable, Stoppable {
     private final SkillCastService castService;
     private final SkillCooldownService cooldownService;
     private final ManaManager manaManager;
+    private final SkillTreeService skillTreeService;
     private final Set<UUID> skillModePlayers = new HashSet<>();
     private BukkitTask actionBarTask;
 
@@ -41,7 +43,8 @@ public class SkillSessionService implements Startable, Stoppable {
             SkillRegistry registry,
             SkillCastService castService,
             SkillCooldownService cooldownService,
-            ManaManager manaManager
+            ManaManager manaManager,
+            SkillTreeService skillTreeService
     ) {
         this.plugin = plugin;
         this.repository = repository;
@@ -49,6 +52,7 @@ public class SkillSessionService implements Startable, Stoppable {
         this.castService = castService;
         this.cooldownService = cooldownService;
         this.manaManager = manaManager;
+        this.skillTreeService = skillTreeService;
     }
 
     @Override
@@ -135,7 +139,12 @@ public class SkillSessionService implements Startable, Stoppable {
                         continue;
                     }
 
-                    SkillContext context = new SkillContext(player, skill, 1, manaManager, cooldownService);
+                    if (!skillTreeService.isSkillUnlocked(player, skill.getId())) {
+                        bar = bar.append(prefix).append(Component.text("LOCKED  ", NamedTextColor.DARK_GRAY));
+                        continue;
+                    }
+
+                    SkillContext context = new SkillContext(player, skill, skillTreeService.getSkillLevel(player, skill.getId()), manaManager, cooldownService);
                     Component display = getActionBarDisplay(player, skill, context);
                     bar = bar.append(prefix).append(display).append(Component.text("  "));
                 }
