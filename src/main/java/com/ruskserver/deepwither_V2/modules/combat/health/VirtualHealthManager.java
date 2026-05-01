@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.combat.health;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.Bukkit;
@@ -23,10 +24,12 @@ public class VirtualHealthManager {
 
     private final Map<UUID, Double> currentHealthMap = new HashMap<>();
     private final StatManager statManager;
+    private final DamageFeedbackService damageFeedbackService;
 
     @Inject
-    public VirtualHealthManager(StatManager statManager) {
+    public VirtualHealthManager(StatManager statManager, DamageFeedbackService damageFeedbackService) {
         this.statManager = statManager;
+        this.damageFeedbackService = damageFeedbackService;
     }
 
     /**
@@ -76,6 +79,7 @@ public class VirtualHealthManager {
         double current = getHealth(entity);
         double maxHp = getMaxHealth(entity);
         double newHealth = current - amount;
+        damageFeedbackService.playHurtFeedback(entity);
 
         if (newHealth <= 0) {
             newHealth = 0;

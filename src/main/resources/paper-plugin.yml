@@ -6,3 +6,9 @@ bootstrapper: com.ruskserver.deepwither_V2.Deepwither_V2Bootstrap
 loader: com.ruskserver.deepwither_V2.Deepwither_V2Loader
 api-version: '26.1.2'
 load: STARTUP
+dependencies:
+  server:
+    packetevents:
+      load: BEFORE
+      required: true
+      join-classpath: true
