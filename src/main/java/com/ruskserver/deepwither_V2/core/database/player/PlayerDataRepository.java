@@ -22,14 +22,25 @@ import java.util.logging.Logger;
 public class PlayerDataRepository extends CachedRepository<UUID, PlayerData> {
 
     private final Logger logger;
+    private final DIContainer container;
     private final List<PlayerDataProvider<?>> providers = new ArrayList<>();
+    private boolean providersLoaded = false;
 
     @Inject
     public PlayerDataRepository(DatabaseManager db, DIContainer container) {
         super(db);
         this.logger = Logger.getLogger("PlayerDataRepo");
+        this.container = container;
+        // プロバイダーの収集は遅延初期化（全コンポーネント登録後に確実に行う）
+    }
 
-        // Collect all registered PlayerDataProviders
+    /**
+     * 全コンポーネントが登録された後に初めて呼ばれた際、プロバイダーを収集します。
+     */
+    private void ensureProvidersLoaded() {
+        if (providersLoaded) return;
+        providersLoaded = true;
+
         for (Object instance : container.getAllInstances()) {
             if (instance instanceof PlayerDataProvider) {
                 providers.add((PlayerDataProvider<?>) instance);
@@ -48,6 +59,7 @@ public class PlayerDataRepository extends CachedRepository<UUID, PlayerData> {
 
     @Override
     protected Optional<PlayerData> loadFromDb(UUID key) {
+        ensureProvidersLoaded();
         PlayerData playerData = new PlayerData(key);
 
         try (Connection conn = db.getConnection()) {
@@ -73,6 +85,7 @@ public class PlayerDataRepository extends CachedRepository<UUID, PlayerData> {
 
     @Override
     protected void saveToDb(UUID key, PlayerData value) {
+        ensureProvidersLoaded();
         Set<DataKey<?>> dirtyKeys = value.getDirtyKeys();
 
         if (dirtyKeys.isEmpty()) {

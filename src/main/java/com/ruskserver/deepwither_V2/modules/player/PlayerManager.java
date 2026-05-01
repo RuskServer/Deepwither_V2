@@ -22,6 +22,36 @@ import java.util.UUID;
 @Service
 public class PlayerManager implements Listener {
 
+    /** Lv1〜100 の次のレベルに必要な累積経験値テーブル（インデックス0 = Lv1 -> Lv2に必要な量） */
+    private static final int[] EXP_TABLE = {
+            // Lv1 - 10 (雑魚10匹〖30匹ペース)
+            500, 900, 1400, 2000, 2700, 3500, 4400, 5400, 6500, 7800,
+            // Lv11 - 20 (ここから1レベルあたり雑魚50匹〖30ペース)
+            9200, 10700, 12300, 14000, 15800, 17700, 19700, 21800, 24000, 26500,
+            // Lv21 - 30 (中盤：ダンジョン周回前提)
+            29000, 31800, 34800, 38000, 41400, 45000, 48800, 52800, 57000, 61500,
+            // Lv31 - 40
+            66500, 72000, 78000, 84500, 91500, 99000, 107000, 115500, 124500, 134000,
+            // Lv41 - 50 (かなりマゾくなってくる)
+            144000, 155000, 167000, 180000, 194000, 209000, 225000, 242000, 260000, 280000,
+            // Lv51 - 60
+            305000, 335000, 370000, 410000, 455000, 505000, 560000, 620000, 685000, 755000,
+            // Lv61 - 70 (上位コンテンツ向け)
+            830000, 910000, 1000000, 1100000, 1210000, 1330000, 1460000, 1600000, 1750000, 1910000,
+            // Lv71 - 80
+            2100000, 2300000, 2520000, 2760000, 3020000, 3300000, 3600000, 3920000, 4260000, 4620000,
+            // Lv81 - 90
+            5000000, 5400000, 5820000, 6260000, 6720000, 7200000, 7700000, 8220000, 8760000, 9320000,
+            // Lv91 - 100 (カンストへの道：伝説級)
+            10000000, 10800000, 11700000, 12700000, 13800000, 15000000, 16300000, 17700000, 19200000, 21000000
+    };
+
+    /** レベルアップ時に付与する属性ポイント数 */
+    private static final int POINTS_PER_LEVEL = 2;
+
+    /** 最大レベル */
+    private static final int MAX_LEVEL = 100;
+
     private final PlayerDataRepository repository;
     private final StatManager statManager;
 
@@ -32,10 +62,14 @@ public class PlayerManager implements Listener {
     }
 
     /**
-     * 次のレベルに必要な経験値を計算します。
+     * 指定レベルから次のレベルに必要な経験値を返します。
+     * レベル100（最大）の場合は Integer.MAX_VALUE を返します。
      */
     public int getExpToNextLevel(int currentLevel) {
-        return currentLevel * 100; // シンプルな計算式
+        if (currentLevel >= MAX_LEVEL) return Integer.MAX_VALUE;
+        int index = currentLevel - 1; // Lv1→index0
+        if (index < 0 || index >= EXP_TABLE.length) return Integer.MAX_VALUE;
+        return EXP_TABLE[index];
     }
 
     /**
@@ -45,20 +79,27 @@ public class PlayerManager implements Listener {
         UUID uuid = player.getUniqueId();
         repository.get(uuid).ifPresent(data -> {
             PlayerLevelProvider.LevelData levelData = data.get(PlayerLevelProvider.KEY);
-            int currentLevel = levelData.getLevel();
-            int currentExp = levelData.getExp();
-            int newExp = currentExp + amount;
+            if (levelData == null || levelData.getLevel() >= MAX_LEVEL) return;
+
+            int beforeLevel = levelData.getLevel();
+            int currentLevel = beforeLevel;
+            int newExp = levelData.getExp() + amount;
+
+            // EXP獲得メッセージ
+            player.sendMessage(Component.text("+ " + String.format("%,d", amount) + " EXP", NamedTextColor.GREEN));
 
             boolean leveledUp = false;
-            while (newExp >= getExpToNextLevel(currentLevel)) {
+            while (newExp >= getExpToNextLevel(currentLevel) && currentLevel < MAX_LEVEL) {
                 newExp -= getExpToNextLevel(currentLevel);
                 currentLevel++;
                 leveledUp = true;
-                
-                // 1レベルにつき3ポイント付与
+
+                // 1レベルにつき2ポイント付与
                 PlayerAttributeProvider.AttributeData attrData = data.get(PlayerAttributeProvider.KEY);
-                attrData.addRemainingPoints(3);
-                data.markDirty(PlayerAttributeProvider.KEY);
+                if (attrData != null) {
+                    attrData.addRemainingPoints(POINTS_PER_LEVEL);
+                    data.markDirty(PlayerAttributeProvider.KEY);
+                }
             }
 
             levelData.setLevel(currentLevel);
@@ -67,11 +108,47 @@ public class PlayerManager implements Listener {
             repository.save(uuid, data);
 
             if (leveledUp) {
-                player.sendMessage(Component.text("レベルが " + currentLevel + " に上がりました！", NamedTextColor.GOLD));
-                player.sendMessage(Component.text("属性ポイントを3ポイント獲得しました。", NamedTextColor.AQUA));
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-            } else {
-                player.sendMessage(Component.text("経験値を " + amount + " 獲得しました。", NamedTextColor.GREEN));
+                // タイトル表示
+                net.kyori.adventure.title.Title title = net.kyori.adventure.title.Title.title(
+                        Component.text("LEVEL UP!", NamedTextColor.GOLD, net.kyori.adventure.text.format.TextDecoration.BOLD),
+                        Component.text(beforeLevel, NamedTextColor.YELLOW)
+                                .append(Component.text(" → ", NamedTextColor.WHITE))
+                                .append(Component.text(currentLevel, NamedTextColor.GOLD, net.kyori.adventure.text.format.TextDecoration.BOLD))
+                );
+                player.showTitle(title);
+
+                // サウンド
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.5f);
+                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+
+                // チャットメッセージ
+                Component separator = Component.text("--------------------------------------", NamedTextColor.AQUA)
+                        .decorate(net.kyori.adventure.text.format.TextDecoration.STRIKETHROUGH);
+                player.sendMessage(separator);
+                player.sendMessage(Component.text("    »» ", NamedTextColor.WHITE, net.kyori.adventure.text.format.TextDecoration.BOLD)
+                        .append(Component.text("レベルアップ！", NamedTextColor.GOLD, net.kyori.adventure.text.format.TextDecoration.BOLD))
+                        .append(Component.text(" ««", NamedTextColor.WHITE, net.kyori.adventure.text.format.TextDecoration.BOLD)));
+                player.sendMessage(Component.text("   レベル: ", NamedTextColor.YELLOW)
+                        .append(Component.text(beforeLevel, NamedTextColor.WHITE))
+                        .append(Component.text(" → ", NamedTextColor.WHITE))
+                        .append(Component.text(currentLevel, NamedTextColor.GREEN, net.kyori.adventure.text.format.TextDecoration.BOLD)));
+                player.sendMessage(Component.empty());
+                player.sendMessage(Component.text("- 獲得したボーナス -", NamedTextColor.GRAY));
+                player.sendMessage(Component.text("  » ", NamedTextColor.RED)
+                        .append(Component.text("属性ポイント: ", NamedTextColor.RED))
+                        .append(Component.text(POINTS_PER_LEVEL, NamedTextColor.WHITE, net.kyori.adventure.text.format.TextDecoration.BOLD)));
+                player.sendMessage(separator);
+            }
+
+            if (currentLevel >= MAX_LEVEL) {
+                Component separator = Component.text("--------------------------------------", NamedTextColor.AQUA)
+                        .decorate(net.kyori.adventure.text.format.TextDecoration.STRIKETHROUGH);
+                player.sendMessage(separator);
+                player.sendMessage(Component.text("    »» ", NamedTextColor.WHITE, net.kyori.adventure.text.format.TextDecoration.BOLD)
+                        .append(Component.text("最大レベル到達！", NamedTextColor.DARK_AQUA, net.kyori.adventure.text.format.TextDecoration.BOLD))
+                        .append(Component.text(" ««", NamedTextColor.WHITE, net.kyori.adventure.text.format.TextDecoration.BOLD)));
+                player.sendMessage(Component.text("   全ての戦いを乗り越えた証！", NamedTextColor.AQUA));
+                player.sendMessage(separator);
             }
         });
     }
@@ -115,6 +192,11 @@ public class PlayerManager implements Listener {
         repository.get(uuid).ifPresent(data -> {
             var attrData = data.get(PlayerAttributeProvider.KEY);
 
+            // providerがまだロードされていない場合はデフォルト値（全0）として扱う
+            if (attrData == null) {
+                return;
+            }
+
             // STR: 1pt -> 攻撃力 +1% (乗算)
             int str = attrData.getAttribute(AttributeType.STR);
             statManager.setModifier(uuid, StatType.ATTACK_DAMAGE, "attr_str", str * 0.01, ModifierType.MULTIPLICATIVE);
@@ -132,7 +214,6 @@ public class PlayerManager implements Listener {
             // INT: 1pt -> 最大マナ +2%
             int intVal = attrData.getAttribute(AttributeType.INT);
             statManager.setModifier(uuid, StatType.MAX_MANA, "attr_int", intVal * 0.02, ModifierType.MULTIPLICATIVE);
-            // ※ CD短縮は必要になったら追加
 
             // AGI: 1pt -> クリティカル率 +0.2%
             int agi = attrData.getAttribute(AttributeType.AGI);
