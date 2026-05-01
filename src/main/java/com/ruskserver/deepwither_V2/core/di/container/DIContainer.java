@@ -14,11 +14,12 @@ import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.logging.Logger;
 
 public class DIContainer {
     
-    private final Map<Class<?>, Object> instances = new HashMap<>();
+    private final Map<Class<?>, Object> instances = new LinkedHashMap<>();
     private final LinkedHashSet<Class<?>> resolvingClasses = new LinkedHashSet<>();
     private final Map<Class<?>, List<Class<?>>> dependencyGraph = new HashMap<>();
     
@@ -155,10 +156,91 @@ public class DIContainer {
     }
 
     /**
-     * Calls start() on all registered instances that implement Startable.
+     * 依存グラフをトポロジカルソート（Kahnのアルゴリズム）し、
+     * 起動順（依存先 → 依存元）のインスタンスリストを返します。
+     */
+    private List<Object> computeStartOrder() {
+        // dependencyGraph の中から、instances として登録されているクラスのみを対象にする
+        Set<Class<?>> nodes = new HashSet<>(dependencyGraph.keySet());
+        nodes.retainAll(instances.keySet());
+
+        // 逆方向グラフを構築 (A が B に依存 → 逆グラフでは B → A)
+        Map<Class<?>, List<Class<?>>> reverseGraph = new HashMap<>();
+        for (Class<?> node : nodes) {
+            reverseGraph.put(node, new ArrayList<>());
+        }
+        for (Class<?> node : nodes) {
+            for (Class<?> dep : dependencyGraph.getOrDefault(node, Collections.emptyList())) {
+                if (nodes.contains(dep)) {
+                    reverseGraph.get(dep).add(node);
+                }
+            }
+        }
+
+        // 入次数（逆グラフ上）の計算
+        Map<Class<?>, Integer> inDegree = new HashMap<>();
+        for (Class<?> node : nodes) {
+            inDegree.put(node, 0);
+        }
+        for (Class<?> node : nodes) {
+            for (Class<?> neighbor : reverseGraph.getOrDefault(node, Collections.emptyList())) {
+                inDegree.merge(neighbor, 1, Integer::sum);
+            }
+        }
+
+        // Kahnのアルゴリズム (BFS)
+        Queue<Class<?>> queue = new ArrayDeque<>();
+        for (Class<?> node : nodes) {
+            if (inDegree.get(node) == 0) {
+                queue.add(node);
+            }
+        }
+
+        List<Object> ordered = new ArrayList<>();
+        while (!queue.isEmpty()) {
+            Class<?> current = queue.poll();
+            Object instance = instances.get(current);
+            if (instance != null) {
+                ordered.add(instance);
+            }
+            for (Class<?> neighbor : reverseGraph.getOrDefault(current, Collections.emptyList())) {
+                int newDegree = inDegree.merge(neighbor, -1, Integer::sum);
+                if (newDegree == 0) {
+                    queue.add(neighbor);
+                }
+            }
+        }
+
+        // トポロジカルソートで処理できなかったノードが残った場合（サイクル）はそのまま追加
+        if (ordered.size() < nodes.size()) {
+            if (logger != null) {
+                logger.warning("[DI] Topological sort incomplete - possible cycle detected. Remaining nodes appended in arbitrary order.");
+            }
+            Set<Object> alreadyAdded = new HashSet<>(ordered);
+            for (Class<?> node : nodes) {
+                Object instance = instances.get(node);
+                if (instance != null && !alreadyAdded.contains(instance)) {
+                    ordered.add(instance);
+                }
+            }
+        }
+
+        return ordered;
+    }
+
+    /**
+     * Calls start() on all Startable instances in dependency-topological order.
+     * (Dependency-first: e.g. DatabaseManager starts before PlayerDataRepository)
      */
     public void startAll() {
-        for (Object instance : instances.values()) {
+        List<Object> ordered = computeStartOrder();
+        if (logger != null) {
+            logger.info("[DI] Starting " + ordered.stream()
+                    .filter(o -> o instanceof Startable)
+                    .map(o -> o.getClass().getSimpleName())
+                    .collect(Collectors.joining(" -> ")));
+        }
+        for (Object instance : ordered) {
             if (instance instanceof Startable) {
                 ((Startable) instance).start();
             }
@@ -166,10 +248,19 @@ public class DIContainer {
     }
 
     /**
-     * Calls stop() on all registered instances that implement Stoppable.
+     * Calls stop() on all Stoppable instances in reverse dependency order.
+     * (Dependent-first: e.g. PlayerDataRepository stops before DatabaseManager)
      */
     public void stopAll() {
-        for (Object instance : instances.values()) {
+        List<Object> ordered = computeStartOrder();
+        Collections.reverse(ordered);
+        if (logger != null) {
+            logger.info("[DI] Stopping " + ordered.stream()
+                    .filter(o -> o instanceof Stoppable)
+                    .map(o -> o.getClass().getSimpleName())
+                    .collect(Collectors.joining(" -> ")));
+        }
+        for (Object instance : ordered) {
             if (instance instanceof Stoppable) {
                 try {
                     ((Stoppable) instance).stop();
