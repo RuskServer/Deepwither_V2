@@ -10,9 +10,9 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * プレイヤーの現在マナを管理するサービス。
@@ -21,7 +21,7 @@ import java.util.UUID;
 @Service
 public class ManaManager implements Startable {
 
-    private final Map<UUID, Double> currentManaMap = new HashMap<>();
+    private final Map<UUID, Double> currentManaMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
     private final Deepwither_V2 plugin;
 
@@ -45,9 +45,6 @@ public class ManaManager implements Startable {
                     double regenAmount = maxMana * 0.05;
                     double newMana = Math.min(current + regenAmount, maxMana);
                     currentManaMap.put(player.getUniqueId(), newMana);
-                    
-                    // アクションバーにマナを表示
-                    sendManaActionBar(player, newMana, maxMana);
                 }
             }
         }, 20L, 20L);
@@ -78,7 +75,6 @@ public class ManaManager implements Startable {
         double newMana = current - amount;
         currentManaMap.put(player.getUniqueId(), newMana);
         
-        sendManaActionBar(player, newMana, getMaxMana(player));
         return true;
     }
 
@@ -90,11 +86,5 @@ public class ManaManager implements Startable {
         double max = getMaxMana(player);
         double newMana = Math.min(current + amount, max);
         currentManaMap.put(player.getUniqueId(), newMana);
-        
-        sendManaActionBar(player, newMana, max);
-    }
-    
-    private void sendManaActionBar(Player player, double current, double max) {
-        player.sendActionBar(Component.text("§b✤ マナ: " + (int)current + " / " + (int)max));
     }
 }

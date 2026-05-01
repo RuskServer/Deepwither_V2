@@ -76,6 +76,28 @@ public class PlayerManager implements Listener {
     }
 
     /**
+     * カスタムレベルとEXPをバニラのレベル・経験値バーに同期させます。
+     */
+    public void syncVanillaExp(Player player) {
+        UUID uuid = player.getUniqueId();
+        repository.get(uuid).ifPresent(data -> {
+            PlayerLevelProvider.LevelData levelData = data.get(PlayerLevelProvider.KEY);
+            if (levelData == null) return;
+
+            int level = levelData.getLevel();
+            int currentExp = levelData.getExp();
+            int nextExp = getExpToNextLevel(level);
+
+            float expRatio = (nextExp > 0 && nextExp != Integer.MAX_VALUE) 
+                    ? (float) currentExp / nextExp 
+                    : 0f;
+
+            player.setLevel(level);
+            player.setExp(Math.max(0f, Math.min(expRatio, 0.999f)));
+        });
+    }
+
+    /**
      * 経験値を追加し、必要であればレベルアップ処理を行います。
      */
     public void addExp(Player player, int amount) {
@@ -109,6 +131,9 @@ public class PlayerManager implements Listener {
             levelData.setExp(newExp);
             data.markDirty(PlayerLevelProvider.KEY);
             repository.save(uuid, data);
+
+            // バニラ経験値バーを更新
+            syncVanillaExp(player);
 
             if (leveledUp) {
                 int gainedLevels = currentLevel - beforeLevel;
@@ -235,5 +260,6 @@ public class PlayerManager implements Listener {
         Player player = event.getPlayer();
         // ログイン時にDBからデータをロード（キャッシュに載せる）し、ステータスを反映
         recalculateStats(player);
+        syncVanillaExp(player);
     }
 }

@@ -11,9 +11,9 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * マイクラ標準の体力属性を無視し、完全に独立した「仮想HP」を管理するサービス。
@@ -22,7 +22,7 @@ import java.util.UUID;
 @Service
 public class VirtualHealthManager {
 
-    private final Map<UUID, Double> currentHealthMap = new HashMap<>();
+    private final Map<UUID, Double> currentHealthMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
     private final DamageFeedbackService damageFeedbackService;
 
