@@ -51,4 +51,21 @@ public interface CustomItem {
     default int getCustomModelData() {
         return 0;
     }
+
+    /**
+     * 手に持って右クリック・左クリック等をした際に呼ばれるフックメソッド。
+     */
+    default void onInteract(org.bukkit.event.player.PlayerInteractEvent event) {}
+
+    /**
+     * 自分が攻撃者になった際、ダメージ計算パイプラインの途中で呼び出されます。
+     * このメソッド内で context.multiplyDamage() 等を呼ぶことで、特定の属性のダメージを上げたりできます。
+     */
+    default void onAttack(com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext context) {}
+
+    /**
+     * 自分が防御者（ダメージを受ける側）になった際、ダメージ計算パイプラインの途中で呼び出されます。
+     * このメソッド内で context.setDamage(0) などを呼ぶことで、攻撃をブロックするパッシブなどが作れます。
+     */
+    default void onDefend(com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext context) {}
 }

@@ -3,7 +3,10 @@ package com.ruskserver.deepwither_V2.modules.combat.damage;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.DamagePhase;
+import com.ruskserver.deepwither_V2.modules.combat.damage.phases.ItemAbilityPhase;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.item.ItemManager;
+import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
@@ -26,7 +29,7 @@ public class DamagePipelineManager implements Listener {
     private final List<DamagePhase> pipeline = new ArrayList<>();
 
     @Inject
-    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager) {
+    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil) {
         this.healthManager = healthManager;
         this.statManager = statManager;
 
@@ -37,7 +40,8 @@ public class DamagePipelineManager implements Listener {
         pipeline.add(new DamagePhase.Critical(statManager));
         // 3. 防御力による軽減
         pipeline.add(new DamagePhase.Defense(statManager));
-        // 必要に応じてここに吸血処理やシールド処理のフェーズを追加できます
+        // 4. 装備アイテムの固有能力（パッシブ）の適用
+        pipeline.add(new ItemAbilityPhase(itemManager, pdcUtil));
     }
 
     /**
@@ -96,6 +100,22 @@ public class DamagePipelineManager implements Listener {
 
         if (finalDamage > 0) {
             healthManager.damage(defender, finalDamage);
+        }
+    }
+
+    /**
+     * 外部システム（杖の魔法弾など）から直接ダメージパイプラインにダメージ処理を流し込むための公開API。
+     */
+    public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags) {
+        DamageContext context = new DamageContext(attacker, defender, type, initialDamage);
+        if (tags != null) {
+            context.addTags(tags);
+        }
+        for (DamagePhase phase : pipeline) {
+            phase.process(context);
+        }
+        if (context.getDamage() > 0) {
+            healthManager.damage(defender, context.getDamage());
         }
     }
 }

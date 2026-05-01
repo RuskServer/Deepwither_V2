@@ -11,6 +11,8 @@ public enum StatType {
     CRITICAL_CHANCE("クリティカル率"),
     CRITICAL_DAMAGE("クリティカルダメージ"),
     HEALTH("最大HP"),
+    MAX_MANA("最大マナ"),
+    ATTACK_SPEED("攻撃速度"),
     SPEED("移動速度");
 
     private final String displayName;

@@ -2,6 +2,10 @@ package com.ruskserver.deepwither_V2.modules.combat.damage;
 
 import org.bukkit.entity.LivingEntity;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.List;
+
 /**
  * ダメージ計算パイプライン内を流れるコンテキストデータ。
  */
@@ -10,6 +14,7 @@ public class DamageContext {
     private final LivingEntity attacker; // 環境ダメージなどの場合は null になる可能性があります
     private final LivingEntity defender;
     private final DamageType type;
+    private final Set<String> tags = new HashSet<>();
     
     private double damage;
     private boolean isCritical = false;
@@ -55,5 +60,28 @@ public class DamageContext {
 
     public void setCritical(boolean critical) {
         isCritical = critical;
+    }
+
+    /**
+     * このダメージに属性タグを追加します。（例: "ICE", "FIRE"）
+     */
+    public void addTag(String tag) {
+        this.tags.add(tag);
+    }
+
+    /**
+     * このダメージに複数の属性タグを追加します。
+     */
+    public void addTags(Set<String> tags) {
+        if (tags != null) {
+            this.tags.addAll(tags);
+        }
+    }
+
+    /**
+     * 指定されたタグを持っているか確認します。
+     */
+    public boolean hasTag(String tag) {
+        return this.tags.contains(tag);
     }
 }

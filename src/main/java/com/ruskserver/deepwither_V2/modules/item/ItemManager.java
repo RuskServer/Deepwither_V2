@@ -45,6 +45,7 @@ public class ItemManager implements Startable {
                 registry.put(item.getId(), item);
             }
         }
+        org.bukkit.Bukkit.getLogger().info("[ItemManager] " + registry.size() + " 個のカスタムアイテムをロードしました。");
     }
 
     /**
