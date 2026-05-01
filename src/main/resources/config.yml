@@ -51,3 +51,12 @@ mob-regions:
   #       weight: 50
   #     - mob-id: lich
   #       weight: 10
+
+# ============================================================
+# リソースパック設定
+# ============================================================
+resource-pack:
+  url: "https://example.com/resourcepack.zip"
+  hash: ""
+  required: true
+  kick-message: "<red>リソースパックの適用が必要です。<br>サーバー設定からリソースパックを「有効」または「プロンプト」に設定してください。"
