@@ -6,6 +6,8 @@ package com.ruskserver.deepwither_V2.core.stat;
 public enum StatType {
     ATTACK_DAMAGE("攻撃力"),
     DEFENSE("防御力"),
+    MAGIC_DAMAGE("魔法攻撃力"),
+    MAGIC_DEFENSE("魔法防御力"),
     CRITICAL_CHANCE("クリティカル率"),
     CRITICAL_DAMAGE("クリティカルダメージ"),
     HEALTH("最大HP"),

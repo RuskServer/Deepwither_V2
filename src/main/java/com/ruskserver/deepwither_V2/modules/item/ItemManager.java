@@ -56,6 +56,15 @@ public class ItemManager implements Startable {
     }
 
     /**
+     * 指定されたIDのアイテム定義を取得します。
+     * @param id アイテムID
+     * @return CustomItemのインスタンス、存在しない場合はnull
+     */
+    public CustomItem getCustomItem(String id) {
+        return registry.get(id);
+    }
+
+    /**
      * 指定されたIDのアイテムを新規生成します。
      * ランダムモディファイアの計算とPDCへの書き込みが行われます。
      *
