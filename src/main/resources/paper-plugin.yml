@@ -12,3 +12,11 @@ dependencies:
       load: BEFORE
       required: true
       join-classpath: true
+    WorldEdit:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    WorldGuard:
+      load: BEFORE
+      required: true
+      join-classpath: true

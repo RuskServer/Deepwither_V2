@@ -1,0 +1,53 @@
+# ============================================================
+# Deepwither_V2 - カスタムモブ Regionスポーン設定
+# ============================================================
+#
+# mob-regions:
+#   <region名（任意の識別名）>:
+#     safe-zone: <boolean>           # true の場合このRegionではモブがスポーンしません
+#     world: <ワールド名>
+#     worldguard-region: <WG Region名>  # /rg define で作成した WorldGuard Region の名前
+#     spawn-interval-ticks: <int>    # スポーンを試みるtick間隔 (20 = 1秒)
+#     max-mobs: <int>                # Region内に同時に存在できるカスタムモブの上限
+#     spawn-table:
+#       - mob-id: <モブID>           # CustomMobManager に登録されたID
+#         weight: <int>              # 出現重み（高いほど選ばれやすい）
+# ============================================================
+
+mob-regions:
+
+  # ----- セーフゾーンの例 -----
+  # /rg define spawn_area で作成した WorldGuard Region に対応
+  spawn_area:
+    safe-zone: true
+    world: world
+    worldguard-region: spawn_area
+
+  # ----- 通常地域の例 -----
+  # /rg define forest_zone で作成した WorldGuard Region に対応
+  forest_zone:
+    safe-zone: false
+    world: world
+    worldguard-region: forest_zone
+    spawn-interval-ticks: 200    # 10秒ごとにスポーン試行
+    max-mobs: 30
+    spawn-table:
+      - mob-id: goblin
+        weight: 60
+      - mob-id: forest_troll
+        weight: 30
+      - mob-id: dark_elf
+        weight: 10
+
+  # ----- 別のZone例（コメントアウト） -----
+  # dungeon_zone:
+  #   safe-zone: false
+  #   world: world
+  #   worldguard-region: dungeon_zone
+  #   spawn-interval-ticks: 100
+  #   max-mobs: 20
+  #   spawn-table:
+  #     - mob-id: skeleton_archer
+  #       weight: 50
+  #     - mob-id: lich
+  #       weight: 10
