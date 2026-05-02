@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class VirtualHealthManager {
 
+    private static final double DEFAULT_PLAYER_MAX_HEALTH = 20.0;
+
     private final Map<UUID, Double> currentHealthMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
     private final DamageFeedbackService damageFeedbackService;
@@ -51,6 +53,9 @@ public class VirtualHealthManager {
      */
     public double getMaxHealth(LivingEntity entity) {
         double maxHp = statManager.getTotalStat(entity, StatType.HEALTH);
+        if (maxHp <= 0 && entity instanceof Player) {
+            return DEFAULT_PLAYER_MAX_HEALTH;
+        }
         // 万が一最大HPが0以下の場合は最低1を保証する
         return maxHp > 0 ? maxHp : 1.0;
     }

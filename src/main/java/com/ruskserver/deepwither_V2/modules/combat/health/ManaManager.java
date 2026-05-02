@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class ManaManager implements Startable {
 
+    private static final double DEFAULT_MAX_MANA = 100.0;
+
     private final Map<UUID, Double> currentManaMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
     private final Deepwither_V2 plugin;
@@ -61,7 +63,8 @@ public class ManaManager implements Startable {
     }
 
     public double getMaxMana(Player player) {
-        return statManager.getTotalStat(player, StatType.MAX_MANA);
+        double maxMana = statManager.getTotalStat(player, StatType.MAX_MANA);
+        return maxMana > 0 ? maxMana : DEFAULT_MAX_MANA;
     }
 
     /**

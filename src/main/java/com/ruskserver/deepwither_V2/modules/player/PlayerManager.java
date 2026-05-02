@@ -53,6 +53,12 @@ public class PlayerManager implements Listener {
     /** 最大レベル */
     private static final int MAX_LEVEL = 100;
 
+    /** プレイヤーの基礎最大HP */
+    private static final double BASE_HEALTH = 20.0;
+
+    /** プレイヤーの基礎最大マナ */
+    private static final double BASE_MAX_MANA = 100.0;
+
     private final PlayerDataRepository repository;
     private final StatManager statManager;
     private final SkillTreeService skillTreeService;
@@ -224,6 +230,9 @@ public class PlayerManager implements Listener {
     public void recalculateStats(Player player) {
         UUID uuid = player.getUniqueId();
         repository.get(uuid).ifPresent(data -> {
+            statManager.setModifier(uuid, StatType.HEALTH, "base_health", BASE_HEALTH, ModifierType.ADDITIVE);
+            statManager.setModifier(uuid, StatType.MAX_MANA, "base_mana", BASE_MAX_MANA, ModifierType.ADDITIVE);
+
             var attrData = data.get(PlayerAttributeProvider.KEY);
 
             // providerがまだロードされていない場合はデフォルト値（全0）として扱う
