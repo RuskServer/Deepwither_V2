@@ -49,4 +49,27 @@ public class SkillContext {
     public Vector getDirection() {
         return caster.getEyeLocation().getDirection().normalize();
     }
+
+    /**
+     * 術者が現在見ているブロックの座標を取得します。
+     * 最大距離は 30 ブロックです。
+     */
+    public Location getTargetLocation() {
+        return caster.getTargetBlock(null, 30).getLocation();
+    }
+
+    /**
+     * 術者の視線先にあるエンティティを取得します。
+     * 未実装の場合は null を返すか、レイトレースを実装します。
+     */
+    public org.bukkit.entity.LivingEntity getTargetEntity() {
+        var result = caster.getWorld().rayTraceEntities(
+                caster.getEyeLocation(),
+                caster.getEyeLocation().getDirection(),
+                30,
+                0.5,
+                entity -> entity instanceof org.bukkit.entity.LivingEntity && !entity.equals(caster)
+        );
+        return result != null ? (org.bukkit.entity.LivingEntity) result.getHitEntity() : null;
+    }
 }
