@@ -7,6 +7,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.phases.ItemAbilityPhas
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
+import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
@@ -26,12 +27,14 @@ public class DamagePipelineManager implements Listener {
 
     private final VirtualHealthManager healthManager;
     private final StatManager statManager;
+    private final CustomMobManager customMobManager;
     private final List<DamagePhase> pipeline = new ArrayList<>();
 
     @Inject
-    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil) {
+    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager) {
         this.healthManager = healthManager;
         this.statManager = statManager;
+        this.customMobManager = customMobManager;
 
         // パイプラインのフェーズを順番に登録する
         // 1. 基礎ダメージの設定
@@ -69,6 +72,7 @@ public class DamagePipelineManager implements Listener {
 
         // 最終ダメージを仮想HPから減算
         if (context.getDamage() > 0) {
+            customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
             
             // TODO: クリティカル発生時のエフェクトや、ダメージホログラム(HolographicDisplaysなど)の表示
@@ -115,6 +119,7 @@ public class DamagePipelineManager implements Listener {
             phase.process(context);
         }
         if (context.getDamage() > 0) {
+            customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
         }
     }

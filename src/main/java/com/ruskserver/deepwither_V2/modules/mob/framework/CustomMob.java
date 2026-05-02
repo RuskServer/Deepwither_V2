@@ -21,6 +21,7 @@ public abstract class CustomMob {
     protected String mobId;
     protected int ticksLived = 0;
     protected CustomMobManager manager;
+    private int exp = 0;
 
     protected static final Random RANDOM = new Random();
 
@@ -81,6 +82,11 @@ public abstract class CustomMob {
     public UUID getUniqueId() { return uuid; }
     public String getMobId() { return mobId; }
     public int getTicksLived() { return ticksLived; }
+    public int getExp() { return exp; }
+
+    protected void setExp(int exp) {
+        this.exp = Math.max(0, exp);
+    }
 
     public Location getLocation() {
         return entity.getLocation();

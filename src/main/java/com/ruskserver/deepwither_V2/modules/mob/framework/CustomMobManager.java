@@ -5,10 +5,13 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -37,6 +40,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
 
     private final JavaPlugin plugin;
     private final VirtualHealthManager healthManager;
+    private final PlayerManager playerManager;
     private final Logger log;
 
     /** mob-id → (EntityType, Supplierファクトリ) のレジストリ */
@@ -46,6 +50,9 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     /** 現在アクティブなモブ: UUID → CustomMobインスタンス */
     private final Map<UUID, CustomMob> activeMobs = new ConcurrentHashMap<>();
 
+    /** カスタムモブUUID → 最後にダメージを与えたプレイヤーUUID */
+    private final Map<UUID, UUID> lastPlayerDamagers = new ConcurrentHashMap<>();
+
     /** 装備アイテムキャッシュ: itemId → クローン元ItemStack */
     private final Map<String, ItemStack> itemCache = new ConcurrentHashMap<>();
 
@@ -53,9 +60,10 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     private final NamespacedKey mobIdKey;
 
     @Inject
-    public CustomMobManager(JavaPlugin plugin, VirtualHealthManager healthManager) {
+    public CustomMobManager(JavaPlugin plugin, VirtualHealthManager healthManager, PlayerManager playerManager) {
         this.plugin = plugin;
         this.healthManager = healthManager;
+        this.playerManager = playerManager;
         this.log = plugin.getLogger();
         this.mobIdKey = new NamespacedKey(plugin, "custom_mob_id");
     }
@@ -72,6 +80,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     @Override
     public void stop() {
         activeMobs.clear();
+        lastPlayerDamagers.clear();
         itemCache.clear();
         log.info("[CustomMobManager] 停止しました。");
     }
@@ -198,6 +207,17 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
         return java.util.Collections.unmodifiableCollection(activeMobs.values());
     }
 
+    /**
+     * カスタムモブへダメージを与えたプレイヤーを記録します。
+     * 死亡時のEXP付与先を決定するために使用します。
+     */
+    public void recordDamage(LivingEntity defender, LivingEntity attacker) {
+        if (!(attacker instanceof Player player)) return;
+        if (defender == null || !activeMobs.containsKey(defender.getUniqueId())) return;
+
+        lastPlayerDamagers.put(defender.getUniqueId(), player.getUniqueId());
+    }
+
     // --- VirtualHealth ブリッジ ---
 
     double getHealth(CustomMob mob) {
@@ -267,14 +287,30 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        CustomMob mob = activeMobs.remove(event.getEntity().getUniqueId());
+        UUID entityId = event.getEntity().getUniqueId();
+        CustomMob mob = activeMobs.remove(entityId);
         if (mob != null) {
             // バニラのドロップを全てクリアし、onDeath()に制御を渡す
             event.getDrops().clear();
             event.setDroppedExp(0);
+            grantExpReward(mob, entityId);
             mob.onDeath();
         }
         // VirtualHealthManagerのメモリを解放
-        healthManager.cleanup(event.getEntity().getUniqueId());
+        lastPlayerDamagers.remove(entityId);
+        healthManager.cleanup(entityId);
+    }
+
+    private void grantExpReward(CustomMob mob, UUID entityId) {
+        int exp = mob.getExp();
+        if (exp <= 0) return;
+
+        UUID playerId = lastPlayerDamagers.get(entityId);
+        if (playerId == null) return;
+
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null || !player.isOnline()) return;
+
+        playerManager.addExp(player, exp);
     }
 }

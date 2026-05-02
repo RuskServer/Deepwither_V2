@@ -49,6 +49,7 @@ public class GoblinMob extends CustomMob {
     public void onSpawn() {
         // スポーン時に1度だけ呼ばれます
         setMaxHealth(150.0);
+        setExp(30);
         entity.setCustomName(net.kyori.adventure.text.Component.text("ゴブリン"));
         entity.setCustomNameVisible(true);
     }
@@ -91,6 +92,7 @@ public class GoblinMob extends CustomMob {
 @Override
 public void onSpawn() {
     setMaxHealth(300.0);  // 最大HPを300に設定し、現在HPも300でスタート
+    setExp(120);          // プレイヤーが倒した時に付与するカスタムEXP
 }
 
 @Override
@@ -100,6 +102,20 @@ public void onTick() {
     }
 }
 ```
+
+### EXP 報酬の設定
+
+```java
+@Override
+public void onSpawn() {
+    setMaxHealth(150.0);
+    setExp(30);
+}
+```
+
+`setExp()` に設定した値は、プレイヤーがそのカスタムモブへ最後にダメージを与えて倒した時に、
+独自レベルシステムの `PlayerManager#addExp()` を通じて自動付与されます。
+バニラの経験値オーブはドロップしません。
 
 ### 装備の設定
 
