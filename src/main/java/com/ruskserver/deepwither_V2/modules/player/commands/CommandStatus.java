@@ -10,7 +10,6 @@ import com.ruskserver.deepwither_V2.modules.player.provider.PlayerAttributeProvi
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.entity.Player;
@@ -44,32 +43,32 @@ public class CommandStatus implements BasicCommand {
         UUID uuid = player.getUniqueId();
         
         // ヘッダー
-        player.sendMessage(Component.text("--------------------------------------", NamedTextColor.AQUA)
+        player.sendMessage(net.kyori.adventure.text.Component.text("--------------------------------------", NamedTextColor.AQUA)
                 .decorate(TextDecoration.STRIKETHROUGH));
-        player.sendMessage(Component.text("       » ", NamedTextColor.WHITE)
-                .append(Component.text(player.getName() + " のステータス", NamedTextColor.GOLD, TextDecoration.BOLD))
-                .append(Component.text(" «", NamedTextColor.WHITE)));
-        player.sendMessage(Component.empty());
+        player.sendMessage(net.kyori.adventure.text.Component.text("       » ", NamedTextColor.WHITE)
+                .append(net.kyori.adventure.text.Component.text(player.getName() + " のステータス", NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(net.kyori.adventure.text.Component.text(" «", NamedTextColor.WHITE)));
+        player.sendMessage(net.kyori.adventure.text.Component.empty());
 
         // 基本属性 (STR, VIT, etc)
         repository.get(uuid).ifPresent(data -> {
             PlayerAttributeProvider.AttributeData attrData = data.get(PlayerAttributeProvider.KEY);
             if (attrData != null) {
-                player.sendMessage(Component.text("[ 基本属性 ]", NamedTextColor.YELLOW, TextDecoration.BOLD));
+                player.sendMessage(net.kyori.adventure.text.Component.text("[ 基本属性 ]", NamedTextColor.YELLOW, TextDecoration.BOLD));
                 for (AttributeType type : AttributeType.values()) {
-                    player.sendMessage(Component.text("  - ", NamedTextColor.GRAY)
-                            .append(Component.text(type.getDisplayName() + ": ", NamedTextColor.WHITE))
-                            .append(Component.text(attrData.getAttribute(type), NamedTextColor.GREEN)));
+                    player.sendMessage(net.kyori.adventure.text.Component.text("  - ", NamedTextColor.GRAY)
+                            .append(net.kyori.adventure.text.Component.text(type.getDisplayName() + ": ", NamedTextColor.WHITE))
+                            .append(net.kyori.adventure.text.Component.text(attrData.getAttribute(type), NamedTextColor.GREEN)));
                 }
-                player.sendMessage(Component.text("  - ", NamedTextColor.GRAY)
-                        .append(Component.text("残りポイント: ", NamedTextColor.WHITE))
-                        .append(Component.text(attrData.getRemainingPoints(), NamedTextColor.AQUA)));
-                player.sendMessage(Component.empty());
+                player.sendMessage(net.kyori.adventure.text.Component.text("  - ", NamedTextColor.GRAY)
+                        .append(net.kyori.adventure.text.Component.text("残りポイント: ", NamedTextColor.WHITE))
+                        .append(net.kyori.adventure.text.Component.text(attrData.getRemainingPoints(), NamedTextColor.AQUA)));
+                player.sendMessage(net.kyori.adventure.text.Component.empty());
             }
         });
 
         // 戦闘ステータス (最終値)
-        player.sendMessage(Component.text("[ 戦闘ステータス ]", NamedTextColor.YELLOW, TextDecoration.BOLD));
+        player.sendMessage(net.kyori.adventure.text.Component.text("[ 戦闘ステータス ]", NamedTextColor.YELLOW, TextDecoration.BOLD));
         
         displayStat(player, StatType.HEALTH, NamedTextColor.RED);
         displayStat(player, StatType.MAX_MANA, NamedTextColor.AQUA);
@@ -82,22 +81,22 @@ public class CommandStatus implements BasicCommand {
         double critChance = statManager.getTotalStat(player, StatType.CRITICAL_CHANCE);
         double critDamage = statManager.getTotalStat(player, StatType.CRITICAL_DAMAGE);
         
-        player.sendMessage(Component.text("  - ", NamedTextColor.GRAY)
-                .append(Component.text(StatType.CRITICAL_CHANCE.getDisplayName() + ": ", NamedTextColor.WHITE))
-                .append(Component.text(String.format("%.1f%%", critChance * 100), NamedTextColor.GREEN)));
+        player.sendMessage(net.kyori.adventure.text.Component.text("  - ", NamedTextColor.GRAY)
+                .append(net.kyori.adventure.text.Component.text(StatType.CRITICAL_CHANCE.getDisplayName() + ": ", NamedTextColor.WHITE))
+                .append(net.kyori.adventure.text.Component.text(String.format("%.1f%%", critChance * 100), NamedTextColor.GREEN)));
         
-        player.sendMessage(Component.text("  - ", NamedTextColor.GRAY)
-                .append(Component.text(StatType.CRITICAL_DAMAGE.getDisplayName() + ": ", NamedTextColor.WHITE))
-                .append(Component.text(String.format("%.1f%%", critDamage * 100), NamedTextColor.GREEN)));
+        player.sendMessage(net.kyori.adventure.text.Component.text("  - ", NamedTextColor.GRAY)
+                .append(net.kyori.adventure.text.Component.text(StatType.CRITICAL_DAMAGE.getDisplayName() + ": ", NamedTextColor.WHITE))
+                .append(net.kyori.adventure.text.Component.text(String.format("%.1f%%", critDamage * 100), NamedTextColor.GREEN)));
 
-        player.sendMessage(Component.text("--------------------------------------", NamedTextColor.AQUA)
+        player.sendMessage(net.kyori.adventure.text.Component.text("--------------------------------------", NamedTextColor.AQUA)
                 .decorate(TextDecoration.STRIKETHROUGH));
     }
 
     private void displayStat(Player player, StatType type, NamedTextColor color) {
         double value = statManager.getTotalStat(player, type);
-        player.sendMessage(Component.text("  - ", NamedTextColor.GRAY)
-                .append(Component.text(type.getDisplayName() + ": ", NamedTextColor.WHITE))
-                .append(Component.text(String.format("%,.1f", value), color)));
+        player.sendMessage(net.kyori.adventure.text.Component.text("  - ", NamedTextColor.GRAY)
+                .append(net.kyori.adventure.text.Component.text(type.getDisplayName() + ": ", NamedTextColor.WHITE))
+                .append(net.kyori.adventure.text.Component.text(String.format("%,.1f", value), color)));
     }
 }
