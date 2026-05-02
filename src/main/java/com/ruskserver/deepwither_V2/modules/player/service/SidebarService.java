@@ -76,7 +76,7 @@ public class SidebarService implements Startable, Listener {
         player.setScoreboard(scoreboard);
         scoreboards.put(player.getUniqueId(), scoreboard);
         
-        Objective objective = scoreboard.registerNewObjective("sidebar", Criteria.dummy(), 
+        Objective objective = scoreboard.registerNewObjective("sidebar", Criteria.DUMMY,
                 Component.empty());
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
     }
