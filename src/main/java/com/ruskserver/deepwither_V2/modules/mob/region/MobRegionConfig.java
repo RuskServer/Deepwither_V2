@@ -115,11 +115,11 @@ public class MobRegionConfig implements Startable {
     private MobRegion parseRegion(String name, ConfigurationSection section) {
         boolean isSafeZone = section.getBoolean("safe-zone", false);
 
-        // ワールドの解決
         String worldName = section.getString("world", "world");
-        World world = plugin.getServer().getWorld(worldName);
+        World world = resolveWorld(worldName);
         if (world == null) {
-            log.warning("[MobRegionConfig] Region '" + name + "' のワールド '" + worldName + "' が見つかりません。スキップします。");
+            log.warning("[MobRegionConfig] Region '" + name + "' のワールド '" + worldName
+                    + "' が見つかりません。読み込み済みワールド: " + getLoadedWorldNames() + "。スキップします。");
             return null;
         }
 
@@ -156,6 +156,53 @@ public class MobRegionConfig implements Startable {
         }
 
         return new MobRegion(name, isSafeZone, world, wgRegion, spawnTable, spawnIntervalTicks, maxMobs);
+    }
+
+    private World resolveWorld(String configuredName) {
+        if (configuredName == null || configuredName.isBlank()) {
+            return null;
+        }
+
+        World direct = plugin.getServer().getWorld(configuredName);
+        if (direct != null) {
+            return direct;
+        }
+
+        String normalized = normalizeWorldName(configuredName);
+        for (World world : plugin.getServer().getWorlds()) {
+            if (normalizeWorldName(world.getName()).equals(normalized)) {
+                return world;
+            }
+        }
+
+        String alias = switch (normalized) {
+            case "overworld" -> "world";
+            case "nether", "the_nether" -> "world_nether";
+            case "end", "the_end" -> "world_the_end";
+            default -> null;
+        };
+        return alias == null ? null : plugin.getServer().getWorld(alias);
+    }
+
+    private String normalizeWorldName(String name) {
+        String normalized = name.trim().toLowerCase(java.util.Locale.ROOT);
+        int namespaceSeparator = normalized.indexOf(':');
+        if (namespaceSeparator >= 0 && namespaceSeparator + 1 < normalized.length()) {
+            normalized = normalized.substring(namespaceSeparator + 1);
+        }
+        if (normalized.startsWith("the_")) {
+            normalized = normalized.substring(4);
+        }
+        return normalized;
+    }
+
+    private String getLoadedWorldNames() {
+        if (plugin.getServer().getWorlds().isEmpty()) {
+            return "(none)";
+        }
+        return plugin.getServer().getWorlds().stream()
+                .map(World::getName)
+                .collect(java.util.stream.Collectors.joining(", "));
     }
 
     /**

@@ -5,7 +5,7 @@ main: com.ruskserver.deepwither_V2.Deepwither_V2
 bootstrapper: com.ruskserver.deepwither_V2.Deepwither_V2Bootstrap
 loader: com.ruskserver.deepwither_V2.Deepwither_V2Loader
 api-version: '26.1.2'
-load: STARTUP
+load: POSTWORLD
 dependencies:
   server:
     packetevents:
