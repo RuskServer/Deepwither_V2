@@ -1,14 +1,11 @@
 package com.ruskserver.deepwither_V2.modules.player.service;
 
 import com.ruskserver.deepwither_V2.Deepwither_V2;
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
-import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
-import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -29,20 +26,15 @@ public class SidebarService implements Startable, Listener {
 
     private final ManaManager manaManager;
     private final VirtualHealthManager healthManager;
-    private final PlayerManager playerManager;
-    private final PlayerDataRepository repository;
     private final Deepwither_V2 plugin;
 
     private final Map<UUID, Scoreboard> scoreboards = new HashMap<>();
 
     @Inject
     public SidebarService(ManaManager manaManager, VirtualHealthManager healthManager,
-                          PlayerManager playerManager, PlayerDataRepository repository, 
                           Deepwither_V2 plugin) {
         this.manaManager = manaManager;
         this.healthManager = healthManager;
-        this.playerManager = playerManager;
-        this.repository = repository;
         this.plugin = plugin;
     }
 
@@ -93,32 +85,15 @@ public class SidebarService implements Startable, Listener {
         double currentMana = manaManager.getMana(player);
         double maxMana = getMaxManaSafe(player);
         
-        int level = 1;
-        int currentExp = 0;
-        var dataOpt = repository.get(player.getUniqueId());
-        if (dataOpt.isPresent()) {
-            var levelData = dataOpt.get().get(PlayerLevelProvider.KEY);
-            if (levelData != null) {
-                level = levelData.getLevel();
-                currentExp = levelData.getExp();
-            }
-        }
-
-        int nextExp = playerManager.getExpToNextLevel(level);
-
         // シンプルな更新：既存のスコアをリセットして再セット
         // ※ チカつきを抑えるには Team を使うべきだが、まずは要件を満たすシンプルな実装とする
         for (String entry : scoreboard.getEntries()) {
             scoreboard.resetScores(entry);
         }
 
-        int score = 15;
-        setLine(objective, "§7--------------------", score--);
-        setLine(objective, "§f レベル: §e" + level, score--);
-        setLine(objective, " ", score--);
+        int score = 2;
         setLine(objective, "§f HP: §c" + (int)currentHp + " / " + (int)maxHp, score--);
         setLine(objective, "§f マナ: §b" + (int)currentMana + " / " + (int)maxMana, score--);
-        setLine(objective, "§7-------------------- ", score--);
     }
 
     private double getMaxManaSafe(Player player) {
