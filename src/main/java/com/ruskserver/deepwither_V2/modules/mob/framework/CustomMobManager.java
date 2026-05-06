@@ -208,6 +208,27 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     }
 
     /**
+     * 指定した条件に合致するカスタムモブを強制デスポーンします。
+     * {@link EntityDeathEvent} は発火しません（バニラドロップ・EXPは出ません）。
+     * {@code onDeath()} フックも呼ばれません。
+     *
+     * @param locationFilter モブの座標がこのpredicateをtrueにした場合に削除
+     */
+    public void despawnMobsIn(java.util.function.Predicate<org.bukkit.Location> locationFilter) {
+        var iterator = activeMobs.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            CustomMob mob = entry.getValue();
+            if (locationFilter.test(mob.getLocation())) {
+                mob.entity.remove();           // エンティティをワールドから削除
+                healthManager.cleanup(entry.getKey());  // 仮想HPデータを解放
+                iterator.remove();             // activeMobsから除去
+            }
+        }
+    }
+
+
+    /**
      * カスタムモブへダメージを与えたプレイヤーを記録します。
      * 死亡時のEXP付与先を決定するために使用します。
      */

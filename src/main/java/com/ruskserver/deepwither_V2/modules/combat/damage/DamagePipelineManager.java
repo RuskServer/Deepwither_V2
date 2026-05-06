@@ -4,6 +4,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.DamagePhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.ItemAbilityPhase;
+import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
@@ -28,13 +29,15 @@ public class DamagePipelineManager implements Listener {
     private final VirtualHealthManager healthManager;
     private final StatManager statManager;
     private final CustomMobManager customMobManager;
+    private final DamageFeedbackService feedbackService;
     private final List<DamagePhase> pipeline = new ArrayList<>();
 
     @Inject
-    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager) {
+    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, DamageFeedbackService feedbackService) {
         this.healthManager = healthManager;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
+        this.feedbackService = feedbackService;
 
         // パイプラインのフェーズを順番に登録する
         // 1. 基礎ダメージの設定
@@ -70,12 +73,11 @@ public class DamagePipelineManager implements Listener {
             phase.process(context);
         }
 
-        // 最終ダメージを仮想HPから減算
+        // 最終ダメージを仮想HPから減算し、フィードバックを再生
         if (context.getDamage() > 0) {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
-            
-            // TODO: クリティカル発生時のエフェクトや、ダメージホログラム(HolographicDisplaysなど)の表示
+            feedbackService.playHurtFeedback(defender);
         }
     }
 
@@ -104,6 +106,7 @@ public class DamagePipelineManager implements Listener {
 
         if (finalDamage > 0) {
             healthManager.damage(defender, finalDamage);
+            feedbackService.playHurtFeedback(defender);
         }
     }
 
@@ -121,6 +124,7 @@ public class DamagePipelineManager implements Listener {
         if (context.getDamage() > 0) {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
+            feedbackService.playHurtFeedback(defender);
         }
     }
 }

@@ -9,12 +9,16 @@ import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
@@ -22,9 +26,10 @@ import java.util.logging.Logger;
  * <p>
  * <ul>
  *   <li>セーフゾーンのRegionはスポーンをスキップします。</li>
+ *   <li>Region内にプレイヤーが1人もいない場合はスポーンしません。</li>
  *   <li>Region内のアクティブモブ数が {@code maxMobsPerRegion} に達している場合はスポーンしません。</li>
- *   <li>スポーン位置は WorldGuard Region の XZ 範囲内のランダム座標に
- *       {@link World#getHighestBlockYAt(int, int)} を用いて地面を算出します。</li>
+ *   <li>スポーン位置はRegion内のランダムなプレイヤーを中心に
+ *       {@value MIN_SPAWN_DIST}〜{@value MAX_SPAWN_DIST} ブロックの範囲で選択します。</li>
  * </ul>
  */
 @Service
@@ -35,6 +40,21 @@ public class MobRegionSpawnService implements Startable, Stoppable {
     private final CustomMobManager mobManager;
     private final Logger log;
     private final Random random = new Random();
+
+    /** プレイヤーから最低この距離以上離れた場所にスポーンする（ブロック） */
+    private static final int MIN_SPAWN_DIST = 24;
+    /** プレイヤーからこの距離以内にスポーンする（ブロック） */
+    private static final int MAX_SPAWN_DIST = 64;
+    /** スポーン座標の候補を何回試みるか */
+    private static final int MAX_SPAWN_ATTEMPTS = 10;
+    /** プレイヤーのY座標から上下スキャンする範囲（ブロック） */
+    private static final int SCAN_RANGE = 16;
+    /** セーフゾーン内でこの時間（ms）経過するとモブをデスポーン */
+    private static final long SAFE_ZONE_DESPAWN_MS = 5_000L;
+
+    /** プレイヤーがセーフゾーンに入った時刻（ UUID → System.currentTimeMillis() ） */
+    private final Map<UUID, Long> safeZoneEntryTime = new HashMap<>();
+
 
     /** 各Regionの定期スポーンタスク（stop時にキャンセルするために保持） */
     private final List<BukkitTask> spawnTasks = new ArrayList<>();
@@ -50,6 +70,7 @@ public class MobRegionSpawnService implements Startable, Stoppable {
     @Override
     public void start() {
         scheduleAll();
+        startSafeZoneCleaner();
         log.info("[MobRegionSpawnService] スポーンスケジューラーを起動しました。");
     }
 
@@ -107,6 +128,10 @@ public class MobRegionSpawnService implements Startable, Stoppable {
      * 指定Regionに対してスポーンを1回試みます。
      */
     private void attemptSpawn(MobRegion region) {
+        // Region内にプレイヤーがいない場合はスポーンしない
+        List<org.bukkit.entity.Player> playersInRegion = getPlayersInRegion(region);
+        if (playersInRegion.isEmpty()) return;
+
         // 現在のRegion内アクティブモブ数をカウント
         long currentCount = countActiveMobsIn(region);
         if (currentCount >= region.maxMobsPerRegion()) {
@@ -124,11 +149,31 @@ public class MobRegionSpawnService implements Startable, Stoppable {
             return;
         }
 
-        // ランダムなスポーン座標を決定
-        Location spawnLoc = randomSurfaceLocation(region);
+        // プレイヤー周辺のランダムなスポーン座標を決定
+        org.bukkit.entity.Player target = playersInRegion.get(random.nextInt(playersInRegion.size()));
+        Location spawnLoc = nearbyPlayerSurfaceLocation(region, target);
         if (spawnLoc == null) return;
 
         mobManager.spawnMob(selectedMobId, spawnLoc);
+    }
+
+    /**
+     * Region内にいるプレイヤーのリストを返します。
+     * セーフゾーン内にいるプレイヤーは除外します。
+     */
+    private List<Player> getPlayersInRegion(MobRegion region) {
+        List<MobRegion> safeZones = getSafeZones();
+        return region.world().getPlayers().stream()
+                .filter(p -> !p.isDead() && region.contains(p.getLocation()))
+                .filter(p -> safeZones.stream().noneMatch(sz -> sz.contains(p.getLocation())))
+                .toList();
+    }
+
+    /** セーフゾーンのRegionリストを返します。 */
+    private List<MobRegion> getSafeZones() {
+        return regionConfig.getRegions().stream()
+                .filter(MobRegion::isSafeZone)
+                .toList();
     }
 
     /**
@@ -139,6 +184,52 @@ public class MobRegionSpawnService implements Startable, Stoppable {
                 .map(CustomMob::getLocation)
                 .filter(region::contains)
                 .count();
+    }
+
+    // =========================================================
+    // セーフゾーンクリーナー
+    // =========================================================
+
+    /**
+     * セーフゾーンクリーナータスクを起動します。
+     * 毎科（1回）全プレイヤーのセーフゾーン在室を確認し、
+     * {@value SAFE_ZONE_DESPAWN_MS}ms 経過したプレイヤーのセーフゾーン内のモブを全削除します。
+     */
+    private void startSafeZoneCleaner() {
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            List<MobRegion> safeZones = getSafeZones();
+            if (safeZones.isEmpty()) return;
+
+            long now = System.currentTimeMillis();
+            boolean anyDespawn = false;
+
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                boolean inSafeZone = safeZones.stream()
+                        .anyMatch(sz -> sz.contains(player.getLocation()));
+
+                if (inSafeZone) {
+                    // 初めて入った時刻を記録
+                    safeZoneEntryTime.putIfAbsent(player.getUniqueId(), now);
+                    long elapsed = now - safeZoneEntryTime.get(player.getUniqueId());
+
+                    if (elapsed >= SAFE_ZONE_DESPAWN_MS) {
+                        // 5秒経過→デスポーンフラグを立てる
+                        anyDespawn = true;
+                        // 次回の事前百秒間は冗長に実行されないよう、穎削する
+                        safeZoneEntryTime.put(player.getUniqueId(), now);
+                    }
+                } else {
+                    // 小退したらリセット
+                    safeZoneEntryTime.remove(player.getUniqueId());
+                }
+            }
+
+            // 1人でもデスポーン対象がいればセーフゾーン内のモブを一收
+            if (anyDespawn) {
+                safeZones.forEach(sz ->
+                        mobManager.despawnMobsIn(sz::contains));
+            }
+        }, 20L, 20L);
     }
 
     /**
@@ -162,34 +253,66 @@ public class MobRegionSpawnService implements Startable, Stoppable {
     }
 
     /**
-     * WorldGuard Region の XZ 範囲内のランダムな地表座標を返します。
-     * {@link com.sk89q.worldguard.protection.regions.ProtectedRegion#getMinimumPoint()} /
-     * {@code getMaximumPoint()} でバウンディングボックスを取得し、その内側でランダムに選択します。
+     * 対象プレイヤーの周辺（{@value MIN_SPAWN_DIST}〜{@value MAX_SPAWN_DIST} ブロック）で
+     * かつ Region 内にある、プレイヤーと近いY座標のスポーン座標を返します。
      * <p>
-     * 地表の Y が Region の Y 範囲外の場合は null を返してスポーンをスキップします。
+     * Y座標はプレイヤーのYを基準に上下 {@value SCAN_RANGE} ブロックをスキャンし、
+     * 「足場が固体ブロック & 上2マスが空気」の最初の場所を選びます。
+     * これにより地下・洞窟内でもプレイヤーと同じ高度帯に湿きます。
      *
+     * @param region スポーン対象Region
+     * @param player スポーン基準プレイヤー
      * @return スポーン可能な座標、または取得できなかった場合はnull
      */
-    private Location randomSurfaceLocation(MobRegion region) {
+    private Location nearbyPlayerSurfaceLocation(MobRegion region, org.bukkit.entity.Player player) {
         BlockVector3 min = region.wgRegion().getMinimumPoint();
         BlockVector3 max = region.wgRegion().getMaximumPoint();
-
-        int rangeX = max.x() - min.x();
-        int rangeZ = max.z() - min.z();
-
-        // 範囲が0の場合（1ブロック幅）でも動作するよう保護
-        int x = min.x() + (rangeX > 0 ? random.nextInt(rangeX + 1) : 0);
-        int z = min.z() + (rangeZ > 0 ? random.nextInt(rangeZ + 1) : 0);
-
         World world = region.world();
-        int surfaceY = world.getHighestBlockYAt(x, z);
 
-        // 地表が Region の Y 範囲内にあるか確認
-        if (surfaceY < min.y() || surfaceY > max.y()) {
-            return null;
+        int range = MAX_SPAWN_DIST - MIN_SPAWN_DIST;
+        int playerY = (int) player.getLocation().getY();
+
+        for (int attempt = 0; attempt < MAX_SPAWN_ATTEMPTS; attempt++) {
+            // プレイヤーを中心に MIN〜MAX ブロックのランダム方向オフセット
+            double angle = random.nextDouble() * 2 * Math.PI;
+            int dist = MIN_SPAWN_DIST + random.nextInt(range + 1);
+            int x = (int) (player.getLocation().getX() + dist * Math.cos(angle));
+            int z = (int) (player.getLocation().getZ() + dist * Math.sin(angle));
+
+            // Region の XZ 境界内に収まっているか確認
+            if (x < min.x() || x > max.x() || z < min.z() || z > max.z()) continue;
+
+            // プレイヤーのYから上下にSCAN_RANGEブロックスキャンし、立てる場所を探す
+            Integer spawnY = findStandableY(world, x, z, playerY, min.y(), max.y());
+            if (spawnY == null) continue;
+
+            return new Location(world, x + 0.5, spawnY, z + 0.5);
         }
 
-        // 地面の1ブロック上（エンティティが立つ位置）をスポーン座標とする
-        return new Location(world, x + 0.5, surfaceY + 1, z + 0.5);
+        return null;  // MAX_SPAWN_ATTEMPTS 回試みても見つからなかった
+    }
+
+    /**
+     * 指定 XZ 座標の、{@code centerY} を基準に上下 {@value SCAN_RANGE} ブロックをスキャンし、
+     * 「足場が固体ブロック & 上2マスが空気」となる最初の Y 座標（エンティティが立つY）を返します。
+     * centerY に最も近い場所を優先するため、dy=0→±1→±2... の順で探索します。
+     *
+     * @return エンティティが立つY座標、見つからなければ null
+     */
+    private Integer findStandableY(World world, int x, int z, int centerY, int minY, int maxY) {
+        for (int dy = 0; dy <= SCAN_RANGE; dy++) {
+            for (int sign : (dy == 0 ? new int[]{0} : new int[]{1, -1})) {
+                int y = centerY + dy * sign;
+                if (y < minY || y > maxY) continue;
+
+                // y-1が固体ブロック（足場）で、yとy+1が空気（立てる）か確認
+                if (world.getBlockAt(x, y - 1, z).getType().isSolid()
+                        && !world.getBlockAt(x, y, z).getType().isSolid()
+                        && !world.getBlockAt(x, y + 1, z).getType().isSolid()) {
+                    return y;
+                }
+            }
+        }
+        return null;
     }
 }
