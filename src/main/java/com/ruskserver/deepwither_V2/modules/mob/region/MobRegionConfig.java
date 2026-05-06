@@ -145,9 +145,12 @@ public class MobRegionConfig implements Startable {
         if (!isSafeZone) {
             List<?> rawTable = section.getList("spawn-table", new ArrayList<>());
             for (Object raw : rawTable) {
-                if (raw instanceof org.bukkit.configuration.MemorySection ms) {
-                    String mobId = ms.getString("mob-id");
-                    int weight = ms.getInt("weight", 1);
+                // getList() の要素はYAMLマップを LinkedHashMap<String,Object> として返す（MemorySection ではない）
+                if (raw instanceof java.util.Map<?, ?> map) {
+                    Object mobIdObj = map.get("mob-id");
+                    Object weightObj = map.get("weight");
+                    String mobId = mobIdObj instanceof String s ? s : null;
+                    int weight = weightObj instanceof Number n ? n.intValue() : 1;
                     if (mobId != null && !mobId.isBlank() && weight > 0) {
                         spawnTable.add(new SpawnEntry(mobId, weight));
                     }
