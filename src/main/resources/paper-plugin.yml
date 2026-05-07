@@ -20,3 +20,7 @@ dependencies:
       load: BEFORE
       required: true
       join-classpath: true
+    Citizens:
+      required: false
+    Vault:
+      required: false

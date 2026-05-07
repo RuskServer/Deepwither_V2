@@ -13,7 +13,8 @@ public enum StatType {
     HEALTH("最大HP"),
     MAX_MANA("最大マナ"),
     ATTACK_SPEED("攻撃速度"),
-    SPEED("移動速度");
+    SPEED("移動速度"),
+    COOLDOWN_REDUCTION("クールタイム短縮");
 
     private final String displayName;
 

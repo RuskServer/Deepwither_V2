@@ -10,6 +10,8 @@ repositories {
     maven { url = uri("https://repo.codemc.io/repository/maven-releases/") }
     maven { url = uri("https://repo.codemc.io/repository/maven-snapshots/") }
     maven("https://maven.enginehub.org/repo/")
+    maven("https://maven.citizensnpcs.co/repo")
+    maven("https://jitpack.io")  // Vault用
 }
 
 dependencies {
@@ -23,6 +25,11 @@ dependencies {
     compileOnly("com.sk89q.worldguard:worldguard-core:7.0.14")   { isTransitive = false }
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.10")   { isTransitive = false }
     compileOnly("com.sk89q.worldedit:worldedit-core:7.3.10")     { isTransitive = false }
+
+    // Citizens & Vault
+    // VaultAPI は古い Bukkit に依存しているため、推移的依存を無効化して競合を回避
+    compileOnly("net.citizensnpcs:citizens-main:2.0.36-SNAPSHOT") { isTransitive = false }
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7") { isTransitive = false }
 
     // Database & Cache
     implementation("com.h2database:h2:2.2.224")
