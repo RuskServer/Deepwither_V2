@@ -5,6 +5,8 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.trader.api.TraderDefinition;
 import com.ruskserver.deepwither_V2.modules.trader.api.TraderProduct;
+import com.ruskserver.deepwither_V2.modules.trader.service.DailyTaskService;
+import com.ruskserver.deepwither_V2.modules.trader.service.TraderReputationService;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -34,6 +36,8 @@ public class TraderInventoryGui implements Listener {
 
     private final ItemManager itemManager;
     private final TraderService traderService;
+    private final TraderReputationService reputationService;
+    private final DailyTaskService dailyTaskService;
     private final SellInventoryGui sellGui;
     private final NamespacedKey productIdKey;
     private final NamespacedKey buyPriceKey;
@@ -41,9 +45,11 @@ public class TraderInventoryGui implements Listener {
     private final Map<Player, String> openedTraders = new HashMap<>(); // プレイヤー -> NPC名
 
     @Inject
-    public TraderInventoryGui(ItemManager itemManager, TraderService traderService, SellInventoryGui sellGui, Deepwither_V2 plugin) {
+    public TraderInventoryGui(ItemManager itemManager, TraderService traderService, TraderReputationService reputationService, DailyTaskService dailyTaskService, SellInventoryGui sellGui, Deepwither_V2 plugin) {
         this.itemManager = itemManager;
         this.traderService = traderService;
+        this.reputationService = reputationService;
+        this.dailyTaskService = dailyTaskService;
         this.sellGui = sellGui;
         this.productIdKey = new NamespacedKey(plugin, "trader_product_id");
         this.buyPriceKey = new NamespacedKey(plugin, "trader_buy_price");
@@ -72,6 +78,42 @@ public class TraderInventoryGui implements Listener {
             gui.setItem(slotIndex, displayItem);
             slotIndex++;
         }
+
+        // 信用度情報の表示（左下）
+        int reputation = reputationService.getReputation(player, npcName);
+        ItemStack repInfo = new ItemStack(Material.PAPER);
+        ItemMeta repMeta = repInfo.getItemMeta();
+        if (repMeta != null) {
+            repMeta.displayName(Component.text("§b§l現在の信用度: " + reputation));
+            repMeta.lore(List.of(
+                    Component.text("§7信用度を高めると割引などの"),
+                    Component.text("§7特典が受けられます。")
+            ));
+            repInfo.setItemMeta(repMeta);
+        }
+        gui.setItem(18, repInfo);
+
+        // デイリータスクボタン（中央下）
+        int remainingSlots = reputationService.getRemainingTaskSlots(player);
+        ItemStack taskButton = new ItemStack(Material.BOOK);
+        ItemMeta taskMeta = taskButton.getItemMeta();
+        if (taskMeta != null) {
+            taskMeta.displayName(Component.text("§e§lデイリータスクを受注する"));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("§7本日の残り回数: §f" + remainingSlots + " / 5"));
+            if (dailyTaskService.hasTask(player)) {
+                lore.add(Component.text(""));
+                lore.add(Component.text("§6§n現在の進行状況:"));
+                lore.add(Component.text("§f" + dailyTaskService.getProgressString(player)));
+            } else if (remainingSlots > 0) {
+                lore.add(Component.text(""));
+                lore.add(Component.text("§aクリックしてタスクを受注"));
+            }
+            taskMeta.lore(lore);
+            taskMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "accept_task");
+            taskButton.setItemMeta(taskMeta);
+        }
+        gui.setItem(22, taskButton);
 
         // 売却画面への遷移ボタン（右下）
         ItemStack sellButton = new ItemStack(Material.EMERALD);
@@ -148,6 +190,16 @@ public class TraderInventoryGui implements Listener {
         if ("open_sell".equals(action)) {
             String npcName = openedTraders.get(player);
             sellGui.openSellGui(player, npcName);
+            return;
+        }
+
+        if ("accept_task".equals(action)) {
+            String npcName = openedTraders.get(player);
+            // 本来はランダムまたは定義済みのタスクを渡すが、一旦 ghoul_mob の討伐を固定
+            if (dailyTaskService.acceptTask(player, npcName, "ghoul_mob", 5, 10)) {
+                // 受注成功したらGUIを再描画して状況を反映
+                openTraderGui(player, npcName);
+            }
             return;
         }
 
