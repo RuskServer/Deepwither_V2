@@ -66,4 +66,9 @@ public class BlueCrystalSword implements CustomItem {
     public int getCustomModelData() {
         return 29;
     }
+
+    @Override
+    public double getSellPrice() {
+        return 400.0;
+    }
 }

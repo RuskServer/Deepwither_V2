@@ -79,4 +79,9 @@ public class SeleneRod implements WandItem {
         // 入門用として扱いやすい低コスト設定
         return 10.0;
     }
+
+    @Override
+    public double getSellPrice() {
+        return 250.0;
+    }
 }

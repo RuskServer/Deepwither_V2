@@ -27,12 +27,12 @@ public class LunariAtelierTrader implements TraderDefinition {
     public List<TraderProduct> getProducts() {
         return Arrays.asList(
                 // Selene Rod - 初級魔導杖
-                // 購入: 500ゴールド, 売却: 250ゴールド
-                new TraderProduct("selene_rod", 500.0, 250.0),
+                // 購入: 500ゴールド
+                new TraderProduct("selene_rod", 500.0),
 
                 // Blue Crystal Sword - 藍晶の剣
-                // 購入: 800ゴールド, 売却: 400ゴールド
-                new TraderProduct("blue_crystal_sword", 800.0, 400.0)
+                // 購入: 800ゴールド
+                new TraderProduct("blue_crystal_sword", 800.0)
         );
     }
 }

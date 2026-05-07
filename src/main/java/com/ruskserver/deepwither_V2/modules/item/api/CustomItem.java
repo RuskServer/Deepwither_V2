@@ -45,6 +45,13 @@ public interface CustomItem {
     String getFlavorText();
 
     /**
+     * @return アイテムの基本売却価格。0以下の場合は売却不可とみなします。
+     */
+    default double getSellPrice() {
+        return 0.0;
+    }
+
+    /**
      * カスタムモデルデータ番号を取得します。必要に応じてオーバーライドしてください。
      * @return CustomModelData (設定しない場合は 0 を返す)
      */

@@ -34,18 +34,20 @@ public class TraderInventoryGui implements Listener {
 
     private final ItemManager itemManager;
     private final TraderService traderService;
+    private final SellInventoryGui sellGui;
     private final NamespacedKey productIdKey;
     private final NamespacedKey buyPriceKey;
-    private final NamespacedKey sellPriceKey;
+    private final NamespacedKey actionKey;
     private final Map<Player, String> openedTraders = new HashMap<>(); // プレイヤー -> NPC名
 
     @Inject
-    public TraderInventoryGui(ItemManager itemManager, TraderService traderService, Deepwither_V2 plugin) {
+    public TraderInventoryGui(ItemManager itemManager, TraderService traderService, SellInventoryGui sellGui, Deepwither_V2 plugin) {
         this.itemManager = itemManager;
         this.traderService = traderService;
+        this.sellGui = sellGui;
         this.productIdKey = new NamespacedKey(plugin, "trader_product_id");
         this.buyPriceKey = new NamespacedKey(plugin, "trader_buy_price");
-        this.sellPriceKey = new NamespacedKey(plugin, "trader_sell_price");
+        this.actionKey = new NamespacedKey(plugin, "trader_gui_action");
     }
 
     /**
@@ -59,17 +61,28 @@ public class TraderInventoryGui implements Listener {
         }
 
         List<TraderProduct> products = trader.getProducts();
-        int slots = Math.min(products.size(), 27); // 最大 27 スロット（3 行分）
-        Inventory gui = Bukkit.createInventory(null, ((slots + 8) / 9) * 9,
+        // 常に 27 スロット（3 行分）確保し、下部にボタンを配置
+        Inventory gui = Bukkit.createInventory(null, 27,
                 Component.text(trader.getDisplayName()));
 
         int slotIndex = 0;
         for (TraderProduct product : products) {
-            if (slotIndex >= 27) break;
+            if (slotIndex >= 18) break; // 商品は上部 2 行まで
             ItemStack displayItem = createProductDisplay(product);
             gui.setItem(slotIndex, displayItem);
             slotIndex++;
         }
+
+        // 売却画面への遷移ボタン（右下）
+        ItemStack sellButton = new ItemStack(Material.EMERALD);
+        ItemMeta sellMeta = sellButton.getItemMeta();
+        if (sellMeta != null) {
+            sellMeta.displayName(Component.text("§aアイテムを売却する"));
+            sellMeta.lore(List.of(Component.text("§7不要なアイテムを買い取ります。")));
+            sellMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "open_sell");
+            sellButton.setItemMeta(sellMeta);
+        }
+        gui.setItem(26, sellButton);
 
         player.openInventory(gui);
         openedTraders.put(player, npcName);
@@ -91,7 +104,6 @@ public class TraderInventoryGui implements Listener {
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             pdc.set(productIdKey, PersistentDataType.STRING, product.getItemId());
             pdc.set(buyPriceKey, PersistentDataType.DOUBLE, product.getBuyPrice());
-            pdc.set(sellPriceKey, PersistentDataType.DOUBLE, product.getSellPrice());
 
             // 表示名を設定
             meta.displayName(Component.text("§e" + customItem.getDisplayName()));
@@ -100,9 +112,8 @@ public class TraderInventoryGui implements Listener {
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text(""));
             lore.add(Component.text("§7購入価格: §6$" + product.getBuyPrice()));
-            lore.add(Component.text("§7売却価格: §6$" + product.getSellPrice()));
             lore.add(Component.text(""));
-            lore.add(Component.text("§7左クリック: 購入 | 右クリック: 売却"));
+            lore.add(Component.text("§eクリックして購入"));
             meta.lore(lore);
 
             display.setItemMeta(meta);
@@ -131,24 +142,28 @@ public class TraderInventoryGui implements Listener {
         }
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
+
+        // アクション判定
+        String action = pdc.get(actionKey, PersistentDataType.STRING);
+        if ("open_sell".equals(action)) {
+            String npcName = openedTraders.get(player);
+            sellGui.openSellGui(player, npcName);
+            return;
+        }
+
+        // 商品購入判定
         String itemId = pdc.get(productIdKey, PersistentDataType.STRING);
         Double buyPrice = pdc.get(buyPriceKey, PersistentDataType.DOUBLE);
-        Double sellPrice = pdc.get(sellPriceKey, PersistentDataType.DOUBLE);
 
-        if (itemId == null || buyPrice == null || sellPrice == null) {
+        if (itemId == null || buyPrice == null) {
             return;
         }
 
         String npcName = openedTraders.get(player);
-        TraderProduct product = new TraderProduct(itemId, buyPrice, sellPrice);
+        TraderProduct product = new TraderProduct(itemId, buyPrice);
 
-        if (event.isLeftClick()) {
-            // 購入
-            traderService.purchaseItem(player, product);
-        } else if (event.isRightClick()) {
-            // 売却
-            traderService.sellItem(player, product);
-        }
+        // 左クリックまたは右クリックで購入（旧仕様の右クリック売却を廃止）
+        traderService.purchaseItem(player, product);
     }
 
     public void closeTrader(Player player) {

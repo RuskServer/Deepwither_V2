@@ -131,13 +131,19 @@ public class TraderService implements Startable {
      * プレイヤーがトレーダーにアイテムを売却します。
      * @return 成功した場合は true
      */
-    public boolean sellItem(Player player, TraderProduct product) {
+    public boolean sellItem(Player player, String itemId) {
         if (!vaultAvailable || economy == null) {
             player.sendMessage("§c経済システムが利用できません。");
             return false;
         }
 
         try {
+            com.ruskserver.deepwither_V2.modules.item.api.CustomItem customItem = itemManager.getCustomItem(itemId);
+            if (customItem == null || customItem.getSellPrice() <= 0) {
+                player.sendMessage("§cこのアイテムは売却できません。");
+                return false;
+            }
+
             // プレイヤーのインベントリから商品をもらえるアイテムを探す
             ItemStack[] inventory = player.getInventory().getContents();
             ItemStack toSell = null;
@@ -146,8 +152,8 @@ public class TraderService implements Startable {
             for (int i = 0; i < inventory.length; i++) {
                 ItemStack item = inventory[i];
                 if (item != null) {
-                    String itemId = pdcUtil.getItemId(item);
-                    if (itemId != null && itemId.equals(product.getItemId())) {
+                    String currentItemId = pdcUtil.getItemId(item);
+                    if (currentItemId != null && currentItemId.equals(itemId)) {
                         toSell = item;
                         slotIndex = i;
                         break;
@@ -161,12 +167,17 @@ public class TraderService implements Startable {
             }
 
             // お金を与える
-            double price = product.getSellPrice();
+            double price = customItem.getSellPrice();
             economy.getClass().getMethod("depositPlayer", Player.class, double.class).invoke(economy, player, price);
 
-            // アイテムを削除
-            player.getInventory().setItem(slotIndex, null);
-            player.sendMessage("§a" + itemManager.getCustomItem(product.getItemId()).getDisplayName() + "§aを売却しました。");
+            // アイテムを1つ減らす（スタック対応を考慮）
+            if (toSell.getAmount() > 1) {
+                toSell.setAmount(toSell.getAmount() - 1);
+            } else {
+                player.getInventory().setItem(slotIndex, null);
+            }
+
+            player.sendMessage("§a" + customItem.getDisplayName() + "§aを売却しました。");
             return true;
         } catch (Exception e) {
             player.sendMessage("§c取引処理でエラーが発生しました。");
