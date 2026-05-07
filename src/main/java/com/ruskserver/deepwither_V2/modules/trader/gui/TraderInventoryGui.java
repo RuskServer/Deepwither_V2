@@ -41,6 +41,7 @@ public class TraderInventoryGui implements Listener {
     private final SellInventoryGui sellGui;
     private final NamespacedKey productIdKey;
     private final NamespacedKey buyPriceKey;
+    private final NamespacedKey requiredRepKey;
     private final NamespacedKey actionKey;
     private final Map<Player, String> openedTraders = new HashMap<>(); // プレイヤー -> NPC名
 
@@ -53,6 +54,7 @@ public class TraderInventoryGui implements Listener {
         this.sellGui = sellGui;
         this.productIdKey = new NamespacedKey(plugin, "trader_product_id");
         this.buyPriceKey = new NamespacedKey(plugin, "trader_buy_price");
+        this.requiredRepKey = new NamespacedKey(plugin, "trader_required_rep");
         this.actionKey = new NamespacedKey(plugin, "trader_gui_action");
     }
 
@@ -146,6 +148,7 @@ public class TraderInventoryGui implements Listener {
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
             pdc.set(productIdKey, PersistentDataType.STRING, product.getItemId());
             pdc.set(buyPriceKey, PersistentDataType.DOUBLE, product.getBuyPrice());
+            pdc.set(requiredRepKey, PersistentDataType.INTEGER, product.getRequiredReputation());
 
             // 表示名を設定
             meta.displayName(Component.text("§e" + customItem.getDisplayName()));
@@ -154,6 +157,9 @@ public class TraderInventoryGui implements Listener {
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text(""));
             lore.add(Component.text("§7購入価格: §6$" + product.getBuyPrice()));
+            if (product.getRequiredReputation() > 0) {
+                lore.add(Component.text("§7必要信用度: §b" + product.getRequiredReputation()));
+            }
             lore.add(Component.text(""));
             lore.add(Component.text("§eクリックして購入"));
             meta.lore(lore);
@@ -206,16 +212,17 @@ public class TraderInventoryGui implements Listener {
         // 商品購入判定
         String itemId = pdc.get(productIdKey, PersistentDataType.STRING);
         Double buyPrice = pdc.get(buyPriceKey, PersistentDataType.DOUBLE);
+        Integer requiredRep = pdc.get(requiredRepKey, PersistentDataType.INTEGER);
 
         if (itemId == null || buyPrice == null) {
             return;
         }
 
         String npcName = openedTraders.get(player);
-        TraderProduct product = new TraderProduct(itemId, buyPrice);
+        TraderProduct product = new TraderProduct(itemId, buyPrice, requiredRep != null ? requiredRep : 0);
 
         // 左クリックまたは右クリックで購入（旧仕様の右クリック売却を廃止）
-        traderService.purchaseItem(player, product);
+        traderService.purchaseItem(player, npcName, product);
     }
 
     public void closeTrader(Player player) {

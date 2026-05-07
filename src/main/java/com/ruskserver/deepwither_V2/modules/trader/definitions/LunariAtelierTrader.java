@@ -30,6 +30,10 @@ public class LunariAtelierTrader implements TraderDefinition {
                 // 購入: 500ゴールド
                 new TraderProduct("selene_rod", 500.0),
 
+                // Selene Flow Rod - 改良魔導杖
+                // 購入: 1200ゴールド, 信用度: 320
+                new TraderProduct("selene_flow_rod", 1200.0, 320),
+
                 // Blue Crystal Sword - 藍晶の剣
                 // 購入: 800ゴールド
                 new TraderProduct("blue_crystal_sword", 800.0)

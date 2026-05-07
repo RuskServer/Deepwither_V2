@@ -7,11 +7,17 @@ package com.ruskserver.deepwither_V2.modules.trader.api;
 public class TraderProduct {
 
     private final String itemId;
-    private final double buyPrice;      // プレイヤーがこの価格でトレーダーから購入
+    private final double buyPrice;
+    private final int requiredReputation;
 
     public TraderProduct(String itemId, double buyPrice) {
+        this(itemId, buyPrice, 0);
+    }
+
+    public TraderProduct(String itemId, double buyPrice, int requiredReputation) {
         this.itemId = itemId;
         this.buyPrice = buyPrice;
+        this.requiredReputation = requiredReputation;
     }
 
     public String getItemId() {
@@ -21,5 +27,10 @@ public class TraderProduct {
     public double getBuyPrice() {
         return buyPrice;
     }
+
+    public int getRequiredReputation() {
+        return requiredReputation;
+    }
 }
+
 

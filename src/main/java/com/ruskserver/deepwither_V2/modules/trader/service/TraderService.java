@@ -27,14 +27,16 @@ public class TraderService implements Startable {
     private final Map<String, TraderDefinition> traders = new HashMap<>();
     private final DIContainer container;
     private final ItemManager itemManager;
+    private final TraderReputationService reputationService;
     private final ItemPDCUtil pdcUtil;
     private Object economy;  // Vault Economy（Reflection で操作）
     private boolean vaultAvailable;
 
     @Inject
-    public TraderService(DIContainer container, ItemManager itemManager, ItemPDCUtil pdcUtil) {
+    public TraderService(DIContainer container, ItemManager itemManager, TraderReputationService reputationService, ItemPDCUtil pdcUtil) {
         this.container = container;
         this.itemManager = itemManager;
+        this.reputationService = reputationService;
         this.pdcUtil = pdcUtil;
     }
 
@@ -88,9 +90,17 @@ public class TraderService implements Startable {
      * プレイヤーがトレーダーからアイテムを購入します。
      * @return 成功した場合は true
      */
-    public boolean purchaseItem(Player player, TraderProduct product) {
+    public boolean purchaseItem(Player player, String npcName, TraderProduct product) {
         if (!vaultAvailable || economy == null) {
             player.sendMessage("§c経済システムが利用できません。");
+            return false;
+        }
+
+        // 信用度チェック
+        int currentRep = reputationService.getReputation(player, npcName);
+        if (currentRep < product.getRequiredReputation()) {
+            player.sendMessage("§cこのアイテムを購入するには信用度が §e" + product.getRequiredReputation() + " §c必要です。");
+            player.sendMessage("§7(現在の信用度: " + currentRep + ")");
             return false;
         }
 
@@ -186,4 +196,3 @@ public class TraderService implements Startable {
         }
     }
 }
-
