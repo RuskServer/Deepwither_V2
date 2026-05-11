@@ -96,7 +96,7 @@ public class DailyTaskService implements Listener {
         if (task == null) return;
 
         reputationService.completeTask(player, task.traderId, task.rewardReputation);
-        player.sendMessage("§6§lDAILY TASK COMPLETE! §a信用度が " + task.rewardReputation + " 上昇しました。");
+        player.sendMessage("§6§lデイリータスク完了！ §a信用度が " + task.rewardReputation + " 上昇しました。");
     }
 
     private static class ActiveTask {

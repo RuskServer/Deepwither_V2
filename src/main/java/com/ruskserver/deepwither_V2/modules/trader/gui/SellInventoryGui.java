@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.trader.gui;
 
 import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.core.di.container.DIContainer;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
@@ -34,17 +35,17 @@ public class SellInventoryGui implements Listener {
     private final ItemManager itemManager;
     private final TraderService traderService;
     private final ItemPDCUtil pdcUtil;
-    private final TraderInventoryGui traderGui;
+    private final DIContainer container;
     private final NamespacedKey actionKey;
     private final Map<Player, String> openedTraders = new HashMap<>(); // プレイヤー -> 元のNPC名
 
     @Inject
     public SellInventoryGui(ItemManager itemManager, TraderService traderService, ItemPDCUtil pdcUtil, 
-                            TraderInventoryGui traderGui, Deepwither_V2 plugin) {
+                            DIContainer container, Deepwither_V2 plugin) {
         this.itemManager = itemManager;
         this.traderService = traderService;
         this.pdcUtil = pdcUtil;
-        this.traderGui = traderGui;
+        this.container = container;
         this.actionKey = new NamespacedKey(plugin, "sell_gui_action");
     }
 
@@ -119,6 +120,7 @@ public class SellInventoryGui implements Listener {
             if ("back".equals(action)) {
                 event.setCancelled(true);
                 String npcName = openedTraders.get(player);
+                TraderInventoryGui traderGui = container.resolve(TraderInventoryGui.class);
                 traderGui.openTraderGui(player, npcName);
                 return;
             }

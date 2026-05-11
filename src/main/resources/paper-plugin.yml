@@ -24,3 +24,5 @@ dependencies:
       required: false
     Vault:
       required: false
+    PlaceholderAPI:
+      required: false

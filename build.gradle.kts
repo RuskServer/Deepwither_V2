@@ -11,6 +11,7 @@ repositories {
     maven { url = uri("https://repo.codemc.io/repository/maven-snapshots/") }
     maven("https://maven.enginehub.org/repo/")
     maven("https://maven.citizensnpcs.co/repo")
+    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     maven("https://jitpack.io")  // Vault用
 }
 
@@ -19,17 +20,16 @@ dependencies {
     compileOnly("com.github.retrooper:packetevents-spigot:2.12.0")
 
     // WorldGuard / WorldEdit
-    // isTransitive = false で推移的依存を全て無効化し、strictly制約の競合を回避する。
-    // コンパイルに必要なBukkitアダプターとコアAPIので4JARのみを個別指定する。
-    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.14") { isTransitive = false }
+    // isTransitive = false で推移皁E��存を全て無効化し、strictly制紁E�E競合を回避する、E    // コンパイルに忁E��なBukkitアダプターとコアAPIので4JARのみを個別持E��する、E    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.14") { isTransitive = false }
     compileOnly("com.sk89q.worldguard:worldguard-core:7.0.14")   { isTransitive = false }
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.10")   { isTransitive = false }
     compileOnly("com.sk89q.worldedit:worldedit-core:7.3.10")     { isTransitive = false }
 
     // Citizens & Vault
-    // VaultAPI は古い Bukkit に依存しているため、推移的依存を無効化して競合を回避
+    // VaultAPI は古ぁEBukkit に依存してぁE��ため、推移皁E��存を無効化して競合を回避
     compileOnly("net.citizensnpcs:citizens-main:2.0.36-SNAPSHOT") { isTransitive = false }
     compileOnly("com.github.MilkBowl:VaultAPI:1.7") { isTransitive = false }
+    compileOnly("me.clip:placeholderapi:2.11.6") { isTransitive = false }
 
     // Database & Cache
     implementation("com.h2database:h2:2.2.224")
@@ -48,8 +48,7 @@ tasks {
     }
 
     shadowJar {
-        archiveClassifier.set("") // -all を取り除き、通常のjarを上書き（FatJar化）する
-        relocate("com.zaxxer.hikari", "com.ruskserver.deepwither_V2.libs.hikari")
+        archiveClassifier.set("") // -all を取り除き、E��常のjarを上書き！EatJar化）すめE        relocate("com.zaxxer.hikari", "com.ruskserver.deepwither_V2.libs.hikari")
         relocate("org.h2", "com.ruskserver.deepwither_V2.libs.h2")
         relocate("com.github.benmanes.caffeine", "com.ruskserver.deepwither_V2.libs.caffeine")
     }
