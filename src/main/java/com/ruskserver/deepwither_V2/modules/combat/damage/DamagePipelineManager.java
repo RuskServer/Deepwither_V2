@@ -48,6 +48,8 @@ public class DamagePipelineManager implements Listener {
         pipeline.add(new DamagePhase.Defense(statManager));
         // 4. 装備アイテムの固有能力（パッシブ）の適用
         pipeline.add(new ItemAbilityPhase(itemManager, pdcUtil));
+        // 5. 属性別ダメージ補正（火・氷などのパッシブ効果）
+        pipeline.add(new DamagePhase.ElementModifier(statManager));
     }
 
     /**

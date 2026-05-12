@@ -14,7 +14,10 @@ public enum StatType {
     MAX_MANA("最大マナ"),
     ATTACK_SPEED("攻撃速度"),
     SPEED("移動速度"),
-    COOLDOWN_REDUCTION("クールタイム短縮");
+    COOLDOWN_REDUCTION("クールタイム短縮"),
+    FIRE_DAMAGE("火属性攻撃力"),
+    ICE_DAMAGE("氷属性攻撃力"),
+    LIGHTNING_DAMAGE("雷属性攻撃力");
 
     private final String displayName;
 

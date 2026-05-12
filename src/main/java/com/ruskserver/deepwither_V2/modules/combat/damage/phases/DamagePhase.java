@@ -88,4 +88,31 @@ public interface DamagePhase {
             }
         }
     }
+
+    public static class ElementModifier implements DamagePhase {
+        private final StatManager statManager;
+
+        public ElementModifier(StatManager statManager) {
+            this.statManager = statManager;
+        }
+
+        @Override
+        public void process(DamageContext context) {
+            if (context.getAttacker() == null) return;
+            if (context.getType() != DamageType.MAGIC) return;
+
+            if (context.hasTag("fire")) {
+                double bonus = statManager.getTotalStat(context.getAttacker(), StatType.FIRE_DAMAGE);
+                context.multiplyDamage(1.0 + bonus);
+            }
+            if (context.hasTag("ice")) {
+                double bonus = statManager.getTotalStat(context.getAttacker(), StatType.ICE_DAMAGE);
+                context.multiplyDamage(1.0 + bonus);
+            }
+            if (context.hasTag("lightning")) {
+                double bonus = statManager.getTotalStat(context.getAttacker(), StatType.LIGHTNING_DAMAGE);
+                context.multiplyDamage(1.0 + bonus);
+            }
+        }
+    }
 }
