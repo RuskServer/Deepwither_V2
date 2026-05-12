@@ -65,6 +65,10 @@ public class TraderService implements Startable {
         return traders.get(npcName);
     }
 
+    public Map<String, TraderDefinition> getAllTraders() {
+        return java.util.Collections.unmodifiableMap(traders);
+    }
+
     public double getBalance(Player player) {
         if (!vaultAvailable || economy == null) return 0.0;
         return economy.getBalance(player);

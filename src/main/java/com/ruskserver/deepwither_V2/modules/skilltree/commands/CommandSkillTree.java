@@ -10,7 +10,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 @Component
-@Command(name = "skilltree", description = "スキルツリーGUIを開きます", aliases = {"stree"})
+@Command(name = "skilltree", description = "スキルツリーGUIを開きます", aliases = {"stree", "st"})
 public class CommandSkillTree implements BasicCommand {
 
     private final SkillTreeGui gui;

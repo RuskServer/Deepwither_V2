@@ -7,6 +7,8 @@ import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.sk89q.worldedit.math.BlockVector3;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -55,7 +57,6 @@ public class MobRegionSpawnService implements Startable, Stoppable {
     /** プレイヤーがセーフゾーンに入った時刻（ UUID → System.currentTimeMillis() ） */
     private final Map<UUID, Long> safeZoneEntryTime = new HashMap<>();
 
-
     /** 各Regionの定期スポーンタスク（stop時にキャンセルするために保持） */
     private final List<BukkitTask> spawnTasks = new ArrayList<>();
 
@@ -71,6 +72,7 @@ public class MobRegionSpawnService implements Startable, Stoppable {
     public void start() {
         scheduleAll();
         startSafeZoneCleaner();
+        startRegionTracker();
         log.info("[MobRegionSpawnService] スポーンスケジューラーを起動しました。");
     }
 
@@ -228,6 +230,41 @@ public class MobRegionSpawnService implements Startable, Stoppable {
             if (anyDespawn) {
                 safeZones.forEach(sz ->
                         mobManager.despawnMobsIn(sz::contains));
+            }
+        }, 20L, 20L);
+    }
+
+    // =========================================================
+    // セーフゾーン入退室通知
+    // =========================================================
+
+    /** プレイヤーがセーフゾーンにいるかどうか */
+    private final Map<UUID, Boolean> inSafeZone = new HashMap<>();
+
+    /**
+     * 毎秒ごとに全プレイヤーのセーフゾーン在室を確認し、入退室時にアクションバーで通知します。
+     */
+    private void startRegionTracker() {
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            List<MobRegion> safeZones = getSafeZones();
+            if (safeZones.isEmpty()) return;
+
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                boolean currentlyIn = safeZones.stream()
+                        .anyMatch(sz -> sz.contains(player.getLocation()));
+                Boolean wasIn = inSafeZone.get(player.getUniqueId());
+
+                if (currentlyIn && (wasIn == null || !wasIn)) {
+                    player.sendActionBar(Component.text("✦ ", NamedTextColor.AQUA)
+                            .append(Component.text("セーフゾーン", NamedTextColor.AQUA))
+                            .append(Component.text(" に入りました", NamedTextColor.WHITE)));
+                    inSafeZone.put(player.getUniqueId(), true);
+                } else if (!currentlyIn && wasIn != null && wasIn) {
+                    player.sendActionBar(Component.text("✧ ", NamedTextColor.GRAY)
+                            .append(Component.text("セーフゾーン", NamedTextColor.GRAY))
+                            .append(Component.text(" から出ました", NamedTextColor.DARK_GRAY)));
+                    inSafeZone.put(player.getUniqueId(), false);
+                }
             }
         }, 20L, 20L);
     }
