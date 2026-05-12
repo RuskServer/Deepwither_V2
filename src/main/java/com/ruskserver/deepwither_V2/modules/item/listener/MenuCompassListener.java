@@ -1,7 +1,9 @@
 package com.ruskserver.deepwither_V2.modules.item.listener;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
+import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
+import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -19,9 +21,12 @@ public class MenuCompassListener implements Listener {
 
     private static final String MENU_COMPASS_KEY = "menu_compass_locked";
     private final ItemManager itemManager;
+    private final ItemPDCUtil pdcUtil;
 
-    public MenuCompassListener(ItemManager itemManager) {
+    @Inject
+    public MenuCompassListener(ItemManager itemManager, ItemPDCUtil pdcUtil) {
         this.itemManager = itemManager;
+        this.pdcUtil = pdcUtil;
     }
 
     @EventHandler
@@ -78,6 +83,10 @@ public class MenuCompassListener implements Listener {
         pdc.set(getMenuCompassKey(), PersistentDataType.STRING, "locked");
         
         compass.setItemMeta(meta);
+
+        // ItemAbilityListenerが識別できるようcustom_item_idを設定
+        pdcUtil.setItemId(compass, "menu_compass");
+
         return compass;
     }
 
