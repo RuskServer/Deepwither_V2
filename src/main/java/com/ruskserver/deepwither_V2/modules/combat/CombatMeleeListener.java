@@ -10,8 +10,6 @@ import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.WandItem;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
-import org.bukkit.Material;
-import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -26,15 +24,10 @@ import org.bukkit.inventory.ItemStack;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Component
 public class CombatMeleeListener implements Listener {
-
-    private static final Set<Material> HEAVY_MATERIALS = Set.of(Material.WOODEN_AXE, Material.STONE_AXE, Material.IRON_AXE, Material.GOLDEN_AXE, Material.DIAMOND_AXE, Material.NETHERITE_AXE);
-    private static final Set<Material> SLASH_MATERIALS = Set.of(Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.GOLDEN_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD);
-    private static final Set<Material> THRUST_MATERIALS = Set.of(Material.TRIDENT);
 
     private final Map<UUID, Long> cooldowns = new HashMap<>();
     private final StatManager statManager;
@@ -83,14 +76,14 @@ public class CombatMeleeListener implements Listener {
         statsService.recordAttack(player);
         List<LivingEntity> targets = hitDetectionService.detectTargets(player, type);
         if (targets.isEmpty()) {
-            playMissEffect(player, type);
+            playMissEffect(player);
             return;
         }
 
         for (LivingEntity target : targets) {
             damagePipelineManager.processDamage(player, target, DamageType.PHYSICAL, 0.0, null);
             statsService.recordHit(player, type, Math.max(0.0, statManager.getTotalStat(player, StatType.ATTACK_DAMAGE)));
-            playHitEffect(target, type);
+            playHitSound(target);
         }
     }
 
@@ -111,36 +104,17 @@ public class CombatMeleeListener implements Listener {
 
     private CombatWeaponType resolveWeaponType(ItemStack itemStack) {
         String itemId = pdcUtil.getItemId(itemStack);
-        if (itemId != null) {
-            String lower = itemId.toLowerCase();
-            if (lower.contains("spear") || lower.contains("lance") || lower.contains("pike") || lower.contains("thrust")) return CombatWeaponType.THRUST;
-            if (lower.contains("axe") || lower.contains("hammer") || lower.contains("heavy")) return CombatWeaponType.HEAVY;
-            if (lower.contains("sword") || lower.contains("slash") || lower.contains("blade")) return CombatWeaponType.SLASH;
-        }
-
-        Material type = itemStack.getType();
-        if (THRUST_MATERIALS.contains(type)) return CombatWeaponType.THRUST;
-        if (HEAVY_MATERIALS.contains(type)) return CombatWeaponType.HEAVY;
-        if (SLASH_MATERIALS.contains(type)) return CombatWeaponType.SLASH;
-        return null;
+        if (itemId == null) return null;
+        CustomItem customItem = itemManager.getCustomItem(itemId);
+        if (customItem == null) return null;
+        return CombatWeaponType.fromItem(customItem);
     }
 
-    private void playMissEffect(Player player, CombatWeaponType type) {
-        float pitch = switch (type) {
-            case HEAVY -> 0.75f;
-            case SLASH -> 1.0f;
-            case THRUST -> 1.2f;
-        };
-        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.6f, pitch);
+    private void playMissEffect(Player player) {
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.6f, 1.0f);
     }
 
-    private void playHitEffect(LivingEntity target, CombatWeaponType type) {
+    private void playHitSound(LivingEntity target) {
         target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.8f, 1.0f);
-        Particle particle = switch (type) {
-            case HEAVY -> Particle.CRIT;
-            case SLASH -> Particle.SWEEP_ATTACK;
-            case THRUST -> Particle.ELECTRIC_SPARK;
-        };
-        target.getWorld().spawnParticle(particle, target.getLocation().add(0, 1.0, 0), 8, 0.25, 0.25, 0.25, 0.0);
     }
 }

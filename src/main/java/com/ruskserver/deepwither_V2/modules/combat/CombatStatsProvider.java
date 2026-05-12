@@ -92,9 +92,9 @@ public class CombatStatsProvider implements PlayerDataProvider<CombatStatsProvid
             totalHits++;
             totalDamage += Math.max(0, damage);
             switch (type) {
-                case HEAVY -> heavyHits++;
-                case SLASH -> slashHits++;
-                case THRUST -> thrustHits++;
+                case SWORD, GREATSWORD -> slashHits++;
+                case SPEAR -> thrustHits++;
+                case AXE, HALBERD, MACE, HAMMER, MACHETE, SCYTHE -> heavyHits++;
             }
         }
     }
