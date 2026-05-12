@@ -139,8 +139,16 @@ public class TraderInventoryGui implements Listener {
         boolean repOk = currentRep >= product.getRequiredReputation();
         boolean moneyOk = balance >= product.getBuyPrice();
 
-        List<Component> lore = new ArrayList<>();
-        if (meta.lore() != null) lore.addAll(meta.lore());
+        // 既存のLoreを取得、なければ新規作成
+        List<Component> lore = meta.lore();
+        if (lore == null) {
+            lore = new ArrayList<>();
+        } else {
+            // Immutableなリストの場合があるため、編集可能なリストに変換
+            lore = new ArrayList<>(lore);
+        }
+        
+        // トレーダー情報を既存Loreの最後に追加
         lore.add(Component.text(""));
         lore.add(Component.text("§7価格: §6" + traderService.formatMoney(product.getBuyPrice())));
         if (product.getRequiredReputation() > 0) {
@@ -148,7 +156,8 @@ public class TraderInventoryGui implements Listener {
         }
         lore.add(Component.text("§7所持金: " + (moneyOk ? "§a" : "§c") + traderService.formatMoney(balance)));
         lore.add(Component.text(""));
-        lore.add(Component.text(repOk && moneyOk ? "§aクリックで購入" : "§c条件を満たしていません"));
+        lore.add(Component.text(repOk && moneyOk ? "§a▶ クリックで購入" : "§c✕ 条件を満たしていません"));
+        
         meta.lore(lore);
         display.setItemMeta(meta);
         return display;
