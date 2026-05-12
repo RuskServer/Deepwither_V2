@@ -84,4 +84,9 @@ public class SeleneRod implements WandItem {
     public double getSellPrice() {
         return 250.0;
     }
+
+    @Override
+    public String getWeaponType() {
+        return "杖";
+    }
 }

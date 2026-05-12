@@ -71,4 +71,9 @@ public class BlueCrystalSword implements CustomItem {
     public double getSellPrice() {
         return 400.0;
     }
+
+    @Override
+    public String getWeaponType() {
+        return "剣";
+    }
 }

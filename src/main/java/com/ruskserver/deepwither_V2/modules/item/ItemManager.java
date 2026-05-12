@@ -125,10 +125,17 @@ public class ItemManager implements Startable {
 
         List<Component> lore = new ArrayList<>();
 
-        // 1. レアリティ
-        lore.add(Component.text("◆ " + customItem.getRarity().getDisplayName())
+        // 1. レアリティ + 武器種
+        Component rarityLine = Component.text("◆ " + customItem.getRarity().getDisplayName())
                 .color(customItem.getRarity().getColor())
-                .decoration(TextDecoration.ITALIC, false));
+                .decoration(TextDecoration.ITALIC, false);
+        String weaponType = customItem.getWeaponType();
+        if (weaponType != null && !weaponType.isEmpty()) {
+            rarityLine = rarityLine
+                    .append(Component.text(" | ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(weaponType, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        }
+        lore.add(rarityLine);
 
         // 2. フレーバーテキスト (30文字で自動改行)
         String flavorText = customItem.getFlavorText();

@@ -56,4 +56,9 @@ public class StarterSword implements CustomItem {
     public String getFlavorText() {
         return "初期装備として支給される標準的な剣です。よく手入れされており、それなりの切れ味を誇りますが、過酷な環境には耐えられないかもしれません。";
     }
+
+    @Override
+    public String getWeaponType() {
+        return "剣";
+    }
 }

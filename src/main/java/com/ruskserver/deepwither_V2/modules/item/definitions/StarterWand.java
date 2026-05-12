@@ -69,4 +69,9 @@ public class StarterWand implements WandItem {
     public double getManaCost() {
         return 15.0; // 少し燃費を良くする
     }
+
+    @Override
+    public String getWeaponType() {
+        return "杖";
+    }
 }

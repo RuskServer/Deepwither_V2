@@ -82,4 +82,9 @@ public class SeleneFlowRod implements WandItem {
     public double getSellPrice() {
         return 600.0;
     }
+
+    @Override
+    public String getWeaponType() {
+        return "杖";
+    }
 }

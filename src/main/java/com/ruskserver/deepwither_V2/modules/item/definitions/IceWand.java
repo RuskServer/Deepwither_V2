@@ -69,4 +69,9 @@ public class IceWand implements WandItem {
         // "ICE" タグを付与する。これにより、FrostAmulet等のアイテムが氷属性ダメージを増幅できるようになる
         return Collections.singleton("ICE");
     }
+
+    @Override
+    public String getWeaponType() {
+        return "杖";
+    }
 }

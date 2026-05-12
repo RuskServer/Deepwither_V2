@@ -45,6 +45,13 @@ public interface CustomItem {
     String getFlavorText();
 
     /**
+     * @return アイテムの武器種（例: "剣", "杖", "斧"など）。nullの場合は表示されません。
+     */
+    default String getWeaponType() {
+        return null;
+    }
+
+    /**
      * @return アイテムの基本売却価格。0以下の場合は売却不可とみなします。
      */
     default double getSellPrice() {
