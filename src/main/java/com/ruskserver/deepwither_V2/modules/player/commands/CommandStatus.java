@@ -152,13 +152,11 @@ public class CommandStatus implements BasicCommand {
     }
 
     private Component header(Player player) {
-        return Component.text("       【 プレイヤー ステータス 】", NamedTextColor.YELLOW, TextDecoration.BOLD)
-                .append(Component.newline())
-                .append(Component.text("       " + player.getName(), NamedTextColor.WHITE));
+        return Component.text("       【 プレイヤー ステータス 】", NamedTextColor.YELLOW);
     }
 
     private Component sectionTitle(String title) {
-        return Component.text(" [ " + title + " ]", NamedTextColor.AQUA, TextDecoration.BOLD);
+        return Component.text(" [ " + title + " ]", NamedTextColor.AQUA);
     }
 
     private Component statLine(String label, Object value, NamedTextColor valueColor) {
@@ -178,7 +176,7 @@ public class CommandStatus implements BasicCommand {
 
     private Component buildEffectiveHpHover(double maxHp, double statValue) {
         double ehp = maxHp * (1.0 + (statValue / 250.0));
-        return Component.text("実効HP (Effective HP)", NamedTextColor.YELLOW, TextDecoration.BOLD)
+        return Component.text("実効HP (Effective HP)", NamedTextColor.YELLOW)
                 .append(Component.newline())
                 .append(Component.text("  全体: ", NamedTextColor.GRAY))
                 .append(Component.text(String.format("%,.0f", ehp), NamedTextColor.GREEN));
