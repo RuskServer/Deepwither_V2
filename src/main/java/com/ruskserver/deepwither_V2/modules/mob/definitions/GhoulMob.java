@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.mob.definitions;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
+import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
@@ -63,13 +64,15 @@ public class GhoulMob extends CustomMob {
     private Player pounceTarget = null;       // 飛び掛かり対象
 
     private final DamagePipelineManager damageManager;
+    private final ItemManager itemManager;
 
     @Inject
-    public GhoulMob(CustomMobManager mobManager, DamagePipelineManager damageManager) {
+    public GhoulMob(CustomMobManager mobManager, DamagePipelineManager damageManager, ItemManager itemManager) {
         // 自己登録：スポーン時にファクトリで新しいインスタンスを生成する
         mobManager.registerMob("ghoul", EntityType.ZOMBIE,
-                () -> new GhoulMob(mobManager, damageManager));
+                () -> new GhoulMob(mobManager, damageManager, itemManager));
         this.damageManager = damageManager;
+        this.itemManager = itemManager;
     }
 
     // =========================================================
@@ -123,11 +126,17 @@ public class GhoulMob extends CustomMob {
 
     @Override
     public void onDeath() {
-        // グール固有のドロップ（将来追加予定）
-        // dropIfPresent("ghoul_claw", 0.3, getLocation());
         Location loc = getLocation();
         loc.getWorld().spawnParticle(Particle.SMOKE, loc.add(0, 1, 0), 20, 0.4, 0.5, 0.4, 0.03);
         loc.getWorld().playSound(loc, Sound.ENTITY_ZOMBIE_DEATH, 1.0f, 0.7f);
+
+        // 1%の確率でアーティファクトボックスをドロップ
+        if (RANDOM.nextDouble() < 0.01) {
+            org.bukkit.inventory.ItemStack box = itemManager.generate("artifact_box");
+            if (box != null) {
+                loc.getWorld().dropItemNaturally(getLocation(), box);
+            }
+        }
     }
 
     @Override
