@@ -7,7 +7,6 @@ import com.ruskserver.deepwither_V2.modules.fusion.api.FusionRecipe;
 import com.ruskserver.deepwither_V2.modules.fusion.service.FusionManager;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
-import net.kyori.adventure.text.Component as AdventureComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -61,7 +60,7 @@ public class FusionGui implements Listener {
     }
 
     public void openFusionGui(Player player, String npcName) {
-        Inventory gui = Bukkit.createInventory(null, 27, AdventureComponent.text("§5§l" + npcName + "の合成屋"));
+        Inventory gui = Bukkit.createInventory(null, 27, net.kyori.adventure.text.Component.text("§5§l" + npcName + "の合成屋"));
 
         // GUIの識別子を設定
         ItemMeta meta = gui.getItem(0) != null ? gui.getItem(0).getItemMeta() : Bukkit.getItemFactory().getItemMeta(Material.STONE);
@@ -132,7 +131,7 @@ public class FusionGui implements Listener {
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        Player player = (Player) event.getWhoClicked();
+        Player player = (Player) event.getPlayer();
         if (openedFusionGuis.containsKey(player)) {
             // GUIが閉じられた際に、素材スロットに残っているアイテムをプレイヤーに返す
             Inventory gui = event.getInventory();
@@ -252,7 +251,7 @@ public class FusionGui implements Listener {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(AdventureComponent.text(name));
+            meta.displayName(net.kyori.adventure.text.Component.text(name));
             item.setItemMeta(meta);
         }
         return item;
