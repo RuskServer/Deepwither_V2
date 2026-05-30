@@ -65,7 +65,12 @@ public class TraderInventoryGui implements Listener {
         openedTraders.put(player, npcName);
 
         List<TraderProduct> products = trader.getProducts();
-        Inventory gui = Bukkit.createInventory(null, 27, Component.text(trader.getDisplayName()));
+
+        TraderInventoryHolder holder = new TraderInventoryHolder();
+        Inventory gui = Bukkit.createInventory(holder, 27, Component.text(trader.getDisplayName()));
+        holder.setInventory(gui);
+
+        player.openInventory(gui);
 
         int slotIndex = 0;
         for (TraderProduct product : products) {
@@ -118,8 +123,6 @@ public class TraderInventoryGui implements Listener {
             sellButton.setItemMeta(sellMeta);
         }
         gui.setItem(26, sellButton);
-
-        player.openInventory(gui);
     }
 
     private ItemStack createProductDisplay(Player player, String npcName, TraderProduct product) {

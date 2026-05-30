@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.item.listener;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
+import com.ruskserver.deepwither_V2.modules.trader.gui.TraderInventoryHolder;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
@@ -28,6 +29,9 @@ public class ItemUpdateListener implements Listener {
 
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
+        // トレーダーGUIは独自のLoreを持つためスキップ
+        if (event.getInventory().getHolder() instanceof TraderInventoryHolder) return;
+
         // チェストなどを開いたときに、中身のアイテムのLoreを最新化
         updateInventory(event.getInventory());
     }
