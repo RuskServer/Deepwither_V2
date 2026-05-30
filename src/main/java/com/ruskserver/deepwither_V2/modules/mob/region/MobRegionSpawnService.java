@@ -9,6 +9,7 @@ import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.sk89q.worldedit.math.BlockVector3;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -167,6 +168,7 @@ public class MobRegionSpawnService implements Startable, Stoppable {
         List<MobRegion> safeZones = getSafeZones();
         return region.world().getPlayers().stream()
                 .filter(p -> !p.isDead() && region.contains(p.getLocation()))
+                .filter(p -> p.getGameMode() != GameMode.CREATIVE && p.getGameMode() != GameMode.SPECTATOR)
                 .filter(p -> safeZones.stream().noneMatch(sz -> sz.contains(p.getLocation())))
                 .toList();
     }
