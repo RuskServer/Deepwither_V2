@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * "Lunaris Atelier" トレーダーの定義。
+ * "LunarisAtelier" トレーダーの定義。
  * 入門用の魔導具や月光・深淵系の装備を販売します。
  */
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
@@ -15,12 +15,12 @@ public class LunariAtelierTrader implements TraderDefinition {
 
     @Override
     public String getNpcName() {
-        return "Lunaris Atelier";
+        return "LunarisAtelier";
     }
 
     @Override
     public String getDisplayName() {
-        return "§f§lLunaris Atelier";
+        return "§f§lLunarisAtelier";
     }
 
     @Override

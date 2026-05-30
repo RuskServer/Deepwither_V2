@@ -7,19 +7,19 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * "Aetherline Foundry" トレーダーの定義。
+ * "AetherlineFoundry" トレーダーの定義。
  */
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class AetherlineFoundryTrader implements TraderDefinition {
 
     @Override
     public String getNpcName() {
-        return "Aetherline Foundry";
+        return "AetherlineFoundry";
     }
 
     @Override
     public String getDisplayName() {
-        return "§e§lAetherline Foundry";
+        return "§e§lAetherlineFoundry";
     }
 
     @Override

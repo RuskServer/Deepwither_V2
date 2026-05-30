@@ -7,19 +7,19 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * "Redline Construct" トレーダーの定義。
+ * "RedlineConstruct" トレーダーの定義。
  */
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class RedlineConstructTrader implements TraderDefinition {
 
     @Override
     public String getNpcName() {
-        return "Redline Construct(赤命構造体)";
+        return "RedlineConstruct";
     }
 
     @Override
     public String getDisplayName() {
-        return "§c§lRedline Construct";
+        return "§c§lRedlineConstruct";
     }
 
     @Override

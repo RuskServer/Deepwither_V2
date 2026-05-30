@@ -7,19 +7,19 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * "Lazward Dynamics" トレーダーの定義。
+ * "LazwardDynamics" トレーダーの定義。
  */
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class LazwardDynamicsTrader implements TraderDefinition {
 
     @Override
     public String getNpcName() {
-        return "Lazward Dynamics";
+        return "LazwardDynamics";
     }
 
     @Override
     public String getDisplayName() {
-        return "§9§lLazward Dynamics";
+        return "§9§lLazwardDynamics";
     }
 
     @Override
