@@ -69,13 +69,12 @@ public class SellInventoryGui implements Listener {
             background.setItemMeta(bgMeta);
         }
 
-        for (int i = 0; i < 27; i++) {
+        // 上段・下段は背景、中段(9-17)は売却スロット
+        for (int i = 0; i < 9; i++) {
             gui.setItem(i, background);
         }
-
-        // 売却スロット（中央 3x1）を空ける
-        for (int i = 12; i <= 14; i++) {
-            gui.setItem(i, null);
+        for (int i = 18; i < 27; i++) {
+            gui.setItem(i, background);
         }
 
         // 戻るボタン
@@ -95,7 +94,7 @@ public class SellInventoryGui implements Listener {
             infoMeta.displayName(Component.text("§6売却ガイド"));
             infoMeta.lore(java.util.List.of(
                 Component.text("§7中央のスロットにアイテムを置くか、"),
-                Component.text("§7手持ちのアイテムを§eシフトクリック§7して売却します。")
+                Component.text("§7手持ちのアイテムを§eシフトクリック§7でまとめて売却します。")
             ));
             info.setItemMeta(infoMeta);
         }
@@ -128,19 +127,20 @@ public class SellInventoryGui implements Listener {
 
         // トップインベントリ内の装飾品などのクリックをキャンセル
         if (slot >= 0 && slot < 27) {
-            // 売却スロット(12, 13, 14)以外はキャンセル
-            if (slot < 12 || slot > 14) {
+            // 売却スロット(9-17)以外はキャンセル
+            if (slot < 9 || slot > 17) {
                 event.setCancelled(true);
             }
         }
 
         // 売却処理のトリガー
-        // 1. 下部インベントリからのシフトクリック
+        // 1. 下部インベントリからのシフトクリック（スタック単位で売却）
         if (event.isShiftClick() && slot >= 27) {
             if (clicked != null && clicked.getType() != Material.AIR) {
                 String itemId = pdcUtil.getItemId(clicked);
                 if (itemId != null) {
-                    if (traderService.sellItem(player, itemId)) {
+                    int sold = traderService.sellItem(player, itemId, clicked.getAmount());
+                    if (sold > 0) {
                         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
                     }
                     event.setCancelled(true);
@@ -150,22 +150,15 @@ public class SellInventoryGui implements Listener {
         }
 
         // 2. 中央スロットへのドロップ（クリックして置く動作）
-        // InventoryClickEvent の直後だとアイテムがまだインベントリにないので、次の Tick で処理するか
-        // または ClickType を見て判定する。ここでは単純化のため、アイテムがスロットに置かれるタイミングで監視
         Bukkit.getScheduler().runTask(Deepwither_V2.getPlugin(Deepwither_V2.class), () -> {
-            for (int i = 12; i <= 14; i++) {
+            for (int i = 9; i <= 17; i++) {
                 ItemStack item = topInventory.getItem(i);
                 if (item != null && item.getType() != Material.AIR) {
                     String itemId = pdcUtil.getItemId(item);
                     if (itemId != null) {
                         if (traderService.sellItem(player, itemId)) {
                             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-                            // 売却成功したらアイテムは Service 内で消費されるか、ここで消す必要がある
-                            // Service 側で player.getInventory() から消しているため、
-                            // GUIスロットに置かれたものは別途ハンドリングが必要
                             topInventory.setItem(i, null);
-                        } else {
-                            // 売却できなかったらプレイヤーに戻すか、その場に残す（今回は残す）
                         }
                     }
                 }

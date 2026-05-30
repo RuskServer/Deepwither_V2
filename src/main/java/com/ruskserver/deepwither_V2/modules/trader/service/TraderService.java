@@ -126,15 +126,19 @@ public class TraderService implements Startable {
     }
 
     public boolean sellItem(Player player, String itemId) {
+        return sellItem(player, itemId, 1) > 0;
+    }
+
+    public int sellItem(Player player, String itemId, int amount) {
         if (!vaultAvailable || economy == null) {
             player.sendMessage("§c経済システムが利用できません。");
-            return false;
+            return 0;
         }
 
         CustomItem customItem = itemManager.getCustomItem(itemId);
         if (customItem == null || customItem.getSellPrice() <= 0) {
             player.sendMessage("§cこのアイテムは売却できません。");
-            return false;
+            return 0;
         }
 
         ItemStack[] inventory = player.getInventory().getContents();
@@ -152,22 +156,24 @@ public class TraderService implements Startable {
         }
         if (toSell == null) {
             player.sendMessage("§c指定されたアイテムがインベントリに見つかりません。");
-            return false;
+            return 0;
         }
 
-        double price = customItem.getSellPrice();
+        int sellAmount = Math.min(amount, toSell.getAmount());
+        double price = customItem.getSellPrice() * sellAmount;
         EconomyResponse deposit = economy.depositPlayer(player, price);
         if (!deposit.transactionSuccess()) {
             player.sendMessage("§c売却に失敗しました。");
             Bukkit.getLogger().warning("[TraderService] deposit failed: " + deposit.errorMessage);
-            return false;
+            return 0;
         }
 
-        if (toSell.getAmount() > 1) toSell.setAmount(toSell.getAmount() - 1);
+        int remaining = toSell.getAmount() - sellAmount;
+        if (remaining > 0) toSell.setAmount(remaining);
         else player.getInventory().setItem(slotIndex, null);
 
         double newBalance = economy.getBalance(player);
-        player.sendMessage("§a売却しました: " + customItem.getDisplayName() + " §7(+§6" + formatMoney(price) + "§7, 残高: §6" + formatMoney(newBalance) + "§7)");
-        return true;
+        player.sendMessage("§a売却しました: §f" + customItem.getDisplayName() + " §7x" + sellAmount + " §7(+§6" + formatMoney(price) + "§7, 残高: §6" + formatMoney(newBalance) + "§7)");
+        return sellAmount;
     }
 }
