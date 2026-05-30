@@ -10,7 +10,10 @@ import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -100,9 +103,14 @@ public class DamagePipelineManager implements Listener {
 
         if (vanillaDamage <= 0) return;
 
-        // バニラダメージの重み（20.0を基準とする）を元に、最大仮想HPに対する「割合ダメージ」に変換する
-        // 例：落下ダメージがバニラで「4(ハート2個分)」の場合、4/20 = 0.2 (最大HPの20%)のダメージとなる
-        double ratio = vanillaDamage / 20.0;
+        // バニラダメージを仮想HPの割合ダメージに変換
+        // プレイヤーは常に20.0基準、MobはバニラのMAX_HEALTH属性を基準とする
+        double baseHealth = 20.0;
+        if (!(defender instanceof Player)) {
+            AttributeInstance attr = defender.getAttribute(Attribute.MAX_HEALTH);
+            if (attr != null) baseHealth = attr.getValue();
+        }
+        double ratio = vanillaDamage / baseHealth;
         double maxHp = healthManager.getMaxHealth(defender);
         double finalDamage = maxHp * ratio;
 
@@ -116,7 +124,15 @@ public class DamagePipelineManager implements Listener {
      * 外部システム（杖の魔法弾など）から直接ダメージパイプラインにダメージ処理を流し込むための公開API。
      */
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags) {
+        processDamage(attacker, defender, type, initialDamage, tags, 1.0);
+    }
+
+    /**
+     * 距離倍率指定可能な processDamage のオーバーロード。
+     */
+    public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags, double distanceMultiplier) {
         DamageContext context = new DamageContext(attacker, defender, type, initialDamage);
+        context.setDistanceMultiplier(distanceMultiplier);
         if (tags != null) {
             context.addTags(tags);
         }

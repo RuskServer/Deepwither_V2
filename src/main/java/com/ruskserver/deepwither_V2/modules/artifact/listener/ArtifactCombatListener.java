@@ -11,6 +11,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -21,6 +22,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -64,16 +66,18 @@ public class ArtifactCombatListener implements Listener {
     private final VirtualHealthManager healthManager;
     private final ManaManager manaManager;
     private final DamagePipelineManager pipelineManager;
+    private final StatManager statManager;
 
     @Inject
     public ArtifactCombatListener(PlayerDataRepository repository, ArtifactPDCUtil pdcUtil,
                                   VirtualHealthManager healthManager, ManaManager manaManager,
-                                  DamagePipelineManager pipelineManager) {
+                                  DamagePipelineManager pipelineManager, StatManager statManager) {
         this.repository   = repository;
         this.pdcUtil       = pdcUtil;
         this.healthManager = healthManager;
         this.manaManager   = manaManager;
         this.pipelineManager = pipelineManager;
+        this.statManager = statManager;
     }
 
     // ──────────────────────────────────────────────────────────────────
@@ -282,10 +286,9 @@ public class ArtifactCombatListener implements Listener {
         if (!isCooldownReady(faultLineCd, uuid)) return;
 
         // 防御無視：攻撃者の物理攻撃力の20%を TRUE_DAMAGE として即時追撃
+        double baseAtk = statManager.getTotalStat(attacker, com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE);
         pipelineManager.processDamage(attacker, target, DamageType.TRUE_DAMAGE,
-                attacker.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE) != null
-                        ? attacker.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).getValue() * 0.2
-                        : 3.0,
+                Math.max(baseAtk, 1.0) * 0.2,
                 null);
 
         // 移動速度UP (3秒間: Speed I)
@@ -312,6 +315,17 @@ public class ArtifactCombatListener implements Listener {
 
         // エフェクト
         target.getWorld().spawnParticle(Particle.ENCHANT, target.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.05);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        abyssBarrierCd.remove(uuid);
+        faultLineCd.remove(uuid);
+        faultLineSpeedEnd.remove(uuid);
+        astralRegenCd.remove(uuid);
+        eternalHeartsCd.remove(uuid);
+        eternalHeartsActive.remove(uuid);
     }
 
     // ──────────────────────────────────────────────────────────────────

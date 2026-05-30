@@ -84,7 +84,6 @@ public class VirtualHealthManager {
         double current = getHealth(entity);
         double maxHp = getMaxHealth(entity);
         double newHealth = current - amount;
-        damageFeedbackService.playHurtFeedback(entity);
 
         if (newHealth <= 0) {
             newHealth = 0;

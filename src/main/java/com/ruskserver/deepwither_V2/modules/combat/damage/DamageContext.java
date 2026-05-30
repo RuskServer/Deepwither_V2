@@ -17,6 +17,7 @@ public class DamageContext {
     private final Set<String> tags = new HashSet<>();
     
     private double damage;
+    private double distanceMultiplier = 1.0;
     private boolean isCritical = false;
 
     public DamageContext(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage) {
@@ -52,6 +53,14 @@ public class DamageContext {
 
     public void multiplyDamage(double multiplier) {
         this.damage = Math.max(0, this.damage * multiplier);
+    }
+
+    public double getDistanceMultiplier() {
+        return distanceMultiplier;
+    }
+
+    public void setDistanceMultiplier(double distanceMultiplier) {
+        this.distanceMultiplier = Math.max(0.01, distanceMultiplier);
     }
 
     public boolean isCritical() {

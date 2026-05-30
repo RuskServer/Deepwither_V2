@@ -22,16 +22,22 @@ public interface DamagePhase {
 
         @Override
         public void process(DamageContext context) {
-            if (context.getAttacker() == null) return; // 環境ダメージなど攻撃者がいない場合はスキップ
+            if (context.getAttacker() == null) return;
 
-            // 攻撃者のステータスに基づいて基礎ダメージを上書き・加算
+            // initialDamage > 0 の場合はスキル/Bow等からの明示的な指定として尊重
+            if (context.getDamage() > 0) return;
+
             if (context.getType() == DamageType.PHYSICAL) {
                 double physicalAtk = statManager.getTotalStat(context.getAttacker(), StatType.ATTACK_DAMAGE);
-                // 基礎ダメージとして設定（バニラの素手ダメージなどは上書きするか加算するかはお好みですが、今回は独自の攻撃力に完全に置き換えるためセットします）
                 context.setDamage(physicalAtk > 0 ? physicalAtk : 1.0);
             } else if (context.getType() == DamageType.MAGIC) {
                 double magicAtk = statManager.getTotalStat(context.getAttacker(), StatType.MAGIC_DAMAGE);
                 context.setDamage(magicAtk > 0 ? magicAtk : 1.0);
+            }
+
+            // 距離倍率を適用（弓など）
+            if (context.getDistanceMultiplier() != 1.0) {
+                context.multiplyDamage(context.getDistanceMultiplier());
             }
         }
     }
@@ -101,17 +107,20 @@ public interface DamagePhase {
             if (context.getAttacker() == null) return;
             if (context.getType() != DamageType.MAGIC) return;
 
+            // getTotalStat は sumAdditive * (1.0 + sumMultiplicative) の最終値を返すため、
+            // 属性値を割合として乗算すると加算値が大きい場合に暴発する。
+            // ここでは固定加算として扱い、context.addDamage() で追加する。
             if (context.hasTag("fire")) {
                 double bonus = statManager.getTotalStat(context.getAttacker(), StatType.FIRE_DAMAGE);
-                context.multiplyDamage(1.0 + bonus);
+                context.addDamage(bonus);
             }
             if (context.hasTag("ice")) {
                 double bonus = statManager.getTotalStat(context.getAttacker(), StatType.ICE_DAMAGE);
-                context.multiplyDamage(1.0 + bonus);
+                context.addDamage(bonus);
             }
             if (context.hasTag("lightning")) {
                 double bonus = statManager.getTotalStat(context.getAttacker(), StatType.LIGHTNING_DAMAGE);
-                context.multiplyDamage(1.0 + bonus);
+                context.addDamage(bonus);
             }
         }
     }

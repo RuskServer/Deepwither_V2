@@ -19,7 +19,8 @@ public record WeaponHitProfile(HitShape shape, double baseReach, VisualType visu
             Map.entry(CombatWeaponType.SCYTHE,     new WeaponHitProfile(new ArcShape(160, 2.0), 2.2, VisualType.SCYTHE)),
             Map.entry(CombatWeaponType.MACE,       new WeaponHitProfile(new ArcShape(30, 3.5),  2.0, VisualType.HEAVY)),
             Map.entry(CombatWeaponType.HAMMER,     new WeaponHitProfile(new ArcShape(30, 4.0),  1.8, VisualType.HEAVY)),
-            Map.entry(CombatWeaponType.MACHETE,    new WeaponHitProfile(new ArcShape(40, 2.0),  2.8, VisualType.HEAVY))
+            Map.entry(CombatWeaponType.MACHETE,    new WeaponHitProfile(new ArcShape(40, 2.0),  2.8, VisualType.HEAVY)),
+            Map.entry(CombatWeaponType.DAGGER,     new WeaponHitProfile(new ArcShape(30, 1.5),  2.0, VisualType.SWORD))
     );
 
     public static WeaponHitProfile from(CombatWeaponType type) {

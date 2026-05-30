@@ -36,7 +36,7 @@ public class ManaManager implements Startable {
     @Override
     public void start() {
         // 1秒(20ticks)ごとにマナを自動回復するタスク
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 double maxMana = getMaxMana(player);
                 if (maxMana <= 0) continue;

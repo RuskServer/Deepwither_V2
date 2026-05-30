@@ -51,8 +51,10 @@ public class ArtifactStatService implements Listener {
             for (StatType type : StatType.values()) {
                 statManager.removeModifier(uuid, type, "artifact_main");
                 statManager.removeModifier(uuid, type, "artifact_sub");
-                statManager.removeModifier(uuid, type, "artifact_set_2pc");
-                statManager.removeModifier(uuid, type, "artifact_set_3pc");
+                for (ArtifactSetType setType : ArtifactSetType.values()) {
+                    statManager.removeModifier(uuid, type, "artifact_set_2pc_" + setType.name());
+                    statManager.removeModifier(uuid, type, "artifact_set_3pc_" + setType.name());
+                }
             }
 
             if (artifactData == null) return;
@@ -104,31 +106,30 @@ public class ArtifactStatService implements Listener {
             int count = entry.getValue();
 
             if (count >= 2) {
-                // 2セット効果
+                String sourceId = "artifact_set_2pc_" + setType.name();
                 switch (setType) {
                     case ABYSS_PULSATION -> {
-                        statManager.setModifier(uuid, StatType.HEALTH, "artifact_set_2pc", 0.1, ModifierType.MULTIPLICATIVE);
-                        statManager.setModifier(uuid, StatType.MAGIC_DAMAGE, "artifact_set_2pc", 0.08, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.HEALTH, sourceId, 0.1, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.MAGIC_DAMAGE, sourceId, 0.08, ModifierType.MULTIPLICATIVE);
                     }
                     case CELESTIAL_RESONANCE -> {
-                        statManager.setModifier(uuid, StatType.MAX_MANA, "artifact_set_2pc", 60.0, ModifierType.ADDITIVE);
-                        statManager.setModifier(uuid, StatType.MAGIC_DAMAGE, "artifact_set_2pc", 0.15, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.MAX_MANA, sourceId, 60.0, ModifierType.ADDITIVE);
+                        statManager.setModifier(uuid, StatType.MAGIC_DAMAGE, sourceId, 0.15, ModifierType.MULTIPLICATIVE);
                     }
                     case FAULT_LINE -> {
-                        statManager.setModifier(uuid, StatType.ATTACK_DAMAGE, "artifact_set_2pc", 12.0, ModifierType.ADDITIVE);
-                        statManager.setModifier(uuid, StatType.CRITICAL_CHANCE, "artifact_set_2pc", 0.02, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.ATTACK_DAMAGE, sourceId, 12.0, ModifierType.ADDITIVE);
+                        statManager.setModifier(uuid, StatType.CRITICAL_CHANCE, sourceId, 0.02, ModifierType.MULTIPLICATIVE);
                     }
                     case ASTRAL_STEEL_GUARD -> {
-                        statManager.setModifier(uuid, StatType.DEFENSE, "artifact_set_2pc", 25.0, ModifierType.ADDITIVE);
-                        // HP自動回復強化は別処理またはバニラ回復強化などのモディファイアがあれば追加
+                        statManager.setModifier(uuid, StatType.DEFENSE, sourceId, 25.0, ModifierType.ADDITIVE);
                     }
                     case LUNAR_SKIRMISHER -> {
-                        statManager.setModifier(uuid, StatType.SPEED, "artifact_set_2pc", 0.02, ModifierType.MULTIPLICATIVE);
-                        statManager.setModifier(uuid, StatType.CRITICAL_DAMAGE, "artifact_set_2pc", 0.10, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.SPEED, sourceId, 0.02, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.CRITICAL_DAMAGE, sourceId, 0.10, ModifierType.MULTIPLICATIVE);
                     }
                     case ETERNAL_HEARTS -> {
-                        statManager.setModifier(uuid, StatType.HEALTH, "artifact_set_2pc", 0.25, ModifierType.MULTIPLICATIVE);
-                        statManager.setModifier(uuid, StatType.DEFENSE, "artifact_set_2pc", 0.10, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.HEALTH, sourceId, 0.25, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.DEFENSE, sourceId, 0.10, ModifierType.MULTIPLICATIVE);
                     }
                 }
             }
