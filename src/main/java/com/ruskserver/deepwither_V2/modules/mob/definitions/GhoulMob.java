@@ -89,9 +89,10 @@ public class GhoulMob extends CustomMob {
                 .color(net.kyori.adventure.text.format.TextColor.color(0x7B4F2E)));
         entity.setCustomNameVisible(true);
 
-        // Zombie固有の設定（ベビーゾンビ化を防ぐ、火でのダメージを受けない設定など）
+        // Zombie固有の設定
         if (entity instanceof Zombie zombie) {
             zombie.setBaby(false);
+            zombie.setShouldBurnInDay(false);
         }
 
         // 攻撃力はDamagePipelineManagerで管理するため、バニラ攻撃力を0にする
