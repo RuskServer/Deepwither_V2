@@ -14,7 +14,8 @@ public enum CombatWeaponType {
     SCYTHE("鎌"),
     MACE("メイス"),
     HAMMER("ハンマー"),
-    MACHETE("マチェット");
+    MACHETE("マチェット"),
+    DAGGER("ダガー");
 
     private final String displayName;
 
