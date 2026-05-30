@@ -207,6 +207,13 @@ public class SkillCastService implements Stoppable {
         return duration;
     }
 
-    private record CastingState(Skill skill, BukkitTask task) {
+    private static final class CastingState {
+        final Skill skill;
+        final BukkitTask task;
+
+        CastingState(Skill skill, BukkitTask task) {
+            this.skill = skill;
+            this.task = task;
+        }
     }
 }
