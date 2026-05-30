@@ -130,6 +130,30 @@ public class GhoulMob extends CustomMob {
         loc.getWorld().spawnParticle(Particle.SMOKE, loc.add(0, 1, 0), 20, 0.4, 0.5, 0.4, 0.03);
         loc.getWorld().playSound(loc, Sound.ENTITY_ZOMBIE_DEATH, 1.0f, 0.7f);
 
+        // グールの残滓をドロップ (20%の確率)
+        if (RANDOM.nextDouble() < 0.2) {
+            org.bukkit.inventory.ItemStack remnant = itemManager.generate("ghoul_remnant");
+            if (remnant != null) {
+                loc.getWorld().dropItemNaturally(getLocation(), remnant);
+            }
+        }
+
+        // グールの内臓をドロップ (30%の確率)
+        if (RANDOM.nextDouble() < 0.3) {
+            org.bukkit.inventory.ItemStack viscera = itemManager.generate("ghoul_viscera");
+            if (viscera != null) {
+                loc.getWorld().dropItemNaturally(getLocation(), viscera);
+            }
+        }
+
+        // グールの精髄をドロップ (10%の確率)
+        if (RANDOM.nextDouble() < 0.1) {
+            org.bukkit.inventory.ItemStack essence = itemManager.generate("ghoul_essence");
+            if (essence != null) {
+                loc.getWorld().dropItemNaturally(getLocation(), essence);
+            }
+        }
+
         // 1%の確率でアーティファクトボックスをドロップ
         if (RANDOM.nextDouble() < 0.01) {
             org.bukkit.inventory.ItemStack box = itemManager.generate("artifact_box");
