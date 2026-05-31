@@ -14,6 +14,13 @@
 #         weight: <int>              # 出現重み（高いほど選ばれやすい）
 # ============================================================
 
+mob-leveling:
+  # 1レベルごとの上昇倍率
+  health_multiplier: 0.03
+  damage_multiplier: 0.01
+  # 名前のフォーマット ({level}, {name}, {hp}, {max_hp} が使えます)
+  name_format: "&b[Lv.{level}] &r{name} &c{hp}/{max_hp}♥"
+
 mob-regions:
 
   # ----- セーフゾーンの例 -----
@@ -31,6 +38,7 @@ mob-regions:
     worldguard-region: forest_zone
     spawn-interval-ticks: 200    # 10秒ごとにスポーン試行
     max-mobs: 30
+    max-level: 15                 # エリアの最大レベル
     spawn-table:
       - mob-id: goblin
         weight: 60

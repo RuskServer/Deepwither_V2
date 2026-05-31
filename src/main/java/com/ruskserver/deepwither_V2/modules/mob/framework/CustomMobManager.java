@@ -59,6 +59,10 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     /** エンティティへのモブIDタグに使用するキー */
     private final NamespacedKey mobIdKey;
 
+    private double healthMultiplier = 0.03;
+    private double damageMultiplier = 0.01;
+    private String nameFormat = "&b[Lv.{level}] &r{name} &c{hp}/{max_hp}♥";
+
     @Inject
     public CustomMobManager(JavaPlugin plugin, VirtualHealthManager healthManager, PlayerManager playerManager) {
         this.plugin = plugin;
@@ -66,7 +70,22 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
         this.playerManager = playerManager;
         this.log = plugin.getLogger();
         this.mobIdKey = new NamespacedKey(plugin, "custom_mob_id");
+        loadLevelingConfig();
     }
+
+    private void loadLevelingConfig() {
+        var config = plugin.getConfig();
+        var section = config.getConfigurationSection("mob-leveling");
+        if (section != null) {
+            this.healthMultiplier = section.getDouble("health_multiplier", 0.03);
+            this.damageMultiplier = section.getDouble("damage_multiplier", 0.01);
+            this.nameFormat = section.getString("name_format", "&b[Lv.{level}] &r{name} &c{hp}/{max_hp}♥");
+        }
+    }
+
+    public double getHealthMultiplier() { return healthMultiplier; }
+    public double getDamageMultiplier() { return damageMultiplier; }
+    public String getNameFormat() { return nameFormat; }
 
     @Override
     public void start() {
@@ -120,14 +139,19 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
      * @return 生成された CustomMob インスタンス、失敗時は null
      */
     public CustomMob spawnMob(String id, Location loc) {
-        EntityType type = mobEntityTypes.getOrDefault(id, EntityType.ZOMBIE);
-        return spawnMob(id, loc, type);
+        return spawnMob(id, loc, 1);
     }
 
-    /**
-     * エンティティタイプを指定してカスタムモブをスポーンさせます。
-     */
+    public CustomMob spawnMob(String id, Location loc, int level) {
+        EntityType type = mobEntityTypes.getOrDefault(id, EntityType.ZOMBIE);
+        return spawnMob(id, loc, type, level);
+    }
+
     public CustomMob spawnMob(String id, Location loc, EntityType type) {
+        return spawnMob(id, loc, type, 1);
+    }
+
+    public CustomMob spawnMob(String id, Location loc, EntityType type, int level) {
         Supplier<CustomMob> factory = mobFactories.get(id);
         if (factory == null) {
             log.warning("[CustomMobManager] 未登録のモブIDでスポーン試行: " + id);
@@ -146,6 +170,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             CustomMob mobLogic = factory.get();
             entity.getPersistentDataContainer().set(mobIdKey, PersistentDataType.STRING, id);
             mobLogic.setMobId(id);
+            mobLogic.setLevel(level);
             mobLogic.init(entity, this);
             activeMobs.put(entity.getUniqueId(), mobLogic);
             return mobLogic;
@@ -333,5 +358,13 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
         if (player == null || !player.isOnline()) return;
 
         playerManager.addExp(player, exp);
+    }
+
+    @EventHandler
+    public void onVirtualHealthChange(com.ruskserver.deepwither_V2.modules.combat.health.event.VirtualHealthChangeEvent event) {
+        CustomMob mob = activeMobs.get(event.getEntity().getUniqueId());
+        if (mob != null) {
+            mob.updateDisplayName();
+        }
     }
 }

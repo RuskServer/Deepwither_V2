@@ -71,6 +71,21 @@ public class PlayerManager implements Listener {
     }
 
     /**
+     * プレイヤーの現在のレベルを取得します。取得できない場合は 1 を返します。
+     */
+    public int getPlayerLevel(Player player) {
+        UUID uuid = player.getUniqueId();
+        var dataOpt = repository.get(uuid);
+        if (dataOpt.isPresent()) {
+            PlayerLevelProvider.LevelData levelData = dataOpt.get().get(PlayerLevelProvider.KEY);
+            if (levelData != null) {
+                return levelData.getLevel();
+            }
+        }
+        return 1;
+    }
+
+    /**
      * 指定レベルから次のレベルに必要な経験値を返します。
      * レベル100（最大）の場合は Integer.MAX_VALUE を返します。
      */

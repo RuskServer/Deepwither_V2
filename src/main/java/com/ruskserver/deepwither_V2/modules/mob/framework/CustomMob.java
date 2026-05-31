@@ -23,6 +23,10 @@ public abstract class CustomMob {
     protected CustomMobManager manager;
     private int exp = 0;
 
+    protected int level = 1;
+    protected double baseMaxHealth = 20.0;
+    protected String baseName = null;
+
     protected static final Random RANDOM = new Random();
 
     /**
@@ -34,6 +38,34 @@ public abstract class CustomMob {
         this.uuid = entity.getUniqueId();
         this.manager = manager;
         onSpawn();
+        
+        // onSpawn() の後にベース名を判定して名前表示を適用する
+        if (baseName == null) {
+            net.kyori.adventure.text.Component customName = entity.customName();
+            if (customName != null) {
+                baseName = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(customName);
+            } else {
+                baseName = entity.getName();
+            }
+        }
+        updateDisplayName();
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    public String getBaseName() {
+        return baseName;
+    }
+
+    public void setBaseName(String baseName) {
+        this.baseName = baseName;
+        updateDisplayName();
     }
 
     final void setMobId(String mobId) {
@@ -107,7 +139,31 @@ public abstract class CustomMob {
      * onSpawn() 内で呼び出して固有HPを設定してください。
      */
     public void setMaxHealth(double health) {
-        manager.setMaxHealth(this, health);
+        this.baseMaxHealth = health;
+        double multiplier = manager.getHealthMultiplier();
+        double finalHealth = health * (1.0 + (level - 1) * multiplier);
+        manager.setMaxHealth(this, finalHealth);
+        updateDisplayName();
+    }
+
+    public void updateDisplayName() {
+        if (entity == null || manager == null) return;
+        String format = manager.getNameFormat();
+        if (format == null || format.isBlank()) return;
+
+        double currentHp = getHealth();
+        double maxHp = getMaxHealth();
+        String currentBaseName = baseName != null ? baseName : entity.getName();
+
+        String formatted = format
+                .replace("{level}", String.valueOf(level))
+                .replace("{name}", currentBaseName)
+                .replace("{hp}", String.format("%.0f", currentHp))
+                .replace("{max_hp}", String.format("%.0f", maxHp));
+
+        net.kyori.adventure.text.Component nameComponent = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacyAmpersand().deserialize(formatted);
+        entity.customName(nameComponent);
+        entity.setCustomNameVisible(true);
     }
 
     /**

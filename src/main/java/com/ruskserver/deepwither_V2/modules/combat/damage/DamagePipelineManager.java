@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackServic
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
+import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.attribute.Attribute;
@@ -78,6 +79,14 @@ public class DamagePipelineManager implements Listener {
             phase.process(context);
         }
 
+        // 攻撃側がカスタムモブの場合、レベルに応じたダメージ補正を適用
+        CustomMob attackerMob = customMobManager.getCustomMob(attacker);
+        if (attackerMob != null) {
+            double multiplier = customMobManager.getDamageMultiplier();
+            double factor = 1.0 + (attackerMob.getLevel() - 1) * multiplier;
+            context.setDamage(context.getDamage() * factor);
+        }
+
         // 最終ダメージを仮想HPから減算し、フィードバックを再生
         if (context.getDamage() > 0) {
             customMobManager.recordDamage(defender, attacker);
@@ -139,6 +148,15 @@ public class DamagePipelineManager implements Listener {
         for (DamagePhase phase : pipeline) {
             phase.process(context);
         }
+
+        // 攻撃側がカスタムモブの場合、レベルに応じたダメージ補正を適用
+        CustomMob attackerMob = customMobManager.getCustomMob(attacker);
+        if (attackerMob != null) {
+            double multiplier = customMobManager.getDamageMultiplier();
+            double factor = 1.0 + (attackerMob.getLevel() - 1) * multiplier;
+            context.setDamage(context.getDamage() * factor);
+        }
+
         if (context.getDamage() > 0) {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());

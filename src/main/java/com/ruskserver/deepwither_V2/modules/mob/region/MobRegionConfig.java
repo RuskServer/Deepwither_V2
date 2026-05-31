@@ -139,6 +139,7 @@ public class MobRegionConfig implements Startable {
 
         int spawnIntervalTicks = section.getInt("spawn-interval-ticks", 200);
         int maxMobs = section.getInt("max-mobs", 10);
+        int maxLevel = section.getInt("max-level", 1);
 
         // セーフゾーンはスポーンテーブルを空にする
         List<SpawnEntry> spawnTable = new ArrayList<>();
@@ -158,7 +159,7 @@ public class MobRegionConfig implements Startable {
             }
         }
 
-        return new MobRegion(name, isSafeZone, world, wgRegion, spawnTable, spawnIntervalTicks, maxMobs);
+        return new MobRegion(name, isSafeZone, world, wgRegion, spawnTable, spawnIntervalTicks, maxMobs, maxLevel);
     }
 
     private World resolveWorld(String configuredName) {

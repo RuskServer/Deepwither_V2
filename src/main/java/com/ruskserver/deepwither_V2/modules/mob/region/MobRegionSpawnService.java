@@ -39,6 +39,7 @@ public class MobRegionSpawnService implements Startable, Stoppable {
     private final JavaPlugin plugin;
     private final MobRegionConfig regionConfig;
     private final CustomMobManager mobManager;
+    private final com.ruskserver.deepwither_V2.modules.player.PlayerManager playerManager;
     private final Logger log;
     private final Random random = new Random();
 
@@ -60,10 +61,11 @@ public class MobRegionSpawnService implements Startable, Stoppable {
     private final List<BukkitTask> spawnTasks = new ArrayList<>();
 
     @Inject
-    public MobRegionSpawnService(JavaPlugin plugin, MobRegionConfig regionConfig, CustomMobManager mobManager) {
+    public MobRegionSpawnService(JavaPlugin plugin, MobRegionConfig regionConfig, CustomMobManager mobManager, com.ruskserver.deepwither_V2.modules.player.PlayerManager playerManager) {
         this.plugin = plugin;
         this.regionConfig = regionConfig;
         this.mobManager = mobManager;
+        this.playerManager = playerManager;
         this.log = plugin.getLogger();
     }
 
@@ -155,7 +157,12 @@ public class MobRegionSpawnService implements Startable, Stoppable {
         Location spawnLoc = nearbyPlayerSurfaceLocation(region, target);
         if (spawnLoc == null) return;
 
-        mobManager.spawnMob(selectedMobId, spawnLoc);
+        // 対象プレイヤーのレベルと同等かつエリアの最大レベルを超えないように制限
+        int playerLevel = playerManager.getPlayerLevel(target);
+        int spawnLevel = Math.min(playerLevel, region.maxLevel());
+        if (spawnLevel < 1) spawnLevel = 1;
+
+        mobManager.spawnMob(selectedMobId, spawnLoc, spawnLevel);
     }
 
     /**

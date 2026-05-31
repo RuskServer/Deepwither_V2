@@ -75,6 +75,8 @@ public class VirtualHealthManager implements Listener {
         
         currentHealthMap.put(entity.getUniqueId(), newHealth);
         syncVisualHealth(entity, newHealth, maxHp);
+
+        Bukkit.getPluginManager().callEvent(new com.ruskserver.deepwither_V2.modules.combat.health.event.VirtualHealthChangeEvent(entity, current, newHealth, maxHp));
     }
 
     /**
@@ -97,6 +99,8 @@ public class VirtualHealthManager implements Listener {
             currentHealthMap.put(entity.getUniqueId(), newHealth);
             syncVisualHealth(entity, newHealth, maxHp);
         }
+
+        Bukkit.getPluginManager().callEvent(new com.ruskserver.deepwither_V2.modules.combat.health.event.VirtualHealthChangeEvent(entity, current, newHealth, maxHp));
     }
 
     /**

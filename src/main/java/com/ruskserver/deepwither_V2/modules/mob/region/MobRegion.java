@@ -28,7 +28,8 @@ public record MobRegion(
         ProtectedRegion wgRegion,
         List<SpawnEntry> spawnTable,
         int spawnIntervalTicks,
-        int maxMobsPerRegion
+        int maxMobsPerRegion,
+        int maxLevel
 ) {
     /**
      * 指定座標がこのRegion内にあるか判定します。
