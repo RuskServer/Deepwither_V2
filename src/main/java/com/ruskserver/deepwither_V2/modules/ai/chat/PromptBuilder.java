@@ -27,12 +27,15 @@ public class PromptBuilder {
 - MarkdownやLaTeX（$\\text{...}$、$$...$$など）は使用せず、プレーンテキストのみで記述すること
 """;
 
-    public String build(String userQuery, String ragContext, boolean thinking) {
+    public String build(String userQuery, String ragContext, String repContext, boolean thinking) {
         StringBuilder sb = new StringBuilder();
         sb.append(SYSTEM_PROMPT).append("\n");
 
         if (!ragContext.isEmpty()) {
             sb.append(ragContext).append("\n");
+        }
+        if (!repContext.isEmpty()) {
+            sb.append(repContext).append("\n");
         }
 
         sb.append("【ユーザー質問】\n").append(userQuery).append("\n");
@@ -46,13 +49,16 @@ public class PromptBuilder {
         return sb.toString();
     }
 
-    public String buildWithCandidates(String userQuery, String ragContext,
+    public String buildWithCandidates(String userQuery, String ragContext, String repContext,
                                        BuildGoal goal, List<BuildCandidate> candidates) {
         StringBuilder sb = new StringBuilder();
         sb.append(SYSTEM_PROMPT).append("\n");
 
         if (!ragContext.isEmpty()) {
             sb.append(ragContext).append("\n");
+        }
+        if (!repContext.isEmpty()) {
+            sb.append(repContext).append("\n");
         }
 
         sb.append("【BuildCalculator事前計算 候補】\n");
@@ -71,6 +77,8 @@ public class PromptBuilder {
         sb.append("\n【ユーザー質問】\n").append(userQuery).append("\n");
         sb.append("\n思考プロセスを踏まえた上で、ユーザーの要望に最も適した構成を提案してください。");
         sb.append("\n「装備セット」の番号ではなく、装備の具体的なIDや特徴を引用して説明すること。");
+        sb.append("\n各装備セットには「信頼度」が示されている。「信頼度」はその装備が本来の装備スロットに適合しているかの指標であり、100%に近いほど実際に装備可能な信頼性の高い構成である。信頼度の低い構成はスロット適合性に問題がある可能性があるため、同等の性能なら信頼度が高い方を優先すること。");
+        sb.append("\nまた、アイテムを購入するにはトレーダーとの「信用度」が必要。プレイヤーの信用度が足りないトレーダーの高要求アイテムは構成から除外し、実際に入手可能な装備のみを提案すること。");
 
         return sb.toString();
     }

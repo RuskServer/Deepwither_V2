@@ -11,6 +11,10 @@ import com.ruskserver.deepwither_V2.modules.ai.build.BuildCalculator;
 import com.ruskserver.deepwither_V2.modules.ai.build.BuildCandidate;
 import com.ruskserver.deepwither_V2.modules.ai.build.BuildGoal;
 import com.ruskserver.deepwither_V2.modules.ai.kd.KdRetriever;
+import com.ruskserver.deepwither_V2.modules.trader.api.TraderDefinition;
+import com.ruskserver.deepwither_V2.modules.trader.api.TraderProduct;
+import com.ruskserver.deepwither_V2.modules.trader.service.TraderReputationService;
+import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 @Service
 public class ChatManager implements Stoppable {
@@ -32,6 +40,8 @@ public class ChatManager implements Stoppable {
     private final PromptBuilder promptBuilder;
     private final ApiResponseParser responseParser;
     private final RateLimiter rateLimiter;
+    private final TraderReputationService reputationService;
+    private final TraderService traderService;
     private final Logger log;
 
     private AiApiClient apiClient;
@@ -41,12 +51,15 @@ public class ChatManager implements Stoppable {
     @Inject
     public ChatManager(KdRetriever retriever, BuildCalculator buildCalculator,
                        PromptBuilder promptBuilder, ApiResponseParser responseParser,
-                       RateLimiter rateLimiter, Logger log) {
+                       RateLimiter rateLimiter, TraderReputationService reputationService,
+                       TraderService traderService, Logger log) {
         this.retriever = retriever;
         this.buildCalculator = buildCalculator;
         this.promptBuilder = promptBuilder;
         this.responseParser = responseParser;
         this.rateLimiter = rateLimiter;
+        this.reputationService = reputationService;
+        this.traderService = traderService;
         this.log = log;
     }
 
@@ -77,7 +90,8 @@ public class ChatManager implements Stoppable {
 
         try {
             String ragContext = retriever.retrieveAsContext(question, RAG_TOP_K);
-            String prompt = promptBuilder.build(question, ragContext, false);
+            String repContext = buildReputationContext(userId);
+            String prompt = promptBuilder.build(question, ragContext, repContext, false);
 
             if (apiClient == null) {
                 return new ChatResult("APIが初期化されていません", false, "API not initialized", false);
@@ -123,11 +137,12 @@ public class ChatManager implements Stoppable {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String ragContext = retriever.retrieveAsContext(question, RAG_TOP_K);
+                String repContext = buildReputationContext(userId);
 
                 BuildGoal goal = estimateGoal(question);
                 List<BuildCandidate> candidates = buildCalculator.preroll(goal);
 
-                String prompt = promptBuilder.buildWithCandidates(question, ragContext, goal, candidates);
+                String prompt = promptBuilder.buildWithCandidates(question, ragContext, repContext, goal, candidates);
 
                 var apiResponse = apiClient.call(prompt, true);
 
@@ -176,6 +191,26 @@ public class ChatManager implements Stoppable {
 
     public int getRemainingDaily() {
         return rateLimiter.getRemainingDaily();
+    }
+
+    private String buildReputationContext(UUID userId) {
+        Player player = Bukkit.getPlayer(userId);
+        if (player == null) return "";
+
+        StringBuilder sb = new StringBuilder("【プレイヤーのトレーダー信用度】\n");
+        for (TraderDefinition trader : traderService.getAllTraders().values()) {
+            int rep = reputationService.getReputation(player, trader.getNpcName());
+            int maxReq = trader.getProducts().stream()
+                    .mapToInt(TraderProduct::getRequiredReputation)
+                    .max().orElse(0);
+            sb.append(trader.getDisplayName()).append(": 信用度 ").append(rep);
+            if (maxReq > 0) {
+                sb.append(" (最高要求: ").append(maxReq).append(")");
+            }
+            sb.append("\n");
+        }
+        sb.append("【注意】信用度が足りないトレーダーの要求アイテムは購入不可。装備提案の際は信用度を考慮すること。\n");
+        return sb.toString();
     }
 
     @Override

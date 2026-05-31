@@ -10,6 +10,7 @@ public class BuildCandidate implements Comparable<BuildCandidate> {
     private final Map<String, String> slots = new java.util.LinkedHashMap<>();
     private final Map<StatType, Double> finalStats = new EnumMap<>(StatType.class);
     private double score;
+    private double credibility = 1.0;
 
     public void setSlot(String slotName, String itemId) {
         slots.put(slotName, itemId);
@@ -43,6 +44,14 @@ public class BuildCandidate implements Comparable<BuildCandidate> {
         return score;
     }
 
+    public void setCredibility(double credibility) {
+        this.credibility = credibility;
+    }
+
+    public double getCredibility() {
+        return credibility;
+    }
+
     public double getPhysicalReduction() {
         double def = getFinalStat(StatType.DEFENSE);
         return 250.0 / (250.0 + def);
@@ -67,6 +76,7 @@ public class BuildCandidate implements Comparable<BuildCandidate> {
         finalStats.forEach((k, v) -> sb.append("  ").append(k.getDisplayName()).append(": ").append(String.format("%.1f", v)).append("\n"));
         sb.append("物理軽減率: ").append(String.format("%.1f", (1 - getPhysicalReduction()) * 100)).append("%\n");
         sb.append("魔法軽減率: ").append(String.format("%.1f", (1 - getMagicReduction()) * 100)).append("%\n");
+        sb.append("信頼度: ").append(String.format("%.0f", credibility * 100)).append("%\n");
         sb.append("スコア: ").append(String.format("%.1f", score)).append("\n");
         return sb.toString();
     }

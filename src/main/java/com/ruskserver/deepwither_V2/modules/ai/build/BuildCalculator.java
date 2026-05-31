@@ -41,10 +41,20 @@ public class BuildCalculator {
                 .filter(i -> i.getWeaponType() != null)
                 .toList();
 
-        if (chests.isEmpty()) chests = allItems;
-        if (legs.isEmpty()) legs = allItems;
-        if (heads.isEmpty()) heads = allItems;
-        if (boots.isEmpty()) boots = allItems;
+        boolean chestFallback = chests.isEmpty();
+        boolean legsFallback = legs.isEmpty();
+        boolean headFallback = heads.isEmpty();
+        boolean bootsFallback = boots.isEmpty();
+        if (chestFallback) chests = allItems;
+        if (legsFallback) legs = allItems;
+        if (headFallback) heads = allItems;
+        if (bootsFallback) boots = allItems;
+
+        Set<CustomItem> validChests = new HashSet<>(chestFallback ? List.of() : chests);
+        Set<CustomItem> validLegs = new HashSet<>(legsFallback ? List.of() : legs);
+        Set<CustomItem> validHeads = new HashSet<>(headFallback ? List.of() : heads);
+        Set<CustomItem> validBoots = new HashSet<>(bootsFallback ? List.of() : boots);
+        Set<CustomItem> validWeapons = new HashSet<>(weapons);
 
         List<BuildCandidate> candidates = new ArrayList<>();
 
@@ -53,10 +63,10 @@ public class BuildCalculator {
                 for (CustomItem head : heads) {
                     for (CustomItem boot : boots) {
                         if (weapons.isEmpty()) {
-                            candidates.add(compute(chest, leg, head, boot, null, goal));
+                            candidates.add(compute(chest, leg, head, boot, null, goal, validChests, validLegs, validHeads, validBoots, validWeapons));
                         } else {
                             for (CustomItem weapon : weapons) {
-                                candidates.add(compute(chest, leg, head, boot, weapon, goal));
+                                candidates.add(compute(chest, leg, head, boot, weapon, goal, validChests, validLegs, validHeads, validBoots, validWeapons));
                             }
                         }
                     }
@@ -71,7 +81,10 @@ public class BuildCalculator {
     }
 
     public BuildCandidate compute(CustomItem chest, CustomItem legs, CustomItem head,
-                                   CustomItem boots, CustomItem weapon, BuildGoal goal) {
+                                   CustomItem boots, CustomItem weapon, BuildGoal goal,
+                                   Set<CustomItem> validChests, Set<CustomItem> validLegs,
+                                   Set<CustomItem> validHeads, Set<CustomItem> validBoots,
+                                   Set<CustomItem> validWeapons) {
         BuildCandidate candidate = new BuildCandidate();
         candidate.setSlot("胴", chest != null ? chest.getDisplayName() : "なし");
         candidate.setSlot("脚", legs != null ? legs.getDisplayName() : "なし");
@@ -111,6 +124,16 @@ public class BuildCalculator {
         }
 
         candidate.setScore(score);
+
+        int matched = 0;
+        int totalSlots = 0;
+        if (chest != null) { totalSlots++; if (validChests.contains(chest)) matched++; }
+        if (legs != null) { totalSlots++; if (validLegs.contains(legs)) matched++; }
+        if (head != null) { totalSlots++; if (validHeads.contains(head)) matched++; }
+        if (boots != null) { totalSlots++; if (validBoots.contains(boots)) matched++; }
+        if (weapon != null) { totalSlots++; if (validWeapons.contains(weapon)) matched++; }
+        candidate.setCredibility(totalSlots > 0 ? (double) matched / totalSlots : 0);
+
         return candidate;
     }
 
