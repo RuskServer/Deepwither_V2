@@ -10,21 +10,15 @@ import java.util.List;
 public class PromptBuilder {
 
     private static final String SYSTEM_PROMPT = """
-あなたは Echoes of Aether のビルドアドバイザーです。
-以下のデータを元に、ユーザーの要望に合った装備構成を提案してください。
-必ず実際の数値を提示し、計算過程も示してください。
+あなたは Echoes of Aether の世界を熟知した老練な冒険者、あるいは知識豊富なガイドです。
+ユーザーの質問に対し、冒険の助けとなるヒントやこの世界の噂話を提供してください。
 
-【計算式】
-- 最終値 = 加算値の合計 × (1 + 乗算値の合計)
-- ダメージ軽減率 = 250 / (250 + 防御値)
-- 物理ダメージ → DEFENSE で軽減
-- 魔法ダメージ → MAGIC_DEFENSE で軽減
-- TRUE_DAMAGE / ENVIRONMENTAL は防御無視
-
-【注意事項】
-- 数値は実際のゲーム内値に基づいて計算すること
-- 複数の装備セットを組み合わせる場合は、各部位のステータスを合計すること
-- MarkdownやLaTeX（$\\text{...}$、$$...$$など）は使用せず、プレーンテキストのみで記述すること
+【回答の指針】
+- 特定の装備構成を「最強」や「最適解」として断定的に教えることは避けてください。
+- 装備の組み合わせについては「〇〇と△△を合わせると面白い効果があるという噂だ」といった、可能性の提示に留めてください。
+- 数値計算を詳しく解説するのではなく、「〇〇を上げると魔法に強くなるだろう」といった感覚的なアドバイスを優先してください。
+- Wikiのような無機質な情報の羅列ではなく、世界観に没入できるような親しみやすい口調で話してください。
+- MarkdownやLaTeX（$\\text{...}$、$$...$$など）は使用せず、プレーンテキストのみで記述すること。
 """;
 
     public String build(String userQuery, String ragContext, String repContext, boolean thinking) {
@@ -32,18 +26,18 @@ public class PromptBuilder {
         sb.append(SYSTEM_PROMPT).append("\n");
 
         if (!ragContext.isEmpty()) {
-            sb.append(ragContext).append("\n");
+            sb.append("【世界の知識・記録】\n").append(ragContext).append("\n");
         }
         if (!repContext.isEmpty()) {
             sb.append(repContext).append("\n");
         }
 
-        sb.append("【ユーザー質問】\n").append(userQuery).append("\n");
+        sb.append("【冒険者の問い】\n").append(userQuery).append("\n");
 
         if (!thinking) {
-            sb.append("\n回答は簡潔に、具体的な数値を含めてください。");
+            sb.append("\n回答は簡潔かつ情緒的に、冒険心をくすぐる内容にしてください。");
         } else {
-            sb.append("\n思考プロセスを踏まえた上で、最終的な回答を提供してください。");
+            sb.append("\nじっくりと考え、この世界の理に則った深い洞察を提供してください。");
         }
 
         return sb.toString();
@@ -51,34 +45,24 @@ public class PromptBuilder {
 
     public String buildWithCandidates(String userQuery, String ragContext, String repContext,
                                        BuildGoal goal, List<BuildCandidate> candidates) {
+        // buildWithCandidates は機能を縮小し、build メソッドと統合するか、
+        // 候補データを「噂されている装備」として抽象的に扱うように変更
         StringBuilder sb = new StringBuilder();
         sb.append(SYSTEM_PROMPT).append("\n");
 
         if (!ragContext.isEmpty()) {
-            sb.append(ragContext).append("\n");
-        }
-        if (!repContext.isEmpty()) {
-            sb.append(repContext).append("\n");
+            sb.append("【世界の知識・記録】\n").append(ragContext).append("\n");
         }
 
-        sb.append("【BuildCalculator事前計算 候補】\n");
-        sb.append("目標: ").append(goal.getPrimaryStat().getDisplayName());
-        if (goal.getSecondaryStat() != null) {
-            sb.append(" (優先度").append(String.format("%.0f", goal.getPrimaryWeight() * 100))
-                    .append("%) / ").append(goal.getSecondaryStat().getDisplayName());
-        }
-        sb.append("\n\n");
+        sb.append("【注目されている能力】: ").append(goal.getPrimaryStat().getDisplayName()).append("\n");
+        sb.append("【噂に上る装備の断片】\n");
+        // 具体的なセットデータではなく、IDや名前からヒントを抽出
+        candidates.stream().limit(3).forEach(c -> {
+            sb.append("- ").append(c.toString().split("\n")[0]).append(" などの組み合わせが語られているようだ。\n");
+        });
 
-        for (int i = 0; i < candidates.size(); i++) {
-            sb.append("【装備セット ").append(i + 1).append("】\n");
-            sb.append(candidates.get(i).toString()).append("\n");
-        }
-
-        sb.append("\n【ユーザー質問】\n").append(userQuery).append("\n");
-        sb.append("\n思考プロセスを踏まえた上で、ユーザーの要望に最も適した構成を提案してください。");
-        sb.append("\n「装備セット」の番号ではなく、装備の具体的なIDや特徴を引用して説明すること。");
-        sb.append("\n各装備セットには「信頼度」が示されている。「信頼度」はその装備が本来の装備スロットに適合しているかの指標であり、100%に近いほど実際に装備可能な信頼性の高い構成である。信頼度の低い構成はスロット適合性に問題がある可能性があるため、同等の性能なら信頼度が高い方を優先すること。");
-        sb.append("\nまた、アイテムを購入するにはトレーダーとの「信用度」が必要。プレイヤーの信用度が足りないトレーダーの高要求アイテムは構成から除外し、実際に入手可能な装備のみを提案すること。");
+        sb.append("\n【冒険者の問い】\n").append(userQuery).append("\n");
+        sb.append("\nこれらの情報を踏まえ、具体的な答えではなく、冒険者が自ら答えに辿り着けるような助言をしてください。");
 
         return sb.toString();
     }

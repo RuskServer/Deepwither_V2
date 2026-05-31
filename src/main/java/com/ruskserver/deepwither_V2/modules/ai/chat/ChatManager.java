@@ -115,49 +115,10 @@ public class ChatManager implements Stoppable {
     }
 
     public CompletableFuture<ChatResult> buildAsync(UUID userId, String question) {
-        RateLimiter.Result rateResult = rateLimiter.tryAcquire(userId);
-        if (rateResult != RateLimiter.Result.ALLOWED) {
-            String msg = switch (rateResult) {
-                case RATE_LIMITED_GLOBAL -> "グローバルのレート制限中です。しばらくお待ちください。";
-                case RATE_LIMITED_USER -> "あなたのレート制限中です。1分ほどお待ちください。";
-                case DAILY_LIMIT_EXCEEDED -> "本日のAPI利用上限に達しました。明日以降にお試しください。";
-                default -> "レート制限中です。";
-            };
-            return CompletableFuture.completedFuture(new ChatResult(msg, false, msg, true));
-        }
-
-        if (apiClient == null) {
-            return CompletableFuture.completedFuture(
-                    new ChatResult("APIが初期化されていません", false, "API not initialized", true));
-        }
-
-        ChatSession session = sessions.computeIfAbsent(userId, ChatSession::new);
-        session.appendUserMessage(question);
-
+        // 重い計算プロセスを廃止し、通常のチャットとして処理
+        // ただし、非同期実行のインターフェースは維持する
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                String ragContext = retriever.retrieveAsContext(question, RAG_TOP_K);
-                String repContext = buildReputationContext(userId);
-
-                BuildGoal goal = estimateGoal(question);
-                List<BuildCandidate> candidates = buildCalculator.preroll(goal);
-
-                String prompt = promptBuilder.buildWithCandidates(question, ragContext, repContext, goal, candidates);
-
-                var apiResponse = apiClient.call(prompt, true);
-
-                if (!apiResponse.success()) {
-                    return new ChatResult("", false, apiResponse.error(), true);
-                }
-
-                String answer = responseParser.parse(apiResponse.text());
-                session.appendAssistantMessage(answer);
-                return new ChatResult(answer, true, null, true);
-
-            } catch (Exception e) {
-                log.warning("[ChatManager] buildAsync failed: " + e.getMessage());
-                return new ChatResult("", false, "Internal error: " + e.getMessage(), true);
-            }
+            return ask(userId, question);
         }, executor);
     }
 
