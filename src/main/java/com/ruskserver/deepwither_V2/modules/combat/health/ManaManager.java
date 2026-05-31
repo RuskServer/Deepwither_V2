@@ -4,11 +4,16 @@ import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
+import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
 import java.util.UUID;
@@ -19,13 +24,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * 自動回復タスクも内包します。
  */
 @Service
-public class ManaManager implements Startable {
+public class ManaManager implements Startable, Stoppable, Listener {
 
     private static final double DEFAULT_MAX_MANA = 100.0;
 
     private final Map<UUID, Double> currentManaMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
     private final Deepwither_V2 plugin;
+    private BukkitTask regenTask;
 
     @Inject
     public ManaManager(StatManager statManager, Deepwither_V2 plugin) {
@@ -35,8 +41,7 @@ public class ManaManager implements Startable {
 
     @Override
     public void start() {
-        // 1秒(20ticks)ごとにマナを自動回復するタスク
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+        regenTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 double maxMana = getMaxMana(player);
                 if (maxMana <= 0) continue;
@@ -50,6 +55,20 @@ public class ManaManager implements Startable {
                 }
             }
         }, 20L, 20L);
+    }
+
+    @Override
+    public void stop() {
+        if (regenTask != null) {
+            regenTask.cancel();
+            regenTask = null;
+        }
+        currentManaMap.clear();
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        currentManaMap.remove(event.getPlayer().getUniqueId());
     }
 
     public double getMana(Player player) {

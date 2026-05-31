@@ -60,3 +60,29 @@ resource-pack:
   hash: ""
   required: true
   kick-message: "<red>リソースパックの適用が必要です。<br>サーバー設定からリソースパックを「有効」または「プロンプト」に設定してください。"
+
+# ============================================================
+# AI Chatbot 設定
+# ============================================================
+ai:
+  # Google AI Studio API Key
+  google-api-key: ""
+  # 1日あたりのAPI呼び出し上限
+  daily-limit: 1500
+  # グローバルRPM制限
+  global-rpm: 15
+  # ユーザーごとのRPM制限
+  user-rpm: 3
+  # 思考モードのタイムアウト（秒）
+  thinking-timeout-seconds: 300
+  # Embeddingモデルのパス
+  model-path: "plugins/Deepwither_V2/models/gemma-300m-onnx"
+
+# ============================================================
+# Discord Bot 設定
+# ============================================================
+discord:
+  # Discord Bot Token (DiscordSRVから流用)
+  token: ""
+  # Discord サーバーID（スラッシュコマンド登録用）
+  guild-id: ""

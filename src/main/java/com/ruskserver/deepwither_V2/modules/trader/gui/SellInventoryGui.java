@@ -24,6 +24,9 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
  * 売却専用 GUI。
@@ -37,7 +40,7 @@ public class SellInventoryGui implements Listener {
     private final ItemPDCUtil pdcUtil;
     private final DIContainer container;
     private final NamespacedKey actionKey;
-    private final Map<Player, String> openedTraders = new HashMap<>(); // プレイヤー -> 元のNPC名
+    private final Map<UUID, String> openedTraders = new HashMap<>(); // プレイヤーUUID -> 元のNPC名
 
     @Inject
     public SellInventoryGui(ItemManager itemManager, TraderService traderService, ItemPDCUtil pdcUtil, 
@@ -101,13 +104,18 @@ public class SellInventoryGui implements Listener {
         gui.setItem(4, info);
 
         player.openInventory(gui);
-        openedTraders.put(player, npcName);
+        openedTraders.put(player.getUniqueId(), npcName);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        openedTraders.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
-        if (!openedTraders.containsKey(player)) return;
+        if (!openedTraders.containsKey(player.getUniqueId())) return;
 
         Inventory topInventory = event.getView().getTopInventory();
         ItemStack clicked = event.getCurrentItem();
@@ -118,7 +126,7 @@ public class SellInventoryGui implements Listener {
             String action = clicked.getItemMeta().getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
             if ("back".equals(action)) {
                 event.setCancelled(true);
-                String npcName = openedTraders.get(player);
+                String npcName = openedTraders.get(player.getUniqueId());
                 TraderInventoryGui traderGui = container.resolve(TraderInventoryGui.class);
                 traderGui.openTraderGui(player, npcName);
                 return;
@@ -167,6 +175,6 @@ public class SellInventoryGui implements Listener {
     }
 
     public void closeSellGui(Player player) {
-        openedTraders.remove(player);
+        openedTraders.remove(player.getUniqueId());
     }
 }

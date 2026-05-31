@@ -26,6 +26,7 @@ public final class Deepwither_V2 extends JavaPlugin {
         // Register the plugin instance itself so it can be injected
         container.registerInstance(JavaPlugin.class, this);
         container.registerInstance(Deepwither_V2.class, this);
+        container.registerInstance(java.util.logging.Logger.class, getLogger());
 
         try {
             // Scan and register all modules

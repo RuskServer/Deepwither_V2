@@ -1,6 +1,9 @@
 package com.ruskserver.deepwither_V2.modules.skill.service;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -8,9 +11,14 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-public class SkillCooldownService {
+public class SkillCooldownService implements Listener {
 
     private final Map<UUID, Map<String, Long>> cooldownUntilMillis = new HashMap<>();
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        cooldownUntilMillis.remove(event.getPlayer().getUniqueId());
+    }
 
     public boolean isOnCooldown(UUID playerId, String skillId) {
         return getRemainingMillis(playerId, skillId) > 0L;

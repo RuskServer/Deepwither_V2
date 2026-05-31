@@ -10,6 +10,9 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -20,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * エンティティの受けるダメージや回復はすべてこのクラスを経由して処理されます。
  */
 @Service
-public class VirtualHealthManager {
+public class VirtualHealthManager implements Listener {
 
     private static final double DEFAULT_PLAYER_MAX_HEALTH = 20.0;
 
@@ -101,6 +104,11 @@ public class VirtualHealthManager {
      */
     public void cleanup(UUID entityId) {
         currentHealthMap.remove(entityId);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        cleanup(event.getPlayer().getUniqueId());
     }
 
     /**

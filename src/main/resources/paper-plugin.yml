@@ -26,3 +26,5 @@ dependencies:
       required: false
     PlaceholderAPI:
       required: false
+    DiscordSRV:
+      required: false

@@ -13,6 +13,7 @@ repositories {
     maven("https://maven.citizensnpcs.co/repo")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     maven("https://jitpack.io")  // Vault用
+    maven ("https://nexus.scarsz.me/content/groups/public/" )
 }
 
 dependencies {
@@ -35,6 +36,18 @@ dependencies {
     implementation("com.h2database:h2:2.2.224")
     implementation("com.zaxxer:HikariCP:5.1.0")
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+
+    // AI Chatbot - Deep Java Library + ONNX Runtime
+    implementation("ai.djl.onnxruntime:onnxruntime-engine:0.31.1")
+    implementation("ai.djl:api:0.31.1")
+
+    // HTTP Client for Google AI Studio API
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // JSON processing
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.0")
+
+    compileOnly("com.discordsrv:discordsrv:1.28.0")
 }
 
 
@@ -48,7 +61,13 @@ tasks {
     }
 
     shadowJar {
-        archiveClassifier.set("") // -all を取り除き、E��常のjarを上書き！EatJar化）すめE        relocate("com.zaxxer.hikari", "com.ruskserver.deepwither_V2.libs.hikari")
+        archiveClassifier.set("")
+
+        // ONNX Runtime native libraries — keep only Linux, drop Windows/macOS
+        exclude("ai/onnxruntime/native/win-*/**")
+        exclude("ai/onnxruntime/native/osx-*/**")
+
+        relocate("com.zaxxer.hikari", "com.ruskserver.deepwither_V2.libs.hikari")
         relocate("org.h2", "com.ruskserver.deepwither_V2.libs.h2")
         relocate("com.github.benmanes.caffeine", "com.ruskserver.deepwither_V2.libs.caffeine")
     }

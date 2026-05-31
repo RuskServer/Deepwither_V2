@@ -80,6 +80,7 @@ public class MobRegionSpawnService implements Startable, Stoppable {
             task.cancel();
         }
         spawnTasks.clear();
+        safeZoneEntryTime.clear();
         log.info("[MobRegionSpawnService] 全スポーンタスクを停止しました。");
     }
 
@@ -203,6 +204,10 @@ public class MobRegionSpawnService implements Startable, Stoppable {
 
             long now = System.currentTimeMillis();
             boolean anyDespawn = false;
+
+            // 既にオフラインになったプレイヤーのエントリを削除
+            safeZoneEntryTime.keySet().removeIf(id ->
+                    plugin.getServer().getPlayer(id) == null);
 
             for (Player player : plugin.getServer().getOnlinePlayers()) {
                 boolean inSafeZone = safeZones.stream()

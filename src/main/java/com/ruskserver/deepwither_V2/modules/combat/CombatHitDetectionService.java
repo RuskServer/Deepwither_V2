@@ -11,6 +11,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,11 +28,16 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
-public class CombatHitDetectionService {
+public class CombatHitDetectionService implements Listener {
 
     private final Random random = new Random();
     private final Set<UUID> debugPlayers = new HashSet<>();
     private final Map<UUID, Set<UUID>> recentlyHit = new HashMap<>();
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        debugPlayers.remove(event.getPlayer().getUniqueId());
+    }
 
     private static final double[] SWORD_ROTATIONS = {0.0, 180.0, 45.0, 135.0};
 

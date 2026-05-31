@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +30,11 @@ public class DailyTaskService implements Listener {
 
     /** プレイヤーUUID -> (モブID -> 討伐数) の一時的な進行状況（DBに保存してもよいが、今回はメモリ管理） */
     private final Map<UUID, ActiveTask> activeTasks = new HashMap<>();
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        activeTasks.remove(event.getPlayer().getUniqueId());
+    }
 
     @Inject
     public DailyTaskService(PlayerDataRepository repository, TraderReputationService reputationService, CustomMobManager mobManager) {
