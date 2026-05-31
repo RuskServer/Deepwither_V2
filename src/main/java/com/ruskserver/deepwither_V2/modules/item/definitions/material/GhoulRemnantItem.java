@@ -1,4 +1,4 @@
-package com.ruskserver.deepwither_V2.modules.item.definitions;
+package com.ruskserver.deepwither_V2.modules.item.definitions.material;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
@@ -6,34 +6,33 @@ import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.ItemRarity;
 import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.EnumMap;
 import java.util.Map;
 
 @Component
-public class GhoulVisceraItem implements CustomItem {
+public class GhoulRemnantItem implements CustomItem {
 
     private final Map<StatType, Double> baseStats;
 
     @Inject
-    public GhoulVisceraItem() {
+    public GhoulRemnantItem() {
         this.baseStats = new EnumMap<>(StatType.class);
     }
 
     @Override
     public String getId() {
-        return "ghoul_viscera";
+        return "ghoul_remnant";
     }
 
     @Override
     public Material getMaterial() {
-        return Material.ROTTEN_FLESH;
+        return Material.GUNPOWDER;
     }
 
     @Override
     public String getDisplayName() {
-        return "グールの内臓";
+        return "グールの残滓";
     }
 
     @Override
@@ -48,16 +47,16 @@ public class GhoulVisceraItem implements CustomItem {
 
     @Override
     public String getFlavorText() {
-        return "腐った肉の塊。料理には使えないが、特殊な調合に使われるかもしれない。";
+        return "グールが放つ不吉な気配を含んだ、褐色の粉々に砕けた骨。";
     }
 
     @Override
     public double getSellPrice() {
-        return 12.0;
+        return 15.0;
     }
 
     @Override
     public int getCustomModelData() {
-        return 2;
+        return 1;
     }
 }

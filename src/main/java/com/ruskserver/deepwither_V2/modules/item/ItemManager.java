@@ -145,6 +145,11 @@ public class ItemManager implements Startable {
             }
         }
 
+        // 2.5 販売価格
+        if (customItem.getSellPrice() > 0) {
+            lore.add(Component.text("§e販売価格: §f" + (int)customItem.getSellPrice() + "G").decoration(TextDecoration.ITALIC, false));
+        }
+
         // 3. 装備ステータス
         if (!customItem.getBaseStats().isEmpty()) {
             lore.add(Component.empty());
