@@ -13,6 +13,8 @@ import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.logging.Logger;
@@ -22,6 +24,7 @@ public class DIContainer {
     private final Map<Class<?>, Object> instances = new LinkedHashMap<>();
     private final LinkedHashSet<Class<?>> resolvingClasses = new LinkedHashSet<>();
     private final Map<Class<?>, List<Class<?>>> dependencyGraph = new HashMap<>();
+    private final Set<Class<?>> scannedClasses = new HashSet<>();
     
     private Logger logger;
     private boolean debugMode = false;
@@ -119,14 +122,34 @@ public class DIContainer {
         }
 
         targetConstructor.setAccessible(true);
-        Class<?>[] parameterTypes = targetConstructor.getParameterTypes();
-        Object[] parameters = new Object[parameterTypes.length];
+        java.lang.reflect.Parameter[] parametersInfo = targetConstructor.getParameters();
+        Object[] parameters = new Object[parametersInfo.length];
         
         List<Class<?>> dependencies = new ArrayList<>();
 
-        for (int i = 0; i < parameterTypes.length; i++) {
-            dependencies.add(parameterTypes[i]);
-            parameters[i] = resolve(parameterTypes[i]); // Recursively resolve dependencies
+        for (int i = 0; i < parametersInfo.length; i++) {
+            java.lang.reflect.Parameter param = parametersInfo[i];
+            Class<?> paramType = param.getType();
+
+            if (List.class.isAssignableFrom(paramType)) {
+                // Handle List<T> injection
+                Type genericType = param.getParameterizedType();
+                if (genericType instanceof ParameterizedType) {
+                    Type[] actualArgs = ((ParameterizedType) genericType).getActualTypeArguments();
+                    if (actualArgs.length > 0 && actualArgs[0] instanceof Class<?>) {
+                        Class<?> elementClass = (Class<?>) actualArgs[0];
+                        parameters[i] = resolveAll(elementClass);
+                        // Add all implementations as dependencies for the graph
+                        for (Object impl : (List<?>) parameters[i]) {
+                            dependencies.add(impl.getClass());
+                        }
+                        continue;
+                    }
+                }
+            }
+
+            dependencies.add(paramType);
+            parameters[i] = resolve(paramType); // Recursively resolve dependencies
         }
         
         dependencyGraph.put(type, dependencies);
@@ -139,6 +162,30 @@ public class DIContainer {
     }
 
     /**
+     * Resolves all instances that implement or extend the specified type.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> List<T> resolveAll(Class<T> type) {
+        List<T> result = new ArrayList<>();
+        
+        // Find all scanned classes that implement the interface or extend the class
+        for (Class<?> clazz : scannedClasses) {
+            if (type.isAssignableFrom(clazz) && !clazz.isInterface() && !java.lang.reflect.Modifier.isAbstract(clazz.getModifiers())) {
+                result.add((T) resolve(clazz));
+            }
+        }
+        
+        // Also check manually registered instances
+        for (Map.Entry<Class<?>, Object> entry : instances.entrySet()) {
+            if (type.isAssignableFrom(entry.getKey()) && !result.contains(entry.getValue())) {
+                result.add((T) entry.getValue());
+            }
+        }
+        
+        return result;
+    }
+
+    /**
      * Scans a package and automatically resolves and registers all annotated classes
      */
     public void scanAndRegister(ClassLoader classLoader, String basePackage) {
@@ -148,6 +195,8 @@ public class DIContainer {
         targetClasses.addAll(ClassScanner.findClassesWithAnnotation(classLoader, basePackage, Repository.class, logger, debugMode));
         targetClasses.addAll(ClassScanner.findClassesWithAnnotation(classLoader, basePackage, Module.class, logger, debugMode));
         targetClasses.addAll(ClassScanner.findClassesWithAnnotation(classLoader, basePackage, Command.class, logger, debugMode));
+
+        scannedClasses.addAll(targetClasses);
 
         for (Class<?> clazz : targetClasses) {
             // Force resolution and instantiation of scanned classes
