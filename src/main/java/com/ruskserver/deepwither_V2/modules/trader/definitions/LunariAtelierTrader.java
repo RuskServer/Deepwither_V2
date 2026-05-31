@@ -28,6 +28,10 @@ public class LunariAtelierTrader implements TraderDefinition {
         return Arrays.asList(
                 new TraderProduct("blue_crystal_sword", 4200.0, 0),
                 new TraderProduct("selene_rod", 3500.0, 0),
+                new TraderProduct("anchi_wisdom_helmet", 3000.0, 0),
+                new TraderProduct("void_star_chestplate", 3000.0, 0),
+                new TraderProduct("corpse_eat_leggings", 3000.0, 0),
+                new TraderProduct("deep_abyss_boots", 3000.0, 0),
                 new TraderProduct("selene_flow_rod", 6000.0, 320),
                 new TraderProduct("moonveil_hood", 8000.0, 500),
                 new TraderProduct("moonveil_tunic", 8000.0, 500),
