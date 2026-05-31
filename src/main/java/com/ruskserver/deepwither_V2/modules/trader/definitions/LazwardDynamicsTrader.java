@@ -19,7 +19,7 @@ public class LazwardDynamicsTrader implements TraderDefinition {
 
     @Override
     public String getDisplayName() {
-        return "§9§lLazwardDynamics";
+        return "§9LazwardDynamics";
     }
 
     @Override

@@ -19,7 +19,7 @@ public class RedlineConstructTrader implements TraderDefinition {
 
     @Override
     public String getDisplayName() {
-        return "§c§lRedlineConstruct";
+        return "§cRedlineConstruct";
     }
 
     @Override

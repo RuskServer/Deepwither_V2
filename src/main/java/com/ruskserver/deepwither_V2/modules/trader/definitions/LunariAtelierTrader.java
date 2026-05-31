@@ -20,7 +20,7 @@ public class LunariAtelierTrader implements TraderDefinition {
 
     @Override
     public String getDisplayName() {
-        return "§f§lLunarisAtelier";
+        return "§fLunarisAtelier";
     }
 
     @Override

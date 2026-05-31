@@ -19,7 +19,7 @@ public class TravelTrader implements TraderDefinition {
 
     @Override
     public String getDisplayName() {
-        return "§d§l旅商人";
+        return "§d旅商人";
     }
 
     @Override

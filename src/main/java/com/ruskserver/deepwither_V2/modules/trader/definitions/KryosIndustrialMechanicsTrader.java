@@ -19,7 +19,7 @@ public class KryosIndustrialMechanicsTrader implements TraderDefinition {
 
     @Override
     public String getDisplayName() {
-        return "§3§lKryosIndustrialMechanics";
+        return "§3KryosIndustrialMechanics";
     }
 
     @Override

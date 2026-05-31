@@ -150,10 +150,21 @@ public class LootChestManager implements Startable, Stoppable {
                 if (r < current) {
                     int amount = ThreadLocalRandom.current().nextInt(item.minAmount(), item.maxAmount() + 1);
                     if (amount > 0) {
-                        // ここでクローンして個数をセット。ItemManager経由で生成された元のItemStackには既にPDC等が含まれている。
                         org.bukkit.inventory.ItemStack is = item.itemStack().clone();
                         is.setAmount(amount);
-                        inv.addItem(is);
+                        
+                        // ランダムな空きスロットに配置
+                        List<Integer> emptySlots = new ArrayList<>();
+                        for (int s = 0; s < inv.getSize(); s++) {
+                            if (inv.getItem(s) == null || inv.getItem(s).getType() == Material.AIR) {
+                                emptySlots.add(s);
+                            }
+                        }
+                        
+                        if (!emptySlots.isEmpty()) {
+                            int randomSlot = emptySlots.get(random.nextInt(emptySlots.size()));
+                            inv.setItem(randomSlot, is);
+                        }
                     }
                     break;
                 }

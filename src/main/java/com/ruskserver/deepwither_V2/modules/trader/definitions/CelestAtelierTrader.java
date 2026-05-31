@@ -19,7 +19,7 @@ public class CelestAtelierTrader implements TraderDefinition {
 
     @Override
     public String getDisplayName() {
-        return "§b§lCelestAtelier";
+        return "§bCelestAtelier";
     }
 
     @Override

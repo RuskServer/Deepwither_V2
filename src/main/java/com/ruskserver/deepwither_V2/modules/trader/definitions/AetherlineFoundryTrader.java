@@ -19,7 +19,7 @@ public class AetherlineFoundryTrader implements TraderDefinition {
 
     @Override
     public String getDisplayName() {
-        return "§e§lAetherlineFoundry";
+        return "§eAetherlineFoundry";
     }
 
     @Override

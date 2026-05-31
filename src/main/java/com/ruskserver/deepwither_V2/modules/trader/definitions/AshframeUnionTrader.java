@@ -19,7 +19,7 @@ public class AshframeUnionTrader implements TraderDefinition {
 
     @Override
     public String getDisplayName() {
-        return "§8§l灰機連盟";
+        return "§8灰機連盟";
     }
 
     @Override
