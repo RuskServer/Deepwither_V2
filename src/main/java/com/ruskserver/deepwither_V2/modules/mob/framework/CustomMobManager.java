@@ -5,6 +5,8 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.party.Party;
+import com.ruskserver.deepwither_V2.modules.party.PartyManager;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -41,6 +43,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     private final JavaPlugin plugin;
     private final VirtualHealthManager healthManager;
     private final PlayerManager playerManager;
+    private final PartyManager partyManager;
     private final Logger log;
 
     /** mob-id → (EntityType, Supplierファクトリ) のレジストリ */
@@ -64,10 +67,12 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     private String nameFormat = "&b[Lv.{level}] &r{name} &c{hp}/{max_hp}♥";
 
     @Inject
-    public CustomMobManager(JavaPlugin plugin, VirtualHealthManager healthManager, PlayerManager playerManager) {
+    public CustomMobManager(JavaPlugin plugin, VirtualHealthManager healthManager, PlayerManager playerManager,
+                            PartyManager partyManager) {
         this.plugin = plugin;
         this.healthManager = healthManager;
         this.playerManager = playerManager;
+        this.partyManager = partyManager;
         this.log = plugin.getLogger();
         this.mobIdKey = new NamespacedKey(plugin, "custom_mob_id");
         loadLevelingConfig();
@@ -347,6 +352,8 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
         healthManager.cleanup(entityId);
     }
 
+    private static final double PARTY_BONUS_RATIO = 0.5;
+
     private void grantExpReward(CustomMob mob, UUID entityId) {
         int exp = mob.getExp();
         if (exp <= 0) return;
@@ -358,6 +365,24 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
         if (player == null || !player.isOnline()) return;
 
         playerManager.addExp(player, exp);
+        distributePartyExp(player, exp);
+    }
+
+    private void distributePartyExp(Player killer, int baseExp) {
+        Party party = partyManager.getParty(killer);
+        if (party == null) return;
+
+        int bonusExp = (int) (baseExp * PARTY_BONUS_RATIO);
+        if (bonusExp <= 0) return;
+
+        for (Player member : party.getOnlineMembers()) {
+            if (member.getUniqueId().equals(killer.getUniqueId())) continue;
+            if (!member.getWorld().equals(killer.getWorld())) continue;
+            playerManager.addExp(member, bonusExp);
+            member.sendMessage(
+                    net.kyori.adventure.text.Component.text("§a+ " + String.format("%,d", bonusExp) + " EXP (パーティーボーナス)")
+            );
+        }
     }
 
     @EventHandler
