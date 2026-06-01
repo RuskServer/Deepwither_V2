@@ -60,6 +60,11 @@ public class MoonlightReaperScythe implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 16200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "鎌";
     }

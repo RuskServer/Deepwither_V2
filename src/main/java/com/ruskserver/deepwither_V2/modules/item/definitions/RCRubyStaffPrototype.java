@@ -77,6 +77,11 @@ public class RCRubyStaffPrototype implements WandItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 9200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "杖";
     }

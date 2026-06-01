@@ -59,6 +59,11 @@ public class AshTacticalDagger implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "ダガー";
     }

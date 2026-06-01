@@ -59,6 +59,11 @@ public class ArklightBuster implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1500.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "大剣";
     }

@@ -59,6 +59,11 @@ public class GravemeltCleaver implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 4000.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "斧";
     }

@@ -59,6 +59,11 @@ public class GravemeltBreaker implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 12000.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "斧";
     }

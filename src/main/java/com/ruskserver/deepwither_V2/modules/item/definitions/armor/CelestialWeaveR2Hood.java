@@ -52,6 +52,11 @@ public class CelestialWeaveR2Hood implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public int getCustomModelData() {
         return 0;
     }

@@ -46,6 +46,11 @@ public class RCRubyAegisHood implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 8000.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "Redline Constructが開発した対魔・対物理両立型防具。エーテル合金製の内部骨格に、魔力遮断特性を持つルビー結晶を散布配置している。魔法を増幅せず、ただ拒絶するための装甲。";
     }

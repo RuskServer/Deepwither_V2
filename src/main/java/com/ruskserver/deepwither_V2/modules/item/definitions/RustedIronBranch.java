@@ -58,6 +58,11 @@ public class RustedIronBranch implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1600.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "マチェット";
     }

@@ -58,6 +58,11 @@ public class VoidStarSword implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 300.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "剣";
     }

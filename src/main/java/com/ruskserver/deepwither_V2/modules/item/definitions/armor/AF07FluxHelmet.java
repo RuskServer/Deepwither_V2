@@ -47,6 +47,11 @@ public class AF07FluxHelmet implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 3200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "Aetherline Foundryの最新鋭『Flux-Frame』シリーズの頭部ユニット。流体エーテルを充填した多層バイザーは、物理的な衝撃を即座に熱エネルギーへ変換・放散する。中装級の重さを持ちながら、内蔵された姿勢制御アシストにより装着者の首への負担をほぼゼロに抑えている。";
     }

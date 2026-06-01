@@ -47,6 +47,11 @@ public class MoonveilBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "魔導衝撃の反動を吸収し、軽やかな足取りを保つ革靴。月光粒子を模した装飾が、微弱な保護膜を生む。";
     }

@@ -60,6 +60,11 @@ public class CrystalSword implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "剣";
     }

@@ -71,6 +71,11 @@ public class FrostAmulet implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 3500.0;
+    }
+
+    @Override
     public void onDefend(DamageContext context) {
         // 固定ダメージや環境ダメージはブロックできない
         if (context.getType() == com.ruskserver.deepwither_V2.modules.combat.damage.DamageType.TRUE_DAMAGE ||

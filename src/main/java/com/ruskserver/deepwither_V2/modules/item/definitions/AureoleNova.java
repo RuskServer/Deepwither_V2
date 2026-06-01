@@ -79,6 +79,11 @@ public class AureoleNova implements WandItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 18000.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "杖";
     }

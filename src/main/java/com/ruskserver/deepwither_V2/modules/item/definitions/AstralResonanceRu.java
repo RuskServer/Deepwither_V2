@@ -77,6 +77,11 @@ public class AstralResonanceRu implements WandItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1800.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "杖";
     }

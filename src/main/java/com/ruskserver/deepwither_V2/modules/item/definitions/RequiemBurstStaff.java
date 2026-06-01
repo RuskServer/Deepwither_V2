@@ -77,6 +77,11 @@ public class RequiemBurstStaff implements WandItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 6200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "杖";
     }

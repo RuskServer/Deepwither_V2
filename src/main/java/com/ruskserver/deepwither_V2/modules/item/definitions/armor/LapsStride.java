@@ -46,6 +46,11 @@ public class LapsStride implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 650.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "ラプスシリーズの中でも特に\"長時間の歩行・巡察\"に特化したレギンス。膝関節部に低摩擦シェルを採用し、砂地や瓦礫地帯でも足運びの軽さを維持できる。";
     }

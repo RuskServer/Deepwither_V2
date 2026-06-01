@@ -57,6 +57,11 @@ public class MoonlightTreeBow implements BowItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 2500.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "弓";
     }

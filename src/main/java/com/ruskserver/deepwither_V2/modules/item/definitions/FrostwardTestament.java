@@ -59,6 +59,11 @@ public class FrostwardTestament implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 6000.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "大剣";
     }

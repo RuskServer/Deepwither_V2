@@ -58,6 +58,11 @@ public class AetherForgeBlade implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 250.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "剣";
     }

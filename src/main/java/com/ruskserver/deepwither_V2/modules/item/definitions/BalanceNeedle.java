@@ -58,6 +58,11 @@ public class BalanceNeedle implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 5000.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "槍";
     }

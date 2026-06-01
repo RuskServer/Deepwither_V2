@@ -72,6 +72,11 @@ public class EventHorizonBow implements BowItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 15000.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "弓";
     }

@@ -42,12 +42,29 @@ public class DiscordBridge extends ListenerAdapter {
 
             String raw = event.getMessage().getContentRaw();
             String botId = event.getJDA().getSelfUser().getId();
+            String botName = event.getJDA().getSelfUser().getName();
+            
             String mentionA = "<@" + botId + ">";
             String mentionB = "<@!" + botId + ">";
+            String mentionC = "@" + botName;
 
-            if (!raw.contains(mentionA) && !raw.contains(mentionB)) return;
+            boolean isMentioned = raw.contains(mentionA) || raw.contains(mentionB) || raw.contains(mentionC) 
+                    || event.getMessage().isMentioned(event.getJDA().getSelfUser());
 
-            String query = raw.replace(mentionA, "").replace(mentionB, "").trim();
+            if (!isMentioned) {
+                return;
+            }
+
+            if (!chatManager.isApiReady()) {
+                log.warning("[DiscordBridge] AI API is not ready. Skipping message from " + event.getAuthor().getName());
+                return;
+            }
+
+            String query = raw.replace(mentionA, "")
+                             .replace(mentionB, "")
+                             .replace(mentionC, "")
+                             .trim();
+            
             if (query.isEmpty()) return;
 
             String userId = event.getAuthor().getId();

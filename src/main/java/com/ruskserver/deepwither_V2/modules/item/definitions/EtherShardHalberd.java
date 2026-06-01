@@ -58,6 +58,11 @@ public class EtherShardHalberd implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 8200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "ハルバード";
     }

@@ -48,6 +48,11 @@ public class CelestialWeaveRBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "星糸と反魔導繊維を複合化した軽装魔導靴。射撃魔術中の踏み込み精度を高め、位置取りのズレを最小限に抑える。";
     }

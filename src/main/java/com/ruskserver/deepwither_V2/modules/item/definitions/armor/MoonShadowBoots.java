@@ -46,6 +46,11 @@ public class MoonShadowBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "足音を消すために靴底へエーテル結晶の粉末を練り込んだ特殊ブーツ。三層の不安定な足場においても、月光が地面を照らすかのように滑らかな移動を約束する。「月影の収穫鎌」を振るう際の遠心力を制御し、打撃へと変換する補助機能を備える。";
     }

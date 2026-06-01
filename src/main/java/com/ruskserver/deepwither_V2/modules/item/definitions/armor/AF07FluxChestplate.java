@@ -48,6 +48,11 @@ public class AF07FluxChestplate implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 4800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "重装甲の安心感と軽装の追従性を高次元で融合させたAetherline Foundry製の傑作胸甲。『流体装甲（Flux Plating）』が被弾の瞬間に硬化し、致命的な打撃を分散させる。背面の小型エーテル・バッテリーが動作を補助するため、厚い装甲に反して驚くほど身体が軽い。";
     }

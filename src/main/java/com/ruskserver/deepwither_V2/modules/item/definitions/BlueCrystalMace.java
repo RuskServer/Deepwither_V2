@@ -59,6 +59,11 @@ public class BlueCrystalMace implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 5800.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "メイス";
     }

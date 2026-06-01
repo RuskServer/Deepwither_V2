@@ -53,6 +53,11 @@ public class DebrisLongsword implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 20.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "剣";
     }

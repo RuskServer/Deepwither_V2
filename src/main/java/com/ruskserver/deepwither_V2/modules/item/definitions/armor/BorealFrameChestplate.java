@@ -48,6 +48,11 @@ public class BorealFrameChestplate implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "セルラーフレーム構造と低出力重力コアを備えた重量級胴体装甲。物理耐久に優れるが、魔法攻撃への耐性は皆無。";
     }

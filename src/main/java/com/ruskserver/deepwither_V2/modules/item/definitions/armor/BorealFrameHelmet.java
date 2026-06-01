@@ -47,6 +47,11 @@ public class BorealFrameHelmet implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1600.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "極寒環境作業用ヘルムを軍事転用したKryos Industrial Mechanics製重装頭部装甲。簡易重力パネルが衝撃を散らすが、魔法には脆弱。";
     }

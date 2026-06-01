@@ -47,6 +47,11 @@ public class AF07FluxBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 3200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "着地の反動をエーテル貯蔵へと回す、高効率なエネルギー循環機構を備えた軍用ブーツ。重量級の防御力を足元に提供しながらも、特殊な靴底の斥力フィールドにより、泥濘や岩場でも軽装のような足取りを可能にする。";
     }

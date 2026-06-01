@@ -47,6 +47,11 @@ public class CelestialWeaveRTunic implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "星糸導路布を高密度編成した、セレスティアル・ウィーブの中核装備。魔法射出時の初速と収束率を同時に高め、遠距離魔導戦で安定した火力を発揮する。腐灰由来の耐膜は再調整され、強力な属性魔法にも耐えうる防護性能を備える。";
     }

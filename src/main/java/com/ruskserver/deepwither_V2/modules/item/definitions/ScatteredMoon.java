@@ -58,6 +58,11 @@ public class ScatteredMoon implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 4800.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "大剣";
     }

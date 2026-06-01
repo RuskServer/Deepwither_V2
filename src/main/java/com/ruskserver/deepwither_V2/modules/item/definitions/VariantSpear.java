@@ -58,6 +58,11 @@ public class VariantSpear implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 2400.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "槍";
     }

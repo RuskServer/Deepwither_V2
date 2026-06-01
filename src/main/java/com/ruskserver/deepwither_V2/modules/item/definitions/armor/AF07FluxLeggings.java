@@ -48,6 +48,11 @@ public class AF07FluxLeggings implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 4800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "人工筋肉とエーテル伝導繊維を組み合わせた、ハイブリッド構造の脚部装甲。激しい戦闘機動においても装甲が干渉せず、装着者の反射神経をダイレクトに運動へと変換する。";
     }

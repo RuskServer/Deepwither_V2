@@ -48,6 +48,11 @@ public class CelestialWeaveLeggings implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "魔力流動時の脚部振動を軽減し、詠唱中の移動精度を維持する脚衣。星糸による導路補助と、グール由来の腐灰加工繊維により魔法抵抗を高めている。";
     }

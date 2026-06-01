@@ -59,6 +59,11 @@ public class HammerMk1 implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1800.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "ハンマー";
     }

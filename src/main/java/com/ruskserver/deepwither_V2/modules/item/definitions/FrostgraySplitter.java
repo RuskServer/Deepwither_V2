@@ -59,6 +59,11 @@ public class FrostgraySplitter implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 3500.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "大剣";
     }

@@ -46,6 +46,11 @@ public class LapsTread implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 650.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "ノア＝セクター外縁部や交易路で活動する輸送兵・傭兵向けに設計された、低コストかつ実用的なLazwardDynamics製軽量戦術ブーツ。防護性能よりも長距離機動性・安定性・耐摩耗性に重点を置いており、都市防衛軍の補給班や民間の軽装部隊にも広く流通している。";
     }

@@ -58,6 +58,11 @@ public class GravemindMachete implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 4200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "マチェット";
     }

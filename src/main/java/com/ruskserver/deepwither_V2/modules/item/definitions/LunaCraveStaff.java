@@ -78,6 +78,11 @@ public class LunaCraveStaff implements WandItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 4500.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "杖";
     }

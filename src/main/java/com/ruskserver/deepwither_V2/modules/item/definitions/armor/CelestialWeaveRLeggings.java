@@ -48,6 +48,11 @@ public class CelestialWeaveRLeggings implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "高出力詠唱時の身体ブレを抑制するため、星糸導路が脚部全体に配置されている。移動中でも魔法精度を維持できるため、機動射撃魔術との相性が極めて高い。";
     }

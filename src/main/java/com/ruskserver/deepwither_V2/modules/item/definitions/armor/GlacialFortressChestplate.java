@@ -48,6 +48,11 @@ public class GlacialFortressChestplate implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 8200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "「氷獄の要塞」の心臓部。数トンの衝撃にも耐えうる多層セルラー装甲を備える。物理的防護に特化した結果、魔法への干渉能力を完全に喪失しているが、その守護は絶対的。";
     }

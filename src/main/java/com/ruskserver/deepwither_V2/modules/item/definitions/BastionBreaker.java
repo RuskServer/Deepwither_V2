@@ -58,6 +58,11 @@ public class BastionBreaker implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 3200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "大剣";
     }

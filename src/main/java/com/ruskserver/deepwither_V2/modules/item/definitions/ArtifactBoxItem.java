@@ -58,6 +58,11 @@ public class ArtifactBoxItem implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 0.0;
+    }
+
+    @Override
     public void onInteract(PlayerInteractEvent event) {
         if (!event.getAction().isRightClick()) {
             return;

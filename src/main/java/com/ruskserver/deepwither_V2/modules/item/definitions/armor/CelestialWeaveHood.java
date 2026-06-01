@@ -47,6 +47,11 @@ public class CelestialWeaveHood implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "Celest Atelierが魔力射線の乱れを抑制するために開発した魔導フード。内部に組み込まれた\"星糸導路膜\"が魔法弾生成を補助し、出力をわずかに強化する。製造にはグール系個体から採取される異質繊維が用いられ、魔力耐性も向上している。";
     }

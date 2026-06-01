@@ -47,6 +47,11 @@ public class RCRubyAegisLeggings implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 8000.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "脚部への物理衝撃を分散するエーテル合金骨格。ルビー系遮断結晶が魔力干渉を抑制し、詠唱妨害や拘束魔法への耐性を高めている。";
     }

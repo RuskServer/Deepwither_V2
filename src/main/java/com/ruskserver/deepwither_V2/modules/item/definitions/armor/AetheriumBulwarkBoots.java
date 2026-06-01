@@ -48,6 +48,11 @@ public class AetheriumBulwarkBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 6200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "着地衝撃を吸収する\"エーテル・ダンパー\"が内蔵された重量型ブーツ。重さゆえに踏み込みの一撃は地面を震わせ、敵の体勢を崩すほどの威圧感を放つ。戦士の歩みを大地に刻む、冷たく硬質な装備。";
     }

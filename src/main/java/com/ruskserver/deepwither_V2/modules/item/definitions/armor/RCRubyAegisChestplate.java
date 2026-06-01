@@ -46,6 +46,11 @@ public class RCRubyAegisChestplate implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 8000.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "エーテル合金製の高密度装甲殻に、魔力共振を破壊するルビー結晶層を組み込んだ主装甲。生体反応を排した設計により、魔導攻撃を『意味のない振動』へと変換する。";
     }

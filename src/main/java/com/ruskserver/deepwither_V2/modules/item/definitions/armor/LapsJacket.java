@@ -46,6 +46,11 @@ public class LapsJacket implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 750.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "LazwardDynamicsが民間向け傭兵市場に投入した軽防護戦術ジャケット。装甲板は薄いが衝撃分散材により最低限の生存性を確保しつつ、長距離移動を妨げない柔軟性を維持している。";
     }

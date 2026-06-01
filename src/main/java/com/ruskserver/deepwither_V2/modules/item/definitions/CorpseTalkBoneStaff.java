@@ -70,6 +70,11 @@ public class CorpseTalkBoneStaff implements WandItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "杖";
     }

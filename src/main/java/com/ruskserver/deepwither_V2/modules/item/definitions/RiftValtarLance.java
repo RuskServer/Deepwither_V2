@@ -60,6 +60,11 @@ public class RiftValtarLance implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 4500.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "槍";
     }

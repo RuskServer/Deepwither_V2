@@ -47,6 +47,11 @@ public class BorealFrameLeggings implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 920.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "積雪地帯での重機作業脚部フレームを軍用に調整したモデル。高い踏ん張り性能を提供するが、魔法干渉には弱い。";
     }

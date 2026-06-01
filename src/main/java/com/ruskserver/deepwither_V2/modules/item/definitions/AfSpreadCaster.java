@@ -78,6 +78,11 @@ public class AfSpreadCaster implements WandItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 300.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "杖";
     }

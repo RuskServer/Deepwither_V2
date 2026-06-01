@@ -52,6 +52,11 @@ public class SilverBranchBow implements BowItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 50.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "弓";
     }

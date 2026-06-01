@@ -47,6 +47,11 @@ public class MoonveilTunic implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "月光銀糸を最も多く使用した中心装備。属性魔法の衝撃を拡散し、大幅な魔法耐性を得られる。";
     }

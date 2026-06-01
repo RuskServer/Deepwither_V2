@@ -57,6 +57,11 @@ public class RubyBow07 implements BowItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1600.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "弓";
     }

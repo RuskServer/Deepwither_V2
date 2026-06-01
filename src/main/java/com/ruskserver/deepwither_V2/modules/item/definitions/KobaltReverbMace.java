@@ -59,6 +59,11 @@ public class KobaltReverbMace implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 5200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "メイス";
     }

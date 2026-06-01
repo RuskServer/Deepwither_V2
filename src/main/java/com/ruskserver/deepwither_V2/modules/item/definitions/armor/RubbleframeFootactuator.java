@@ -46,6 +46,11 @@ public class RubbleframeFootactuator implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "旧文明の補助歩行ユニットを灰機連盟式に再構築した外骨格脚部末端。着地衝撃の吸収と踏破補助により、重量を感じさせない機動性を実現している。";
     }

@@ -47,6 +47,11 @@ public class GlacialFortressHelmet implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 6200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "Boreal Frameの設計を極限まで高密化した、KIM製重工業用外骨格の頭部装甲。内蔵された重力子増幅器が、飛来する物理弾を磁気嵐の如く散らす。";
     }

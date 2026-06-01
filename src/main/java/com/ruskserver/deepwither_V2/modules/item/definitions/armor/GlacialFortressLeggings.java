@@ -47,6 +47,11 @@ public class GlacialFortressLeggings implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 8200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "超重量装甲の自重を支えるべく強化された、産業用アクチュエーター搭載型脚部。圧倒的な質量が装着者を大地に固定し、いかなる衝撃にも揺るがぬ立ち姿を約束する。";
     }

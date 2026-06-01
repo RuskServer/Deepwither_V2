@@ -47,6 +47,11 @@ public class MoonveilLeggings implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "側面の魔導糸が移動中の魔法ダメージを緩和する。洞窟都市の魔導職に広く使われている軽装脚衣。";
     }

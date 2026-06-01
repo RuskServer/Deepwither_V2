@@ -71,6 +71,11 @@ public class IceWand implements WandItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1000.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "杖";
     }

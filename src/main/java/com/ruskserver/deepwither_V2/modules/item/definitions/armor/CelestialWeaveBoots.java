@@ -48,6 +48,11 @@ public class CelestialWeaveBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "魔導衝撃の反発を抑制し、射撃魔術中の立ち位置安定性を高める軽装靴。グール系素材の反魔導繊維が微弱な保護膜を生成し、魔法耐性を底上げする。";
     }

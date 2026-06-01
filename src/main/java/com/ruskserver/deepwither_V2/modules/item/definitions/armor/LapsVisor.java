@@ -46,6 +46,11 @@ public class LapsVisor implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 850.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "軽量化と視界確保を最優先して設計された、LazwardDynamics製の戦術用ヘルメット。ノア＝セクター外縁での長距離移動を伴う任務に適し、最小限の装甲ながら高い通気性と通信補助システムを備える。";
     }

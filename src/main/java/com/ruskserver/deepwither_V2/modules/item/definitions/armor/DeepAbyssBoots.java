@@ -45,6 +45,11 @@ public class DeepAbyssBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 300.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "LunarisAtelier製の安価なブーツ";
     }

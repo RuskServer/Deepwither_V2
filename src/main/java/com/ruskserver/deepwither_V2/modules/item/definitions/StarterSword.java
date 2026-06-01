@@ -58,6 +58,11 @@ public class StarterSword implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 10.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "剣";
     }

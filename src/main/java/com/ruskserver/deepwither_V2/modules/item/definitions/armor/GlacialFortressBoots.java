@@ -47,6 +47,11 @@ public class GlacialFortressBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 6200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "着地時の運動エネルギーを強制的に吸収・放散する超重量ブーツ。高所からの落下すらも「作業の一環」として処理する驚異的な耐衝撃性を誇る。";
     }

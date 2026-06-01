@@ -47,6 +47,11 @@ public class MoonveilHood implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 800.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "Lunaris Atelierが魔力干渉対策のために製造した軽量フード。月光銀糸が魔法への抵抗を高める。";
     }

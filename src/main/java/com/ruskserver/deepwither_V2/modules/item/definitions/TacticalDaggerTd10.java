@@ -59,6 +59,11 @@ public class TacticalDaggerTd10 implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 6200.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "ダガー";
     }

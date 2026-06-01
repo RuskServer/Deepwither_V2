@@ -58,6 +58,11 @@ public class AbyssalMoonJelly implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 6500.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "剣";
     }

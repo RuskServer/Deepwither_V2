@@ -48,6 +48,11 @@ public class AetheriumBulwarkChestplate implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 8200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "Aetherline Foundryの象徴ともいえる重装胸甲。「均衡炉心（Balance Core）」と呼ばれるエーテル共振板を内蔵し、あらゆる衝撃を鈍化させる。着用者は圧迫感すら感じるほどの重厚な防護に包まれ、戦場での生存率は桁外れに高い。";
     }

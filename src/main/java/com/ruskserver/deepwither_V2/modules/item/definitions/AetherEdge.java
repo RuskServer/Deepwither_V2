@@ -58,6 +58,11 @@ public class AetherEdge implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 180.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "剣";
     }

@@ -47,6 +47,11 @@ public class CelestialWeaveTunic implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "Celest Atelierが遠距離魔導戦に特化して設計した主装衣。\"星紡ぎ導路布\"が魔導射出の初速を安定化させ、魔法火力を底上げする。胸部にはグール系素材由来の腐蝕耐膜が組み込まれており、魔法属性耐性に優れる。";
     }

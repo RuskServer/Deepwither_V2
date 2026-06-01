@@ -47,6 +47,11 @@ public class BorealFrameBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 890.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "落下衝撃の軽減を重視した産業用ブーツを軍事利用したモデル。重量化により機動力は犠牲になっているが、頑強さは十分。";
     }

@@ -52,6 +52,11 @@ public class FieldlineBowRebuilt implements BowItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 720.0;
+    }
+
+    @Override
     public String getWeaponType() {
         return "弓";
     }

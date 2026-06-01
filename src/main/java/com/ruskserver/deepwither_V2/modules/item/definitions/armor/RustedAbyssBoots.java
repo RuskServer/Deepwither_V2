@@ -45,6 +45,11 @@ public class RustedAbyssBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 30.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return null;
     }

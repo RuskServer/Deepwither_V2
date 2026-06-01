@@ -52,6 +52,11 @@ public class MoonShadowHood implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 13200.0;
+    }
+
+    @Override
     public int getCustomModelData() {
         return 2;
     }

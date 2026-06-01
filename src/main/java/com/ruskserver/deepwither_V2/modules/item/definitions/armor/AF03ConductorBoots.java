@@ -48,6 +48,11 @@ public class AF03ConductorBoots implements CustomItem {
     }
 
     @Override
+    public double getSellPrice() {
+        return 1200.0;
+    }
+
+    @Override
     public String getFlavorText() {
         return "魔法と機械技術を併用したAetherline Foundryの代表的なバランス防具。「コンダクタ（導体）」の名の通り、装着者の身体運動・魔力流・外部エネルギーを安定的に\"導く\"ことを目的に設計されている。軽装の機動性と中装の防御力の中間を取り、どの陣営でも扱いやすい標準装備として評価が高い。";
     }
