@@ -41,6 +41,10 @@ public class DiscordBridge extends ListenerAdapter {
             if (event.getAuthor().isBot()) return;
 
             String raw = event.getMessage().getContentRaw();
+
+            if (raw.contains("@here") || raw.contains("@everyone")) {
+                return;
+            }
             String botId = event.getJDA().getSelfUser().getId();
             String botName = event.getJDA().getSelfUser().getName();
             
