@@ -1,7 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.party;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
-import com.ruskserver.deepwither_V2.modules.player.gui.MainMenuGui;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -29,12 +28,10 @@ public class PartyTagGUI implements Listener {
     private static final int[] TAG_SLOTS = {20, 21, 22, 23, 24, 29, 30, 31, 32, 33};
 
     private final PartyManager partyManager;
-    private final MainMenuGui mainMenuGui;
 
     @Inject
-    public PartyTagGUI(PartyManager partyManager, MainMenuGui mainMenuGui) {
+    public PartyTagGUI(PartyManager partyManager) {
         this.partyManager = partyManager;
-        this.mainMenuGui = mainMenuGui;
     }
 
     public void open(Player player) {
@@ -140,7 +137,6 @@ public class PartyTagGUI implements Listener {
 
         if (slot == 52) {
             player.closeInventory();
-            mainMenuGui.open(player);
             return;
         }
 
