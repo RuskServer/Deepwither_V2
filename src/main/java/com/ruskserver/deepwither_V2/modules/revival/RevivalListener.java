@@ -2,6 +2,8 @@ package com.ruskserver.deepwither_V2.modules.revival;
 
 import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
 import net.kyori.adventure.text.Component;
@@ -21,19 +23,37 @@ public class RevivalListener implements Listener {
     private final RevivalManager revivalManager;
     private final PlayerDataRepository repository;
     private final PlayerManager playerManager;
+    private final MobRegionConfig regionConfig;
+    private final VirtualHealthManager virtualHealthManager;
 
     @Inject
     public RevivalListener(RevivalManager revivalManager, PlayerDataRepository repository,
-                           PlayerManager playerManager) {
+                           PlayerManager playerManager, MobRegionConfig regionConfig,
+                           VirtualHealthManager virtualHealthManager) {
         this.revivalManager = revivalManager;
         this.repository = repository;
         this.playerManager = playerManager;
+        this.regionConfig = regionConfig;
+        this.virtualHealthManager = virtualHealthManager;
+    }
+
+    @EventHandler
+    public void onPlayerDown(PlayerDownEvent event) {
+        Player player = event.getPlayer();
+        if (regionConfig.isInSafeZone(player.getLocation())) {
+            event.setCancelled(true);
+            return;
+        }
+        revivalManager.enterDownState(player);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
+
+        virtualHealthManager.heal(player, virtualHealthManager.getMaxHealth(player));
+
         if (revivalManager.hasDeathPenalty(uuid)) {
             revivalManager.consumeDeathPenalty(uuid);
             applyDeathPenalty(player);

@@ -301,7 +301,6 @@ public class RevivalManager implements Startable, Stoppable, Listener {
         UUID uuid = player.getUniqueId();
 
         if (downedPlayers.containsKey(uuid)) {
-            pendingDeathPenalty.add(uuid);
             downedPlayers.remove(uuid);
             BossBar bar = bossBars.remove(uuid);
             if (bar != null) bar.removeAll();
