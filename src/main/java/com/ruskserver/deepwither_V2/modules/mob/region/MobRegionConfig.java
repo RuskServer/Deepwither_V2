@@ -7,6 +7,7 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -62,6 +63,13 @@ public class MobRegionConfig implements Startable {
     /** 読み込み済みのRegionリストを返します（読み取り専用）。 */
     public List<MobRegion> getRegions() {
         return Collections.unmodifiableList(regions);
+    }
+
+    /** 指定座標がセーフゾーン内かどうかを判定します。 */
+    public boolean isInSafeZone(Location location) {
+        return regions.stream()
+                .filter(MobRegion::isSafeZone)
+                .anyMatch(sz -> sz.contains(location));
     }
 
     // --- 内部処理 ---

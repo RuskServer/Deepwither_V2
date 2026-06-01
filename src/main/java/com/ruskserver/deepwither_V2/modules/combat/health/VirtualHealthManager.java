@@ -4,6 +4,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
+import com.ruskserver.deepwither_V2.modules.revival.PlayerDownEvent;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
@@ -82,19 +83,32 @@ public class VirtualHealthManager implements Listener {
     /**
      * エンティティに仮想ダメージを与えます。
      * HPが0になった場合は対象を死亡させます。
+     * プレイヤーの場合は {@link PlayerDownEvent} を発火し、ダウン状態に移行します。
      */
     public void damage(LivingEntity entity, double amount) {
         if (entity == null || entity.isDead() || amount <= 0) return;
 
         double current = getHealth(entity);
+        if (current <= 0) return;
+
         double maxHp = getMaxHealth(entity);
         double newHealth = current - amount;
 
         if (newHealth <= 0) {
             newHealth = 0;
             currentHealthMap.put(entity.getUniqueId(), newHealth);
-            // マイクラ側で対象を殺す
-            entity.setHealth(0);
+
+            if (entity instanceof Player player) {
+                PlayerDownEvent downEvent = new PlayerDownEvent(player);
+                Bukkit.getPluginManager().callEvent(downEvent);
+                if (downEvent.isCancelled()) {
+                    entity.setHealth(0);
+                } else {
+                    syncVisualHealth(entity, 0.5, maxHp);
+                }
+            } else {
+                entity.setHealth(0);
+            }
         } else {
             currentHealthMap.put(entity.getUniqueId(), newHealth);
             syncVisualHealth(entity, newHealth, maxHp);
