@@ -149,22 +149,23 @@ public class LootChestManager implements Startable, Stoppable {
                 current += item.weight();
                 if (r < current) {
                     int amount = ThreadLocalRandom.current().nextInt(item.minAmount(), item.maxAmount() + 1);
-                    if (amount > 0) {
-                        org.bukkit.inventory.ItemStack is = item.itemStack().clone();
-                        is.setAmount(amount);
-                        
-                        // ランダムな空きスロットに配置
-                        List<Integer> emptySlots = new ArrayList<>();
-                        for (int s = 0; s < inv.getSize(); s++) {
-                            if (inv.getItem(s) == null || inv.getItem(s).getType() == Material.AIR) {
-                                emptySlots.add(s);
-                            }
+                    if (amount <= 0) break;
+                    org.bukkit.inventory.ItemStack base = item.itemStack();
+                    if (base == null) break;
+                    org.bukkit.inventory.ItemStack is = base.clone();
+                    is.setAmount(amount);
+
+                    // ランダムな空きスロットに配置
+                    List<Integer> emptySlots = new ArrayList<>();
+                    for (int s = 0; s < inv.getSize(); s++) {
+                        if (inv.getItem(s) == null || inv.getItem(s).getType() == Material.AIR) {
+                            emptySlots.add(s);
                         }
-                        
-                        if (!emptySlots.isEmpty()) {
-                            int randomSlot = emptySlots.get(random.nextInt(emptySlots.size()));
-                            inv.setItem(randomSlot, is);
-                        }
+                    }
+
+                    if (!emptySlots.isEmpty()) {
+                        int randomSlot = emptySlots.get(random.nextInt(emptySlots.size()));
+                        inv.setItem(randomSlot, is);
                     }
                     break;
                 }
@@ -213,12 +214,26 @@ public class LootChestManager implements Startable, Stoppable {
         long seconds = totalSeconds % 60;
         String timeStr = String.format("%02d:%02d", minutes, seconds);
 
-        ArmorStand as = activeHolograms.computeIfAbsent(loc.getId(), k -> createHologram(loc.getLocation()));
+        ArmorStand as = activeHolograms.get(loc.getId());
+        if (as == null || as.isDead()) {
+            if (as != null) activeHolograms.remove(loc.getId());
+            as = createHologram(loc.getLocation());
+            activeHolograms.put(loc.getId(), as);
+        }
         as.customName(Component.text("§e§lリスポーンまで: §f" + timeStr));
     }
 
     private ArmorStand createHologram(Location loc) {
         Location spawnLoc = loc.clone().add(0.5, 0.5, 0.5);
+
+        // 既存のホログラムが残っている場合は削除（チャンク再読み込み対策）
+        for (Entity entity : spawnLoc.getWorld().getNearbyEntities(spawnLoc, 0.1, 0.1, 0.1)) {
+            if (entity instanceof ArmorStand as
+                    && as.getPersistentDataContainer().has(HOLOGRAM_KEY, PersistentDataType.BYTE)) {
+                as.remove();
+            }
+        }
+
         ArmorStand as = (ArmorStand) spawnLoc.getWorld().spawnEntity(spawnLoc, EntityType.ARMOR_STAND);
         as.setGravity(false);
         as.setCanPickupItems(false);

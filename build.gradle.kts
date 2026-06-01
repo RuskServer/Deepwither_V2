@@ -70,6 +70,7 @@ tasks {
         relocate("com.zaxxer.hikari", "com.ruskserver.deepwither_V2.libs.hikari")
         relocate("org.h2", "com.ruskserver.deepwither_V2.libs.h2")
         relocate("com.github.benmanes.caffeine", "com.ruskserver.deepwither_V2.libs.caffeine")
+        relocate("com.fasterxml.jackson", "com.ruskserver.deepwither_V2.libs.jackson")
     }
 
     runServer {

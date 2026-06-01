@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -127,10 +128,16 @@ public class PartyCommand implements BasicCommand {
         }
         if (party.isPublic()) {
             player.sendMessage(Component.text("§7状態: §a公開募集"));
-            String tagsStr = party.getTags().stream()
-                    .map(PartyTag::getDisplayName)
-                    .collect(Collectors.joining(" "));
-            player.sendMessage(Component.text("§7タグ: " + (tagsStr.isEmpty() ? "§7なし" : "§f" + tagsStr)));
+            if (party.getTags().isEmpty()) {
+                player.sendMessage(Component.text("タグ: ", NamedTextColor.GRAY)
+                        .append(Component.text("なし", NamedTextColor.GRAY)));
+            } else {
+                player.sendMessage(Component.text("タグ: ", NamedTextColor.GRAY)
+                        .append(Component.join(
+                                JoinConfiguration.separator(Component.text(", ", NamedTextColor.GRAY)),
+                                party.getTags().stream().map(PartyTag::getComponent).toList()
+                        )));
+            }
         } else {
             player.sendMessage(Component.text("§7状態: §e非公開"));
         }

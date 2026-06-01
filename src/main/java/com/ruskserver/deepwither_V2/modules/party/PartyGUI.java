@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.party;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
@@ -21,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
 
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class PartyGUI implements Listener {
@@ -196,10 +197,11 @@ public class PartyGUI implements Listener {
         lore.add(Component.text("§7メンバー: " + party.getSize() + "/" + party.getMaxMembers())
                 .decoration(TextDecoration.ITALIC, false));
         if (!party.getTags().isEmpty()) {
-            String tagsStr = party.getTags().stream()
-                    .map(PartyTag::getDisplayName)
-                    .collect(Collectors.joining(" "));
-            lore.add(Component.text("§7タグ: §f" + tagsStr).decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text("タグ: ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                    .append(Component.join(
+                            JoinConfiguration.separator(Component.text(", ", NamedTextColor.GRAY)),
+                            party.getTags().stream().map(PartyTag::getComponent).toList()
+                    )));
         }
         lore.add(Component.text(""));
         lore.add(Component.text("§aクリックして参加", NamedTextColor.GREEN)

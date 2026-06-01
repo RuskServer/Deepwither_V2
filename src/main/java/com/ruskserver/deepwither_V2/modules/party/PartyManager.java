@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.party.event.PartyDisbandEvent;
 import com.ruskserver.deepwither_V2.modules.party.event.PartyJoinEvent;
 import com.ruskserver.deepwither_V2.modules.party.event.PartyLeaveEvent;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
@@ -289,10 +290,11 @@ public class PartyManager implements Startable, Stoppable, Listener {
                     .decorate(TextDecoration.BOLD);
             Component desc = Component.text("リーダー: ", NamedTextColor.GRAY)
                     .append(Component.text(leader.getName(), NamedTextColor.WHITE));
-            String tagsStr = party.getTags().stream()
-                    .map(PartyTag::getDisplayName)
-                    .collect(Collectors.joining(" "));
-            Component tagsLine = Component.text("§7タグ: §f" + tagsStr);
+            Component tagsLine = Component.text("タグ: ", NamedTextColor.GRAY)
+                    .append(Component.join(
+                            JoinConfiguration.separator(Component.text(", ", NamedTextColor.GRAY)),
+                            party.getTags().stream().map(PartyTag::getComponent).toList()
+                    ));
             Component joinHint = Component.text("§7/party gui から参加できます", NamedTextColor.GRAY);
 
             Bukkit.getServer().sendMessage(separator);
