@@ -7,6 +7,7 @@ import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerAttributeProvider;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
+import com.ruskserver.deepwither_V2.modules.party.PartyGUI;
 import com.ruskserver.deepwither_V2.modules.skill.gui.SkillAssignmentGui;
 import com.ruskserver.deepwither_V2.modules.skilltree.gui.SkillTreeGui;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
@@ -43,12 +44,13 @@ public class MainMenuGui implements Listener {
     private final SkillTreeGui skillTreeGui;
     private final AttributeGui attributeGui;
     private final SkillAssignmentGui skillAssignmentGui;
+    private final PartyGUI partyGUI;
 
     @Inject
     public MainMenuGui(PlayerManager playerManager, PlayerDataRepository repository,
                        StatManager statManager, TraderService traderService,
                        SkillTreeGui skillTreeGui, AttributeGui attributeGui,
-                       SkillAssignmentGui skillAssignmentGui) {
+                       SkillAssignmentGui skillAssignmentGui, PartyGUI partyGUI) {
         this.playerManager = playerManager;
         this.repository = repository;
         this.statManager = statManager;
@@ -56,6 +58,7 @@ public class MainMenuGui implements Listener {
         this.skillTreeGui = skillTreeGui;
         this.attributeGui = attributeGui;
         this.skillAssignmentGui = skillAssignmentGui;
+        this.partyGUI = partyGUI;
     }
 
     public void open(Player player) {
@@ -100,6 +103,15 @@ public class MainMenuGui implements Listener {
                 Component.text("詳細に確認します。", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
                 Component.empty(),
                 Component.text("▶ クリックして表示", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
+        ));
+
+        gui.setItem(45, createNavButton(
+                Material.CHEST,
+                Component.text("パーティー管理", NamedTextColor.DARK_GREEN, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false),
+                Component.text("パーティーを作成・管理します。", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                Component.text("フレンドと一緒に冒険しましょう！", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                Component.empty(),
+                Component.text("▶ クリックして開く", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false)
         ));
 
         gui.setItem(49, createNavButton(
@@ -272,6 +284,10 @@ public class MainMenuGui implements Listener {
             case 43 -> {
                 player.closeInventory();
                 player.performCommand("status");
+            }
+            case 45 -> {
+                player.closeInventory();
+                partyGUI.open(player);
             }
             case 49 -> player.closeInventory();
         }
