@@ -9,6 +9,7 @@ import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
+import io.papermc.paper.datacomponent.item.ResolvableProfile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
@@ -19,9 +20,14 @@ import org.bukkit.Sound;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Pose;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -102,20 +108,37 @@ public class RevivalManager implements Startable, Stoppable, Listener {
             }
         }
 
-        DownedPlayerData data = new DownedPlayerData(uuid, System.currentTimeMillis(),
-                player.getLocation().clone(), expAtDeath);
-        downedPlayers.put(uuid, data);
-
-        player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, 7, false, false));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, PotionEffect.INFINITE_DURATION, 0, false, false));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, PotionEffect.INFINITE_DURATION, 0, false, false));
+        player.setInvisible(true);
         player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, PotionEffect.INFINITE_DURATION, 4, false, false));
         player.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, PotionEffect.INFINITE_DURATION, 4, false, false));
-        player.setGameMode(GameMode.ADVENTURE);
-        player.setWalkSpeed(0.0f);
-        player.setGlowing(true);
+        player.setGameMode(GameMode.SPECTATOR);
+        player.setGlowing(false);
         player.setCollidable(false);
-        player.setAllowFlight(false);
-        player.setFlying(false);
+
+        Location loc = player.getLocation();
+        Mannequin mannequin = (Mannequin) loc.getWorld().spawnEntity(loc, org.bukkit.entity.EntityType.MANNEQUIN);
+        mannequin.setPersistent(false);
+        mannequin.setRemoveWhenFarAway(false);
+        mannequin.setCustomNameVisible(false);
+        mannequin.setProfile(ResolvableProfile.resolvableProfile()
+                .name(player.getName())
+                .uuid(player.getUniqueId())
+                .build());
+        mannequin.setGlowing(true);
+        mannequin.setPose(Pose.SLEEPING, true);
+        if (player.getEquipment() != null) {
+            mannequin.getEquipment().setHelmet(player.getEquipment().getHelmet());
+            mannequin.getEquipment().setChestplate(player.getEquipment().getChestplate());
+            mannequin.getEquipment().setLeggings(player.getEquipment().getLeggings());
+            mannequin.getEquipment().setBoots(player.getEquipment().getBoots());
+            mannequin.getEquipment().setItemInMainHand(player.getEquipment().getItemInMainHand());
+            mannequin.getEquipment().setItemInOffHand(player.getEquipment().getItemInOffHand());
+        }
+
+        DownedPlayerData data = new DownedPlayerData(uuid, System.currentTimeMillis(),
+                player.getLocation().clone(), expAtDeath, mannequin.getUniqueId());
+        downedPlayers.put(uuid, data);
 
         BossBar bar = Bukkit.createBossBar(
                 "§c⚠ ダウン状態 §7- §e/suicide §7でリスポーン",
@@ -135,16 +158,21 @@ public class RevivalManager implements Startable, Stoppable, Listener {
 
     public void revive(Player target) {
         UUID targetId = target.getUniqueId();
-        if (!downedPlayers.containsKey(targetId)) return;
+        DownedPlayerData data = downedPlayers.get(targetId);
+        if (data == null) return;
 
+        target.removePotionEffect(PotionEffectType.INVISIBILITY);
+        target.setInvisible(false);
+        target.removePotionEffect(PotionEffectType.JUMP_BOOST);
         target.removePotionEffect(PotionEffectType.SLOWNESS);
         target.removePotionEffect(PotionEffectType.BLINDNESS);
         target.removePotionEffect(PotionEffectType.WEAKNESS);
         target.removePotionEffect(PotionEffectType.MINING_FATIGUE);
         target.setGameMode(GameMode.SURVIVAL);
         target.setWalkSpeed(0.2f);
-        target.setGlowing(false);
         target.setCollidable(true);
+
+        removeMannequin(data.mannequinId);
 
         double maxHp = healthManager.getMaxHealth(target);
         healthManager.heal(target, maxHp * REVIVE_HP_RATIO);
@@ -165,18 +193,23 @@ public class RevivalManager implements Startable, Stoppable, Listener {
 
     public void forceDeath(Player player) {
         UUID uuid = player.getUniqueId();
-        if (!downedPlayers.containsKey(uuid)) return;
+        DownedPlayerData data = downedPlayers.get(uuid);
+        if (data == null) return;
 
         pendingDeathPenalty.add(uuid);
 
+        player.removePotionEffect(PotionEffectType.INVISIBILITY);
+        player.setInvisible(false);
+        player.removePotionEffect(PotionEffectType.JUMP_BOOST);
         player.removePotionEffect(PotionEffectType.SLOWNESS);
         player.removePotionEffect(PotionEffectType.BLINDNESS);
         player.removePotionEffect(PotionEffectType.WEAKNESS);
         player.removePotionEffect(PotionEffectType.MINING_FATIGUE);
         player.setGameMode(GameMode.SURVIVAL);
         player.setWalkSpeed(0.2f);
-        player.setGlowing(false);
         player.setCollidable(true);
+
+        removeMannequin(data.mannequinId);
 
         downedPlayers.remove(uuid);
         BossBar bar = bossBars.remove(uuid);
@@ -219,6 +252,12 @@ public class RevivalManager implements Startable, Stoppable, Listener {
             Player target = Bukkit.getPlayer(data.playerId);
             if (target == null || !target.isOnline()) continue;
 
+            // スペクテイター: ダウン地点から5ブロック以内に制限
+            if (target.getLocation().distanceSquared(data.location) > 5 * 5) {
+                target.teleport(data.location);
+                target.sendMessage(Component.text("§c>> ダウン地点から離れすぎています！"));
+            }
+
             boolean hasActiveSession = sessions.containsKey(data.playerId);
             BossBar bar = bossBars.get(data.playerId);
             if (bar != null) {
@@ -255,6 +294,7 @@ public class RevivalManager implements Startable, Stoppable, Listener {
                 continue;
             }
 
+            boolean revivalJustStarted = !sessions.containsKey(data.playerId);
             RevivalSession session = sessions.computeIfAbsent(data.playerId, k -> {
                 RevivalSession s = new RevivalSession();
                 s.bossBar = Bukkit.createBossBar(
@@ -264,6 +304,11 @@ public class RevivalManager implements Startable, Stoppable, Listener {
                 s.bossBar.setVisible(true);
                 return s;
             });
+
+            if (revivalJustStarted) {
+                target.teleport(data.location);
+                target.sendMessage(Component.text("§e>> 蘇生が開始されました！"));
+            }
 
             session.reviverIds = reviverIds;
 
@@ -296,11 +341,28 @@ public class RevivalManager implements Startable, Stoppable, Listener {
     }
 
     @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        // 再起動後など、ダウンデータなしでスペクテイターのまま残った場合の復旧
+        if (player.getGameMode() == GameMode.SPECTATOR && !downedPlayers.containsKey(player.getUniqueId())) {
+            player.setGameMode(GameMode.SURVIVAL);
+            player.removePotionEffect(PotionEffectType.INVISIBILITY);
+            player.removePotionEffect(PotionEffectType.WEAKNESS);
+            player.removePotionEffect(PotionEffectType.MINING_FATIGUE);
+            player.setInvisible(false);
+            player.setWalkSpeed(0.2f);
+            player.setCollidable(true);
+        }
+    }
+
+    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
         if (downedPlayers.containsKey(uuid)) {
+            DownedPlayerData data = downedPlayers.get(uuid);
+            removeMannequin(data.mannequinId);
             downedPlayers.remove(uuid);
             BossBar bar = bossBars.remove(uuid);
             if (bar != null) bar.removeAll();
@@ -309,17 +371,40 @@ public class RevivalManager implements Startable, Stoppable, Listener {
         }
     }
 
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        if (!downedPlayers.containsKey(player.getUniqueId())) return;
+        if (player.getGameMode() == GameMode.SPECTATOR) return;
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (to == null) return;
+        if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
+            event.setTo(from.clone());
+        }
+    }
+
+    private void removeMannequin(UUID mannequinId) {
+        if (mannequinId == null) return;
+        Entity entity = Bukkit.getEntity(mannequinId);
+        if (entity != null) {
+            entity.remove();
+        }
+    }
+
     private static class DownedPlayerData {
         final UUID playerId;
         final long downedAt;
         final Location location;
         final int expAtDeath;
+        final UUID mannequinId;
 
-        DownedPlayerData(UUID playerId, long downedAt, Location location, int expAtDeath) {
+        DownedPlayerData(UUID playerId, long downedAt, Location location, int expAtDeath, UUID mannequinId) {
             this.playerId = playerId;
             this.downedAt = downedAt;
             this.location = location;
             this.expAtDeath = expAtDeath;
+            this.mannequinId = mannequinId;
         }
     }
 

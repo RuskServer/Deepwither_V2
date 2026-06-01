@@ -4,7 +4,6 @@ import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.container.DIContainer;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
-import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.trader.api.TraderDefinition;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
@@ -22,16 +21,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import org.bukkit.event.player.PlayerQuitEvent;
-
-/**
- * 売却専用 GUI。
- * プレイヤーのアイテムを買い取ります。
- */
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class SellInventoryGui implements Listener {
 
@@ -40,10 +29,9 @@ public class SellInventoryGui implements Listener {
     private final ItemPDCUtil pdcUtil;
     private final DIContainer container;
     private final NamespacedKey actionKey;
-    private final Map<UUID, String> openedTraders = new HashMap<>(); // プレイヤーUUID -> 元のNPC名
 
     @Inject
-    public SellInventoryGui(ItemManager itemManager, TraderService traderService, ItemPDCUtil pdcUtil, 
+    public SellInventoryGui(ItemManager itemManager, TraderService traderService, ItemPDCUtil pdcUtil,
                             DIContainer container, Deepwither_V2 plugin) {
         this.itemManager = itemManager;
         this.traderService = traderService;
@@ -52,9 +40,6 @@ public class SellInventoryGui implements Listener {
         this.actionKey = new NamespacedKey(plugin, "sell_gui_action");
     }
 
-    /**
-     * 売却 UI を開きます。
-     */
     public void openSellGui(Player player, String npcName) {
         TraderDefinition trader = traderService.getTrader(npcName);
         if (trader == null) {
@@ -62,9 +47,10 @@ public class SellInventoryGui implements Listener {
             return;
         }
 
-        Inventory gui = Bukkit.createInventory(null, 27, Component.text("アイテム売却 - " + trader.getDisplayName()));
+        SellInventoryHolder holder = new SellInventoryHolder(npcName);
+        Inventory gui = Bukkit.createInventory(holder, 27, Component.text("アイテム売却 - " + trader.getDisplayName()));
+        holder.setInventory(gui);
 
-        // 背景と装飾
         ItemStack background = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta bgMeta = background.getItemMeta();
         if (bgMeta != null) {
@@ -72,7 +58,6 @@ public class SellInventoryGui implements Listener {
             background.setItemMeta(bgMeta);
         }
 
-        // 上段・下段は背景、中段(9-17)は売却スロット
         for (int i = 0; i < 9; i++) {
             gui.setItem(i, background);
         }
@@ -80,7 +65,6 @@ public class SellInventoryGui implements Listener {
             gui.setItem(i, background);
         }
 
-        // 戻るボタン
         ItemStack backButton = new ItemStack(Material.ARROW);
         ItemMeta backMeta = backButton.getItemMeta();
         if (backMeta != null) {
@@ -90,7 +74,6 @@ public class SellInventoryGui implements Listener {
         }
         gui.setItem(18, backButton);
 
-        // 説明用アイテム
         ItemStack info = new ItemStack(Material.BOOK);
         ItemMeta infoMeta = info.getItemMeta();
         if (infoMeta != null) {
@@ -104,45 +87,33 @@ public class SellInventoryGui implements Listener {
         gui.setItem(4, info);
 
         player.openInventory(gui);
-        openedTraders.put(player.getUniqueId(), npcName);
-    }
-
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        openedTraders.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getView().getTopInventory().getHolder() instanceof SellInventoryHolder holder)) return;
         Player player = (Player) event.getWhoClicked();
-        if (!openedTraders.containsKey(player.getUniqueId())) return;
 
         Inventory topInventory = event.getView().getTopInventory();
         ItemStack clicked = event.getCurrentItem();
         int slot = event.getRawSlot();
 
-        // アクションボタンの判定
         if (clicked != null && clicked.hasItemMeta()) {
             String action = clicked.getItemMeta().getPersistentDataContainer().get(actionKey, PersistentDataType.STRING);
             if ("back".equals(action)) {
                 event.setCancelled(true);
-                String npcName = openedTraders.get(player.getUniqueId());
                 TraderInventoryGui traderGui = container.resolve(TraderInventoryGui.class);
-                traderGui.openTraderGui(player, npcName);
+                traderGui.openTraderGui(player, holder.getNpcName());
                 return;
             }
         }
 
-        // トップインベントリ内の装飾品などのクリックをキャンセル
         if (slot >= 0 && slot < 27) {
-            // 売却スロット(9-17)以外はキャンセル
             if (slot < 9 || slot > 17) {
                 event.setCancelled(true);
             }
         }
 
-        // 売却処理のトリガー
-        // 1. 下部インベントリからのシフトクリック（スタック単位で売却）
         if (event.isShiftClick() && slot >= 27) {
             if (clicked != null && clicked.getType() != Material.AIR) {
                 String itemId = pdcUtil.getItemId(clicked);
@@ -157,7 +128,6 @@ public class SellInventoryGui implements Listener {
             return;
         }
 
-        // 2. 中央スロットへのドロップ（クリックして置く動作）
         Bukkit.getScheduler().runTask(Deepwither_V2.getPlugin(Deepwither_V2.class), () -> {
             for (int i = 9; i <= 17; i++) {
                 ItemStack item = topInventory.getItem(i);
@@ -172,9 +142,5 @@ public class SellInventoryGui implements Listener {
                 }
             }
         });
-    }
-
-    public void closeSellGui(Player player) {
-        openedTraders.remove(player.getUniqueId());
     }
 }

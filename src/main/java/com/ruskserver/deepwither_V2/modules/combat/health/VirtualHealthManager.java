@@ -29,6 +29,7 @@ public class VirtualHealthManager implements Listener {
     private static final double DEFAULT_PLAYER_MAX_HEALTH = 20.0;
 
     private final Map<UUID, Double> currentHealthMap = new ConcurrentHashMap<>();
+    private final Map<UUID, Double> customMaxHealthMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
     private final DamageFeedbackService damageFeedbackService;
 
@@ -53,9 +54,26 @@ public class VirtualHealthManager implements Listener {
     }
 
     /**
+     * 最大仮想HPを登録します（CustomMobManagerなどから呼ばれる）。
+     * StatManagerで管理されないエンティティ（モブなど）に対して使用します。
+     */
+    public void setMaxHealth(LivingEntity entity, double maxHp) {
+        UUID id = entity.getUniqueId();
+        customMaxHealthMap.put(id, maxHp);
+        currentHealthMap.putIfAbsent(id, maxHp);
+    }
+
+    /**
      * エンティティの最大仮想HPを取得します。
      */
     public double getMaxHealth(LivingEntity entity) {
+        UUID id = entity.getUniqueId();
+
+        // カスタム登録された最大HPがあればそれを返す（モブ向け）
+        Double customMax = customMaxHealthMap.get(id);
+        if (customMax != null) return customMax;
+
+        // プレイヤーはStatManager経由
         double maxHp = statManager.getTotalStat(entity, StatType.HEALTH);
         if (maxHp <= 0 && entity instanceof Player) {
             return DEFAULT_PLAYER_MAX_HEALTH;
@@ -122,6 +140,7 @@ public class VirtualHealthManager implements Listener {
      */
     public void cleanup(UUID entityId) {
         currentHealthMap.remove(entityId);
+        customMaxHealthMap.remove(entityId);
     }
 
     @EventHandler

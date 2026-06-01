@@ -280,14 +280,15 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     }
 
     void setMaxHealth(CustomMob mob, double maxHp) {
-        // StatManager経由ではなく直接バニラHP属性を設定してVirtualHealthManagerと同期させる
+        // バニラのHP属性はsyncVisualHealthでの割合計算のために必要
         org.bukkit.attribute.AttributeInstance attr =
                 mob.entity.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
         if (attr != null) {
             attr.setBaseValue(maxHp);
         }
         mob.entity.setHealth(maxHp);
-        // VirtualHealthManagerのマップにも最大値で初期化（次のgetHealthで自動設定される）
+        // VirtualHealthManagerに最大HPを登録（これによりgetMaxHealth/getHealthが正しい値を返す）
+        healthManager.setMaxHealth(mob.entity, maxHp);
     }
 
     // --- アイテムキャッシュ ---

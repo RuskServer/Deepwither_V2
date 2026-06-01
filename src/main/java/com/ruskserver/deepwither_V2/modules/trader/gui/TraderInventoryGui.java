@@ -24,12 +24,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import org.bukkit.event.player.PlayerQuitEvent;
 
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class TraderInventoryGui implements Listener {
@@ -43,7 +38,6 @@ public class TraderInventoryGui implements Listener {
     private final NamespacedKey buyPriceKey;
     private final NamespacedKey requiredRepKey;
     private final NamespacedKey actionKey;
-    private final Map<UUID, String> openedTraders = new HashMap<>();
 
     @Inject
     public TraderInventoryGui(ItemManager itemManager, TraderService traderService, TraderReputationService reputationService, DailyTaskService dailyTaskService, SellInventoryGui sellGui, Deepwither_V2 plugin) {
@@ -65,11 +59,9 @@ public class TraderInventoryGui implements Listener {
             return;
         }
 
-        openedTraders.put(player.getUniqueId(), npcName);
-
         List<TraderProduct> products = trader.getProducts();
 
-        TraderInventoryHolder holder = new TraderInventoryHolder();
+        TraderInventoryHolder holder = new TraderInventoryHolder(npcName);
         Inventory gui = Bukkit.createInventory(holder, 27, Component.text(trader.getDisplayName()));
         holder.setInventory(gui);
 
@@ -145,16 +137,13 @@ public class TraderInventoryGui implements Listener {
         boolean repOk = currentRep >= product.getRequiredReputation();
         boolean moneyOk = balance >= product.getBuyPrice();
 
-        // 既存のLoreを取得、なければ新規作成
         List<Component> lore = meta.lore();
         if (lore == null) {
             lore = new ArrayList<>();
         } else {
-            // Immutableなリストの場合があるため、編集可能なリストに変換
             lore = new ArrayList<>(lore);
         }
-        
-        // トレーダー情報を既存Loreの最後に追加
+
         lore.add(Component.text(""));
         lore.add(Component.text("§7価格: §6" + traderService.formatMoney(product.getBuyPrice())));
         if (product.getRequiredReputation() > 0) {
@@ -163,21 +152,16 @@ public class TraderInventoryGui implements Listener {
         lore.add(Component.text("§7所持金: " + (moneyOk ? "§a" : "§c") + traderService.formatMoney(balance)));
         lore.add(Component.text(""));
         lore.add(Component.text(repOk && moneyOk ? "§a▶ クリックで購入" : "§c✕ 条件を満たしていません"));
-        
+
         meta.lore(lore);
         display.setItemMeta(meta);
         return display;
     }
 
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        openedTraders.remove(event.getPlayer().getUniqueId());
-    }
-
-    @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getView().getTopInventory().getHolder() instanceof TraderInventoryHolder holder)) return;
         Player player = (Player) event.getWhoClicked();
-        if (!openedTraders.containsKey(player.getUniqueId())) return;
 
         event.setCancelled(true);
         ItemStack clicked = event.getCurrentItem();
@@ -187,12 +171,12 @@ public class TraderInventoryGui implements Listener {
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         String action = pdc.get(actionKey, PersistentDataType.STRING);
+        String npcName = holder.getNpcName();
         if ("open_sell".equals(action)) {
-            sellGui.openSellGui(player, openedTraders.get(player.getUniqueId()));
+            sellGui.openSellGui(player, npcName);
             return;
         }
         if ("accept_task".equals(action)) {
-            String npcName = openedTraders.get(player.getUniqueId());
             if (dailyTaskService.acceptTask(player, npcName, "ghoul_mob", 5, 10)) openTraderGui(player, npcName);
             return;
         }
@@ -202,15 +186,10 @@ public class TraderInventoryGui implements Listener {
         Integer requiredRep = pdc.get(requiredRepKey, PersistentDataType.INTEGER);
         if (itemId == null || buyPrice == null) return;
 
-        String npcName = openedTraders.get(player.getUniqueId());
         TraderProduct product = new TraderProduct(itemId, buyPrice, requiredRep != null ? requiredRep : 0);
         if (traderService.purchaseItem(player, npcName, product)) {
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.4f);
             openTraderGui(player, npcName);
         }
-    }
-
-    public void closeTrader(Player player) {
-        openedTraders.remove(player.getUniqueId());
     }
 }

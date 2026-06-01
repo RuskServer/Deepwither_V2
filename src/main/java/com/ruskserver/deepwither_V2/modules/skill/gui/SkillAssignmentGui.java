@@ -1,5 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.skill.gui;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
@@ -43,6 +44,7 @@ public class SkillAssignmentGui implements Listener {
     private static final int BACK_SLOT = 40;
     private static final int MAX_EQUIPPED_SKILLS = 4;
 
+    private final Deepwither_V2 plugin;
     private final PlayerDataRepository repository;
     private final SkillRegistry registry;
     private final ManaManager manaManager;
@@ -53,12 +55,14 @@ public class SkillAssignmentGui implements Listener {
 
     @Inject
     public SkillAssignmentGui(
+            Deepwither_V2 plugin,
             PlayerDataRepository repository,
             SkillRegistry registry,
             ManaManager manaManager,
             SkillCooldownService cooldownService,
             SkillTreeService skillTreeService
     ) {
+        this.plugin = plugin;
         this.repository = repository;
         this.registry = registry;
         this.manaManager = manaManager;
@@ -225,8 +229,13 @@ public class SkillAssignmentGui implements Listener {
         if (!(event.getPlayer() instanceof Player player)) return;
         if (!event.getView().title().equals(GUI_TITLE)) return;
         UUID uuid = player.getUniqueId();
-        selectedSkillMap.remove(uuid);
-        playerPages.remove(uuid);
+        // 1tick遅延でクリア: スキル選択やページ移動によるGUI再構築で発生するcloseを誤検知しない
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.getOpenInventory().title().equals(GUI_TITLE)) {
+                selectedSkillMap.remove(uuid);
+                playerPages.remove(uuid);
+            }
+        });
     }
 
     @EventHandler
