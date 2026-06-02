@@ -11,12 +11,15 @@ import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
 import io.papermc.paper.datacomponent.item.ItemArmorTrim;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -198,7 +201,15 @@ public class ItemManager implements Startable {
             EquipmentSlot slot = getSlotFromMaterial(customItem.getMaterial());
             if (slot != null) {
                 NamespacedKey customArmorId = NamespacedKey.minecraft(customArmorAssetId);
-                item.setData(DataComponentTypes.EQUIPPABLE, Equippable.equippable(slot).assetId(customArmorId).build());
+                Equippable baseEquippable = item.getData(DataComponentTypes.EQUIPPABLE);
+                if (baseEquippable == null) {
+                    baseEquippable = Equippable.equippable(slot).build();
+                }
+                Equippable equippable = baseEquippable
+                        .toBuilder()
+                        .assetId(customArmorId)
+                        .build();
+                item.setData(DataComponentTypes.EQUIPPABLE, equippable);
             } else {
                 Bukkit.getLogger().warning("[ItemManager] Custom armor asset id is set, but material "
                         + customItem.getMaterial().name() + " is not recognized as armor: " + customItem.getId());
@@ -211,8 +222,10 @@ public class ItemManager implements Startable {
             NamespacedKey trimKey = NamespacedKey.minecraft(armorTrimPattern);
             NamespacedKey materialKey = NamespacedKey.minecraft(armorTrimMaterial);
 
-            TrimPattern trimPattern = Bukkit.getRegistry(TrimPattern.class).get(trimKey);
-            TrimMaterial trimMaterial = Bukkit.getRegistry(TrimMaterial.class).get(materialKey);
+            Registry<TrimPattern> trimPatternRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.TRIM_PATTERN);
+            Registry<TrimMaterial> trimMaterialRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.TRIM_MATERIAL);
+            TrimPattern trimPattern = trimPatternRegistry.get(trimKey);
+            TrimMaterial trimMaterial = trimMaterialRegistry.get(materialKey);
 
             if (trimPattern != null && trimMaterial != null) {
                 ArmorTrim armorTrim = new ArmorTrim(trimMaterial, trimPattern);
