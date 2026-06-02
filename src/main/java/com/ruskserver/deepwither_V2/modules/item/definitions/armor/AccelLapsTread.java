@@ -51,6 +51,16 @@ public class AccelLapsTread implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "eye";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "diamond";
+    }
+
+    @Override
     public String getFlavorText() {
         return "ノア＝セクターの特殊工作部隊向けに限定生産された、高機動戦闘用フットウェア。足裏のエネルギー噴出機構により、空中でのわずかな軌道修正すら可能にする。";
     }

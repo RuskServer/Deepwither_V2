@@ -8,12 +8,25 @@ import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierManager;
 import com.ruskserver.deepwither_V2.core.di.container.DIContainer;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.Equippable;
+import io.papermc.paper.datacomponent.item.ItemArmorTrim;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.trim.ArmorTrim;
+import org.bukkit.inventory.meta.trim.TrimMaterial;
+import org.bukkit.inventory.meta.trim.TrimPattern;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -179,6 +192,58 @@ public class ItemManager implements Startable {
         }
 
         item.setItemMeta(meta);
+        applyArmorAppearance(item, customItem);
+    }
+
+    private void applyArmorAppearance(ItemStack item, CustomItem customItem) {
+        String customArmorAssetId = customItem.getCustomArmorAssetId();
+        if (customArmorAssetId != null) {
+            EquipmentSlot slot = getSlotFromMaterial(customItem.getMaterial());
+            if (slot != null) {
+                NamespacedKey customArmorId = NamespacedKey.minecraft(customArmorAssetId);
+                Equippable baseEquippable = item.getData(DataComponentTypes.EQUIPPABLE);
+                if (baseEquippable == null) {
+                    baseEquippable = Equippable.equippable(slot).build();
+                }
+                Equippable equippable = baseEquippable
+                        .toBuilder()
+                        .assetId(customArmorId)
+                        .build();
+                item.setData(DataComponentTypes.EQUIPPABLE, equippable);
+            } else {
+                Bukkit.getLogger().warning("[ItemManager] Custom armor asset id is set, but material "
+                        + customItem.getMaterial().name() + " is not recognized as armor: " + customItem.getId());
+            }
+        }
+
+        String armorTrimPattern = customItem.getArmorTrimPattern();
+        String armorTrimMaterial = customItem.getArmorTrimMaterial();
+        if (armorTrimPattern != null && armorTrimMaterial != null) {
+            NamespacedKey trimKey = NamespacedKey.minecraft(armorTrimPattern);
+            NamespacedKey materialKey = NamespacedKey.minecraft(armorTrimMaterial);
+
+            Registry<TrimPattern> trimPatternRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.TRIM_PATTERN);
+            Registry<TrimMaterial> trimMaterialRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.TRIM_MATERIAL);
+            TrimPattern trimPattern = trimPatternRegistry.get(trimKey);
+            TrimMaterial trimMaterial = trimMaterialRegistry.get(materialKey);
+
+            if (trimPattern != null && trimMaterial != null) {
+                ArmorTrim armorTrim = new ArmorTrim(trimMaterial, trimPattern);
+                item.setData(DataComponentTypes.TRIM, ItemArmorTrim.itemArmorTrim(armorTrim));
+            } else {
+                Bukkit.getLogger().warning("[ItemManager] Failed to resolve armor trim for item "
+                        + customItem.getId() + ": pattern=" + armorTrimPattern + ", material=" + armorTrimMaterial);
+            }
+        }
+    }
+
+    private EquipmentSlot getSlotFromMaterial(Material material) {
+        String name = material.name();
+        if (name.endsWith("_HELMET")) return EquipmentSlot.HEAD;
+        if (name.endsWith("_CHESTPLATE")) return EquipmentSlot.CHEST;
+        if (name.endsWith("_LEGGINGS")) return EquipmentSlot.LEGS;
+        if (name.endsWith("_BOOTS")) return EquipmentSlot.FEET;
+        return null;
     }
 
     /**

@@ -52,6 +52,16 @@ public class AccelLapsVisor implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "sentry";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "diamond";
+    }
+
+    @Override
     public String getFlavorText() {
         return "Lazward Dynamicsの高速戦闘用OSを搭載したラプスシリーズの最新鋭モデル。多機能センサーが敵の予備動作をミリ秒単位で解析し、装着者の回避行動を強力にバックアップする。";
     }

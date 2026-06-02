@@ -53,6 +53,11 @@ public class AetheriumBulwarkLeggings implements CustomItem {
     }
 
     @Override
+    public String getCustomArmorAssetId() {
+        return "aetherium";
+    }
+
+    @Override
     public String getFlavorText() {
         return "Aetherline Foundryが誇る高密度エーテル鋼を脚部に最適化した重量装甲。関節部の\"減衝リング\"により、重装の割には可動性を犠牲にしすぎない。長距離の行軍には不向きだが、戦闘中の耐久能力は同クラスの装備を凌駕する。";
     }

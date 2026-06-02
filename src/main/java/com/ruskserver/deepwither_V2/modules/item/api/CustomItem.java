@@ -66,6 +66,18 @@ public interface CustomItem {
         return 0;
     }
 
+    default String getCustomArmorAssetId() {
+        return null;
+    }
+
+    default String getArmorTrimPattern() {
+        return null;
+    }
+
+    default String getArmorTrimMaterial() {
+        return null;
+    }
+
     /**
      * 手に持って右クリック・左クリック等をした際に呼ばれるフックメソッド。
      */

@@ -52,6 +52,16 @@ public class AccelLapsJacket implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "shaper";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "diamond";
+    }
+
+    @Override
     public String getFlavorText() {
         return "旧来のラプス・ジャケットをネザライト合金で強化しつつ、極限まで肉抜きを施した超軽量装甲。胸部の慣性制御ユニットが急制動による身体への負荷を無効化し、人外の身のこなしを可能にする。";
     }

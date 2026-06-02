@@ -47,6 +47,11 @@ public class CelestialWeaveR2Hood implements CustomItem {
     }
 
     @Override
+    public String getCustomArmorAssetId() {
+        return "armor3";
+    }
+
+    @Override
     public String getFlavorText() {
         return "Celest Atelierが星紡ぎ魔導装備を再設計した高純度モデル。星糸導路膜は多層化され、魔法弾生成時のエネルギー散逸を極限まで抑制する。グール由来素材は精製工程を増やすことで腐蝕性を排除し、純粋な耐魔性能へと昇華された。";
     }
