@@ -52,6 +52,11 @@ public class MoonShadowLower implements CustomItem {
     }
 
     @Override
+    public String getCustomArmorAssetId() {
+        return "armor3";
+    }
+
+    @Override
     public String getFlavorText() {
         return "「月影の隠密装束」の脚部ユニット。上衣からの魔導信号を受け取り、踏み込みの瞬間に位相をわずかにずらすことで、慣性を無視した移動を可能にする。単体では魔導回路が閉じておらず、マナの漏出を引き起こすため、必ず上衣とセットで着用することが推奨されている。";
     }

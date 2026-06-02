@@ -51,6 +51,16 @@ public class AccelLapsStride implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "wayfinder";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "diamond";
+    }
+
+    @Override
     public String getFlavorText() {
         return "膝関節に最新の低摩擦磁気浮上ギミックを採用した脚部装甲。瓦礫や砂地といった悪路を平地と認識させるほどの踏破能力と、凄まじい瞬発力を装着者に与える。";
     }

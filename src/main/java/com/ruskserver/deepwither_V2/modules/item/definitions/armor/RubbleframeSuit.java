@@ -51,6 +51,16 @@ public class RubbleframeSuit implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "bolt";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "netherite";
+    }
+
+    @Override
     public String getFlavorText() {
         return "灰機連盟が旧文明外骨格の残骸を組み直して製造した簡易外骨格スーツ。外部アクチュエーターが打撃動作を補助し、装着者の攻撃力を強化する。魔法的耐性は皆無だが、重量補助機構により機動力ペナルティはない。";
     }

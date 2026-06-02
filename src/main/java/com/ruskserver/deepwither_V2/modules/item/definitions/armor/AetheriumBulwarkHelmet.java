@@ -53,6 +53,11 @@ public class AetheriumBulwarkHelmet implements CustomItem {
     }
 
     @Override
+    public String getCustomArmorAssetId() {
+        return "aetherium";
+    }
+
+    @Override
     public String getFlavorText() {
         return "Aetherline Foundryが開発した重防御型アーマーシリーズの頭部装甲。超高圧鍛造エーテル鋼を多層構造で積層し、物理・魔法の波動を均一に散らす。その重さは熟練者でなければ首を痛めるほどだが、対価として揺るぎない守護をもたらす。";
     }

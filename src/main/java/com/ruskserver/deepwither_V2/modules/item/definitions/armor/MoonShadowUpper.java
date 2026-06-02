@@ -52,6 +52,11 @@ public class MoonShadowUpper implements CustomItem {
     }
 
     @Override
+    public String getCustomArmorAssetId() {
+        return "armor3";
+    }
+
+    @Override
     public String getFlavorText() {
         return "Lunaris Atelier製の軽量魔導防具。漆黒の月光布で仕立てられている。背面から両腕にかけて微細なエーテル伝導路が刺繍されており、下衣と連結することで、装着者の動作に合わせて魔力を四肢へ供給する。※この装備は同シリーズのレギンスと一対で運用しなければ機能しない。";
     }

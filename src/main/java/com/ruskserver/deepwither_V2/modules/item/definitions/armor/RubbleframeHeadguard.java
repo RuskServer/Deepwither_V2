@@ -51,6 +51,16 @@ public class RubbleframeHeadguard implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "bolt";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "netherite";
+    }
+
+    @Override
     public String getFlavorText() {
         return "旧文明装甲片を再加工した簡易外骨格頭部ユニット。視界補助は最小限だが、衝撃吸収材と粗雑な補強により物理的には頑丈。";
     }

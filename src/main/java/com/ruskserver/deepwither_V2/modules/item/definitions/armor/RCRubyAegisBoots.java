@@ -51,6 +51,11 @@ public class RCRubyAegisBoots implements CustomItem {
     }
 
     @Override
+    public String getCustomArmorAssetId() {
+        return "armor2";
+    }
+
+    @Override
     public String getFlavorText() {
         return "地面反力と魔力残滓を同時に遮断する特殊靴底。移動性能を犠牲にする代わりに、安定した防御と耐魔性能を得られる設計となっている。";
     }

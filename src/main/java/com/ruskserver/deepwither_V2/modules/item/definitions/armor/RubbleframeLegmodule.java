@@ -51,6 +51,16 @@ public class RubbleframeLegmodule implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "eye";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "netherite";
+    }
+
+    @Override
     public String getFlavorText() {
         return "旧文明残骸フレームの脚部骨格を灰機連盟式に組み替えた外骨格脚部。踏み込み動作を補助する油圧シリンダーにより、近接攻撃の威力がわずかに上昇する。魔法攻撃にはほとんど無防備。";
     }
