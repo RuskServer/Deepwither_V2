@@ -73,6 +73,7 @@ public class GuiService implements Startable, Stoppable {
         GuiView view = views.get(guiId);
         if (view == null) {
             if (legacyGuiBridge.open(player, guiId)) {
+                clear(player.getUniqueId());
                 return;
             }
             logger.warning("[GuiService] Unknown GUI id: " + guiId);
@@ -126,6 +127,22 @@ public class GuiService implements Startable, Stoppable {
     public void close(Player player) {
         clear(player.getUniqueId());
         player.closeInventory();
+    }
+
+    void openLater(Player player, String guiId, GuiContext context) {
+        Bukkit.getScheduler().runTask(plugin, () -> open(player, guiId, context));
+    }
+
+    void backLater(Player player) {
+        Bukkit.getScheduler().runTask(plugin, () -> back(player));
+    }
+
+    void closeLater(Player player) {
+        Bukkit.getScheduler().runTask(plugin, () -> close(player));
+    }
+
+    void refreshLater(Player player) {
+        Bukkit.getScheduler().runTask(plugin, () -> refresh(player));
     }
 
     void handleClick(GuiInventoryHolder holder, org.bukkit.event.inventory.InventoryClickEvent event) {

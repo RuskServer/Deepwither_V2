@@ -35,7 +35,10 @@ public final class GuiContext {
 
     public boolean getBoolean(String key, boolean defaultValue) {
         String value = values.get(key);
-        return value == null ? defaultValue : Boolean.parseBoolean(value);
+        if (value == null) return defaultValue;
+        if ("true".equalsIgnoreCase(value)) return true;
+        if ("false".equalsIgnoreCase(value)) return false;
+        return defaultValue;
     }
 
     public UUID getUuid(String key) {

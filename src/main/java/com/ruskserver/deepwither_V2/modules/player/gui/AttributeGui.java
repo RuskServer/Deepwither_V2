@@ -58,8 +58,12 @@ public class AttributeGui implements GuiView {
     public void render(GuiRenderContext context) {
         Player player = context.player();
         Inventory gui = context.inventory();
+        gui.setItem(22, createBackButton());
         repository.get(player.getUniqueId()).ifPresent(data -> {
             var attrData = data.get(PlayerAttributeProvider.KEY);
+            if (attrData == null) {
+                return;
+            }
 
             AttributeType[] guiStats = { AttributeType.STR, AttributeType.VIT, AttributeType.MND, AttributeType.INT, AttributeType.AGI };
 
@@ -74,8 +78,6 @@ public class AttributeGui implements GuiView {
                 };
                 gui.setItem(slot, icon);
             }
-
-            gui.setItem(22, createBackButton());
         });
     }
 

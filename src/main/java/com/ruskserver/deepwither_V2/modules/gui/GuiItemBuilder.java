@@ -20,6 +20,9 @@ public final class GuiItemBuilder {
     private GuiItemBuilder(Material material) {
         this.item = new ItemStack(material);
         this.meta = item.getItemMeta();
+        if (meta == null) {
+            throw new IllegalArgumentException("Material cannot be used as a GUI item: " + material);
+        }
     }
 
     public static GuiItemBuilder of(Material material) {

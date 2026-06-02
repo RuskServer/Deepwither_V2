@@ -8,8 +8,8 @@ import com.ruskserver.deepwither_V2.modules.item.api.ItemRarity;
 import com.ruskserver.deepwither_V2.modules.player.gui.MainMenuGui;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import org.bukkit.Material;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class MenuCompass implements CustomItem {
 
     @Override
     public void onInteract(PlayerInteractEvent event) {
-        if (event.getAction().isRightClick()) {
+        if (event.getAction().isRightClick() && event.getHand() == EquipmentSlot.HAND) {
             guiService.open(event.getPlayer(), MainMenuGui.ID);
         }
     }

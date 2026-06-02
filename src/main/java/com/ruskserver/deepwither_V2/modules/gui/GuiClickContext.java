@@ -48,22 +48,22 @@ public final class GuiClickContext {
     }
 
     public void open(String guiId) {
-        guiService.open(player(), guiId);
+        guiService.openLater(player(), guiId, GuiContext.EMPTY);
     }
 
     public void open(String guiId, GuiContext context) {
-        guiService.open(player(), guiId, context);
+        guiService.openLater(player(), guiId, context);
     }
 
     public void back() {
-        guiService.back(player());
+        guiService.backLater(player());
     }
 
     public void close() {
-        guiService.close(player());
+        guiService.closeLater(player());
     }
 
     public void refresh() {
-        guiService.refresh(player());
+        guiService.refreshLater(player());
     }
 }
