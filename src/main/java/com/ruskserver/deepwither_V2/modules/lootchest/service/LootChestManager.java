@@ -12,6 +12,8 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.ArmorStand;
@@ -176,16 +178,23 @@ public class LootChestManager implements Startable, Stoppable {
     private void checkChestEmptied(LootChestLocation loc) {
         Block block = loc.getLocation().getBlock();
         if (block.getType() != Material.CHEST) {
-            // 破壊された場合もリスポーンタイマー開始
+            playDespawnEffect(loc.getLocation());
             startCooldown(loc);
             return;
         }
 
         Chest chest = (Chest) block.getState();
         if (isEmpty(chest.getInventory())) {
+            playDespawnEffect(loc.getLocation());
             block.setType(Material.AIR);
             startCooldown(loc);
         }
+    }
+
+    private void playDespawnEffect(Location loc) {
+        Location center = loc.clone().add(0.5, 0.5, 0.5);
+        center.getWorld().spawnParticle(Particle.POOF, center, 15, 0.5, 0.5, 0.5, 0.05);
+        center.getWorld().playSound(center, Sound.BLOCK_CHEST_CLOSE, 0.5f, 0.8f);
     }
 
     private boolean isEmpty(Inventory inv) {

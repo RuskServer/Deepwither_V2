@@ -64,9 +64,7 @@ public class DamagePipelineManager implements Listener {
         if (!(event.getEntity() instanceof LivingEntity defender)) return;
         if (!(event.getDamager() instanceof LivingEntity attacker)) return;
 
-        // バニラのダメージ計算を完全にキャンセル
         event.setDamage(0);
-        event.setCancelled(true);
 
         // ダメージタイプの判定（今回はデフォルトでPHYSICALとする。魔法アイテムならMAGICにするなどの拡張が可能）
         DamageType type = DamageType.PHYSICAL;

@@ -177,7 +177,7 @@ public class TraderInventoryGui implements Listener {
             return;
         }
         if ("accept_task".equals(action)) {
-            if (dailyTaskService.acceptTask(player, npcName, "ghoul_mob", 5, 10)) openTraderGui(player, npcName);
+            if (dailyTaskService.acceptTask(player, npcName, "ghoul", 5, 10)) openTraderGui(player, npcName);
             return;
         }
 

@@ -73,7 +73,6 @@ public class BowAttackListener implements Listener {
         if (!(arrow.getShooter() instanceof LivingEntity shooter)) return;
 
         event.setDamage(0);
-        event.setCancelled(true);
 
         // 距離計算
         Location origin = arrow.getOrigin();

@@ -148,12 +148,9 @@ public class RevivalManager implements Startable, Stoppable, Listener {
         bar.setVisible(true);
         bossBars.put(uuid, bar);
 
-        player.sendMessage(Component.text("§c╔══════════════════════════════════╗"));
-        player.sendMessage(Component.text("§c║ §c⚠ あなたはダウン状態です！           §c║"));
-        player.sendMessage(Component.text("§c║ §e/suicide §7でリスポーン             §c║"));
-        player.sendMessage(Component.text("§c║ §a味方が近くでスニーク長押しで蘇生       §c║"));
-        player.sendMessage(Component.text("§c╚══════════════════════════════════╝"));
-        player.sendMessage(Component.text("§8ヒント: 2分経過で自動的にリスポーンします"));
+        player.sendMessage(Component.text("§c⚠ ダウン状態です"));
+        player.sendMessage(Component.text("§7/suicide §7でリスポーン  §a味方のスニーク長押し§7で蘇生"));
+        player.sendMessage(Component.text("§72分経過で自動リスポーン"));
     }
 
     public void revive(Player target) {

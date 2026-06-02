@@ -40,7 +40,7 @@ public class GhoulMob extends CustomMob {
     // --- ステータス定数 ---
     private static final double MAX_HP        = 30.0;
     private static final double ATTACK_DAMAGE = 5.0;
-    private static final int EXP_REWARD       = 30;
+    private static final int EXP_REWARD       = 50;
 
     // --- スキルクールダウン (tick) ---
     private static final int POUNCE_COOLDOWN_MIN = 120;  // 6秒

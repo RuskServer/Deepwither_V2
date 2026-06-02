@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.mob.event.CustomMobDeathEvent;
 import com.ruskserver.deepwither_V2.modules.party.Party;
 import com.ruskserver.deepwither_V2.modules.party.PartyManager;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
@@ -58,6 +59,11 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
 
     /** 装備アイテムキャッシュ: itemId → クローン元ItemStack */
     private final Map<String, ItemStack> itemCache = new ConcurrentHashMap<>();
+
+    /** カスタムモブUUID → 最後にダメージを与えたプレイヤーUUID */
+    public UUID getLastPlayerDamager(UUID entityId) {
+        return lastPlayerDamagers.get(entityId);
+    }
 
     /** エンティティへのモブIDタグに使用するキー */
     private final NamespacedKey mobIdKey;
@@ -347,6 +353,14 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             event.setDroppedExp(0);
             grantExpReward(mob, entityId);
             mob.onDeath();
+
+            // カスタムモブ死亡イベントを発火
+            Player killer = null;
+            UUID killerId = lastPlayerDamagers.get(entityId);
+            if (killerId != null) {
+                killer = Bukkit.getPlayer(killerId);
+            }
+            Bukkit.getPluginManager().callEvent(new CustomMobDeathEvent(mob, event.getEntity(), killer));
         }
         // VirtualHealthManagerのメモリを解放
         lastPlayerDamagers.remove(entityId);

@@ -3,15 +3,11 @@ package com.ruskserver.deepwither_V2.modules.trader.service;
 import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
-import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
+import com.ruskserver.deepwither_V2.modules.mob.event.CustomMobDeathEvent;
 import com.ruskserver.deepwither_V2.modules.trader.provider.TraderReputationProvider;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashMap;
@@ -26,7 +22,6 @@ public class DailyTaskService implements Listener {
 
     private final PlayerDataRepository repository;
     private final TraderReputationService reputationService;
-    private final CustomMobManager mobManager;
 
     /** プレイヤーUUID -> (モブID -> 討伐数) の一時的な進行状況（DBに保存してもよいが、今回はメモリ管理） */
     private final Map<UUID, ActiveTask> activeTasks = new HashMap<>();
@@ -37,10 +32,9 @@ public class DailyTaskService implements Listener {
     }
 
     @Inject
-    public DailyTaskService(PlayerDataRepository repository, TraderReputationService reputationService, CustomMobManager mobManager) {
+    public DailyTaskService(PlayerDataRepository repository, TraderReputationService reputationService) {
         this.repository = repository;
         this.reputationService = reputationService;
-        this.mobManager = mobManager;
     }
 
     /**
@@ -77,15 +71,12 @@ public class DailyTaskService implements Listener {
         return "§e" + task.targetMobId + "§f: " + task.currentCount + " / " + task.requiredCount;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onMobKill(EntityDeathEvent event) {
-        LivingEntity victim = event.getEntity();
-        String mobId = mobManager.getCustomMobId(victim);
-        if (mobId == null) return;
+    @EventHandler
+    public void onCustomMobKill(CustomMobDeathEvent event) {
+        Player killer = event.getKiller();
+        if (killer == null || !killer.isOnline()) return;
 
-        Player killer = victim.getKiller();
-        if (killer == null) return;
-
+        String mobId = event.getMobId();
         ActiveTask task = activeTasks.get(killer.getUniqueId());
         if (task != null && task.targetMobId.equals(mobId)) {
             task.currentCount++;

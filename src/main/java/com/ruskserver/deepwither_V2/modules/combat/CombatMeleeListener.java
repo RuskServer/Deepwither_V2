@@ -108,7 +108,6 @@ public class CombatMeleeListener implements Listener {
         if (hand == null || hand.isEmpty()) return;
         if (isWand(hand)) return;
 
-        event.setCancelled(true);
         event.setDamage(0);
 
         // EntityDamageByEntityEvent では PlayerAnimationEvent が発火しないため、
