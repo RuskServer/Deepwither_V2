@@ -189,12 +189,13 @@ public class DIContainer {
      * Scans a package and automatically resolves and registers all annotated classes
      */
     public void scanAndRegister(ClassLoader classLoader, String basePackage) {
-        Set<Class<?>> targetClasses = new HashSet<>();
-        targetClasses.addAll(ClassScanner.findClassesWithAnnotation(classLoader, basePackage, Component.class, logger, debugMode));
-        targetClasses.addAll(ClassScanner.findClassesWithAnnotation(classLoader, basePackage, Service.class, logger, debugMode));
-        targetClasses.addAll(ClassScanner.findClassesWithAnnotation(classLoader, basePackage, Repository.class, logger, debugMode));
-        targetClasses.addAll(ClassScanner.findClassesWithAnnotation(classLoader, basePackage, Module.class, logger, debugMode));
-        targetClasses.addAll(ClassScanner.findClassesWithAnnotation(classLoader, basePackage, Command.class, logger, debugMode));
+        Set<Class<?>> targetClasses = ClassScanner.findClassesWithAnyAnnotation(
+                classLoader,
+                basePackage,
+                List.of(Component.class, Service.class, Repository.class, Module.class, Command.class),
+                logger,
+                debugMode
+        );
 
         scannedClasses.addAll(targetClasses);
 

@@ -46,6 +46,7 @@ dependencies {
 
     // JSON processing
     implementation("com.fasterxml.jackson.core:jackson-databind:2.18.0")
+    implementation("io.github.classgraph:classgraph:4.8.184")
 
     compileOnly("com.discordsrv:discordsrv:1.28.0")
 }
@@ -71,6 +72,7 @@ tasks {
         relocate("org.h2", "com.ruskserver.deepwither_V2.libs.h2")
         relocate("com.github.benmanes.caffeine", "com.ruskserver.deepwither_V2.libs.caffeine")
         relocate("com.fasterxml.jackson", "com.ruskserver.deepwither_V2.libs.jackson")
+        relocate("io.github.classgraph", "com.ruskserver.deepwither_V2.libs.classgraph")
     }
 
     runServer {
