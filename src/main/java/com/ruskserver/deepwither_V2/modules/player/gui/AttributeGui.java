@@ -4,17 +4,17 @@ import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.AttributeType;
+import com.ruskserver.deepwither_V2.modules.gui.GuiClickContext;
+import com.ruskserver.deepwither_V2.modules.gui.GuiContext;
+import com.ruskserver.deepwither_V2.modules.gui.GuiRenderContext;
+import com.ruskserver.deepwither_V2.modules.gui.GuiView;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerAttributeProvider;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -23,9 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class AttributeGui implements Listener {
+public class AttributeGui implements GuiView {
 
     public static final net.kyori.adventure.text.Component GUI_TITLE = net.kyori.adventure.text.Component.text("ステータス割り振り", NamedTextColor.DARK_GREEN);
+
+    public static final String ID = "attributes";
+    private static final int GUI_SIZE = 27;
 
     private final PlayerManager playerManager;
     private final PlayerDataRepository repository;
@@ -36,10 +39,31 @@ public class AttributeGui implements Listener {
         this.repository = repository;
     }
 
-    public void open(Player player) {
+    @Override
+    public String getId() {
+        return ID;
+    }
+
+    @Override
+    public net.kyori.adventure.text.Component getTitle(Player player, GuiContext context) {
+        return GUI_TITLE;
+    }
+
+    @Override
+    public int getSize(Player player, GuiContext context) {
+        return GUI_SIZE;
+    }
+
+    @Override
+    public void render(GuiRenderContext context) {
+        Player player = context.player();
+        Inventory gui = context.inventory();
+        gui.setItem(22, createBackButton());
         repository.get(player.getUniqueId()).ifPresent(data -> {
             var attrData = data.get(PlayerAttributeProvider.KEY);
-            Inventory gui = Bukkit.createInventory(null, 27, GUI_TITLE);
+            if (attrData == null) {
+                return;
+            }
 
             AttributeType[] guiStats = { AttributeType.STR, AttributeType.VIT, AttributeType.MND, AttributeType.INT, AttributeType.AGI };
 
@@ -54,9 +78,16 @@ public class AttributeGui implements Listener {
                 };
                 gui.setItem(slot, icon);
             }
-
-            player.openInventory(gui);
         });
+    }
+
+    private ItemStack createBackButton() {
+        ItemStack item = new ItemStack(Material.ARROW);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(net.kyori.adventure.text.Component.text("戻る", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        meta.lore(List.of(net.kyori.adventure.text.Component.text("前のメニューへ戻ります", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)));
+        item.setItemMeta(meta);
+        return item;
     }
 
     private ItemStack getStatIcon(AttributeType type, PlayerAttributeProvider.AttributeData attrData) {
@@ -122,14 +153,14 @@ public class AttributeGui implements Listener {
         return list;
     }
 
-    @EventHandler
-    public void onClick(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player player)) return;
-        if (!e.getView().title().equals(GUI_TITLE)) return;
-
-        e.setCancelled(true);
-
-        int slot = e.getRawSlot();
+    @Override
+    public void onClick(GuiClickContext context) {
+        Player player = context.player();
+        int slot = context.slot();
+        if (slot == 22) {
+            context.back();
+            return;
+        }
         AttributeType type = switch (slot) {
             case 9 -> AttributeType.STR;
             case 11 -> AttributeType.VIT;
@@ -145,7 +176,7 @@ public class AttributeGui implements Listener {
         if (success) {
             player.sendMessage(net.kyori.adventure.text.Component.text(type.getDisplayName() + " に 1ポイント割り振りました！", NamedTextColor.GREEN));
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
-            open(player); // 再描画
+            context.refresh();
         } else {
             player.sendMessage(net.kyori.adventure.text.Component.text("ポイントが足りないか、上限に達しています！", NamedTextColor.RED));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
