@@ -20,9 +20,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * バニラのダメージ処理をインターセプトし、パイプラインを実行して仮想HPに反映させるマネージャー。
@@ -35,6 +39,9 @@ public class DamagePipelineManager implements Listener {
     private final CustomMobManager customMobManager;
     private final DamageFeedbackService feedbackService;
     private final List<DamagePhase> pipeline = new ArrayList<>();
+
+    // 各エンティティの次回の攻撃可能時刻を管理 (無敵時間システム)
+    private final Map<UUID, Long> nextDamageTimeMap = new ConcurrentHashMap<>();
 
     @Inject
     public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, DamageFeedbackService feedbackService) {
@@ -64,6 +71,14 @@ public class DamagePipelineManager implements Listener {
         if (!(event.getEntity() instanceof LivingEntity defender)) return;
         if (!(event.getDamager() instanceof LivingEntity attacker)) return;
 
+        // 無敵時間（i-frame）のチェック
+        long now = System.currentTimeMillis();
+        UUID id = defender.getUniqueId();
+        if (nextDamageTimeMap.getOrDefault(id, 0L) > now) {
+            event.setCancelled(true);
+            return;
+        }
+
         event.setDamage(0);
 
         // ダメージタイプの判定（今回はデフォルトでPHYSICALとする。魔法アイテムならMAGICにするなどの拡張が可能）
@@ -89,7 +104,17 @@ public class DamagePipelineManager implements Listener {
         if (context.getDamage() > 0) {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
-            feedbackService.playHurtFeedback(defender);
+            
+            // 無敵時間を設定 (500ms = 0.5秒)
+            nextDamageTimeMap.put(id, now + 500);
+            
+            // 攻撃の方向（Yaw）を計算して視界の揺れに反映
+            float yaw = 0f;
+            if (attacker != null) {
+                org.bukkit.util.Vector dir = attacker.getLocation().toVector().subtract(defender.getLocation().toVector());
+                yaw = (float) (Math.atan2(dir.getZ(), dir.getX()) * 180 / Math.PI) - 90f;
+            }
+            feedbackService.playHurtFeedback(defender, yaw);
         }
     }
 
@@ -102,6 +127,14 @@ public class DamagePipelineManager implements Listener {
         // EntityDamageByEntityEventは上で処理しているので弾く
         if (event instanceof EntityDamageByEntityEvent) return;
         if (!(event.getEntity() instanceof LivingEntity defender)) return;
+
+        // 無敵時間（i-frame）のチェック
+        long now = System.currentTimeMillis();
+        UUID id = defender.getUniqueId();
+        if (nextDamageTimeMap.getOrDefault(id, 0L) > now) {
+            event.setCancelled(true);
+            return;
+        }
 
         // バニラの計算をキャンセル
         double vanillaDamage = event.getDamage();
@@ -124,7 +157,15 @@ public class DamagePipelineManager implements Listener {
         if (finalDamage > 0) {
             healthManager.damage(defender, finalDamage);
             feedbackService.playHurtFeedback(defender);
+
+            // 環境ダメージ後も無敵時間を設定
+            nextDamageTimeMap.put(id, now + 500);
         }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        nextDamageTimeMap.remove(event.getPlayer().getUniqueId());
     }
 
     /**
@@ -138,6 +179,11 @@ public class DamagePipelineManager implements Listener {
      * 距離倍率指定可能な processDamage のオーバーロード。
      */
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags, double distanceMultiplier) {
+        // 無敵時間（i-frame）のチェック
+        long now = System.currentTimeMillis();
+        UUID id = defender.getUniqueId();
+        if (nextDamageTimeMap.getOrDefault(id, 0L) > now) return;
+
         DamageContext context = new DamageContext(attacker, defender, type, initialDamage);
         context.setDistanceMultiplier(distanceMultiplier);
         if (tags != null) {
@@ -158,7 +204,17 @@ public class DamagePipelineManager implements Listener {
         if (context.getDamage() > 0) {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
-            feedbackService.playHurtFeedback(defender);
+
+            // 無敵時間を設定
+            nextDamageTimeMap.put(id, now + 500);
+
+            // 攻撃の方向（Yaw）を計算して視界の揺れに反映
+            float yaw = 0f;
+            if (attacker != null) {
+                org.bukkit.util.Vector dir = attacker.getLocation().toVector().subtract(defender.getLocation().toVector());
+                yaw = (float) (Math.atan2(dir.getZ(), dir.getX()) * 180 / Math.PI) - 90f;
+            }
+            feedbackService.playHurtFeedback(defender, yaw);
         }
     }
 }

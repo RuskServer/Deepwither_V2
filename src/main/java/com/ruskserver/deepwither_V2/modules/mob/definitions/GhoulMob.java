@@ -24,38 +24,38 @@ import java.util.List;
  *
  * <p><b>ステータス</b>
  * <ul>
- *   <li>HP: 30
- *   <li>物理攻撃力: 5（DamagePipelineManagerを経由）
+ *   <li>HP: 18
+ *   <li>物理攻撃力: 3（DamagePipelineManagerを経由）
  * </ul>
  *
  * <p><b>スキル</b>
  * <ul>
- *   <li><b>飛び掛かり (Pounce)</b>: 8ブロック以内のプレイヤーへ跳躍し、着地時に5ダメージ（クールダウン: 6〜10秒）
- *   <li><b>突進 (Charge)</b>: 15ブロック以内のプレイヤーへ一直線に突進し、パーティクル煙を巻き上げる（クールダウン: 12秒）
+ *   <li><b>飛び掛かり (Pounce)</b>: 6ブロック以内のプレイヤーへ跳躍し、着地時に3ダメージ（クールダウン: 10〜15秒）
+ *   <li><b>突進 (Charge)</b>: 10ブロック以内のプレイヤーへ一直線に突進し、パーティクル煙を巻き上げる（クールダウン: 20秒）
  * </ul>
  */
 @Component
 public class GhoulMob extends CustomMob {
 
     // --- ステータス定数 ---
-    private static final double MAX_HP        = 30.0;
-    private static final double ATTACK_DAMAGE = 5.0;
+    private static final double MAX_HP        = 18.0;
+    private static final double ATTACK_DAMAGE = 3.0;
     private static final int EXP_REWARD       = 50;
 
     // --- スキルクールダウン (tick) ---
-    private static final int POUNCE_COOLDOWN_MIN = 120;  // 6秒
-    private static final int POUNCE_COOLDOWN_MAX = 200;  // 10秒
-    private static final int CHARGE_COOLDOWN     = 240;  // 12秒
+    private static final int POUNCE_COOLDOWN_MIN = 200;  // 10秒
+    private static final int POUNCE_COOLDOWN_MAX = 300;  // 15秒
+    private static final int CHARGE_COOLDOWN     = 400;  // 20秒
 
     // --- スキルの射程 (ブロック) ---
-    private static final double POUNCE_RANGE = 8.0;
-    private static final double CHARGE_RANGE = 15.0;
+    private static final double POUNCE_RANGE = 6.0;
+    private static final double CHARGE_RANGE = 10.0;
 
     // --- スキルのパラメーター ---
     private static final double POUNCE_HIT_RADIUS   = 2.5;  // 着地時のヒット判定
-    private static final double POUNCE_POWER_XZ     = 1.2;  // 飛び掛かりの水平速度
+    private static final double POUNCE_POWER_XZ     = 0.9;  // 飛び掛かりの水平速度
     private static final double POUNCE_POWER_Y      = 0.6;  // 飛び掛かりの垂直速度
-    private static final double CHARGE_POWER        = 1.8;  // 突進の速度
+    private static final double CHARGE_POWER        = 1.3;  // 突進の速度
 
     // --- スキル状態管理 ---
     private int pounceCooldown = 60;          // 初回は3秒後から発動可能
@@ -99,9 +99,9 @@ public class GhoulMob extends CustomMob {
         var attackAttr = entity.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE);
         if (attackAttr != null) attackAttr.setBaseValue(0.0);
 
-        // 移動速度を少し速くする（デフォルトZombie: 0.23）
+        // 移動速度をデフォルトのZombie（0.23）に戻す
         var speedAttr = entity.getAttribute(org.bukkit.attribute.Attribute.MOVEMENT_SPEED);
-        if (speedAttr != null) speedAttr.setBaseValue(0.26);
+        if (speedAttr != null) speedAttr.setBaseValue(0.23);
     }
 
     @Override
