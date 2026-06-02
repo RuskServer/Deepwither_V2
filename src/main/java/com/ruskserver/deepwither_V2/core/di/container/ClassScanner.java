@@ -35,6 +35,7 @@ public class ClassScanner {
         try (ScanResult scanResult = new ClassGraph()
                 .overrideClassLoaders(classLoader)
                 .acceptPackages(packageName)
+                .ignoreClassVisibility()
                 .enableClassInfo()
                 .enableAnnotationInfo()
                 .scan()) {
