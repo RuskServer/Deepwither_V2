@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.item.definitions;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.gui.GuiService;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.ItemRarity;
 import com.ruskserver.deepwither_V2.modules.player.gui.MainMenuGui;
@@ -16,13 +17,13 @@ import java.util.Map;
 @Component
 public class MenuCompass implements CustomItem {
 
-    private final MainMenuGui mainMenuGui;
+    private final GuiService guiService;
 
     private final Map<StatType, Double> baseStats;
 
     @Inject
-    public MenuCompass(MainMenuGui mainMenuGui) {
-        this.mainMenuGui = mainMenuGui;
+    public MenuCompass(GuiService guiService) {
+        this.guiService = guiService;
         this.baseStats = new EnumMap<>(StatType.class);
     }
 
@@ -59,7 +60,7 @@ public class MenuCompass implements CustomItem {
     @Override
     public void onInteract(PlayerInteractEvent event) {
         if (event.getAction().isRightClick()) {
-            mainMenuGui.open(event.getPlayer());
+            guiService.open(event.getPlayer(), MainMenuGui.ID);
         }
     }
 }

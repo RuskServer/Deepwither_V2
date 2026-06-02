@@ -4,24 +4,21 @@ import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.AttributeType;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
+import com.ruskserver.deepwither_V2.modules.gui.GuiClickContext;
+import com.ruskserver.deepwither_V2.modules.gui.GuiContext;
+import com.ruskserver.deepwither_V2.modules.gui.GuiRenderContext;
+import com.ruskserver.deepwither_V2.modules.gui.GuiView;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerAttributeProvider;
 import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
-import com.ruskserver.deepwither_V2.modules.party.PartyGUI;
-import com.ruskserver.deepwither_V2.modules.skill.gui.SkillAssignmentGui;
-import com.ruskserver.deepwither_V2.modules.skilltree.gui.SkillTreeGui;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -32,37 +29,44 @@ import java.util.ArrayList;
 import java.util.List;
 
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
-public class MainMenuGui implements Listener {
+public class MainMenuGui implements GuiView {
 
     public static final Component GUI_TITLE = Component.text("メインメニュー", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false);
+    public static final String ID = "main_menu";
     private static final int GUI_SIZE = 54;
 
     private final PlayerManager playerManager;
     private final PlayerDataRepository repository;
     private final StatManager statManager;
     private final TraderService traderService;
-    private final SkillTreeGui skillTreeGui;
-    private final AttributeGui attributeGui;
-    private final SkillAssignmentGui skillAssignmentGui;
-    private final PartyGUI partyGUI;
-
     @Inject
     public MainMenuGui(PlayerManager playerManager, PlayerDataRepository repository,
-                       StatManager statManager, TraderService traderService,
-                       SkillTreeGui skillTreeGui, AttributeGui attributeGui,
-                       SkillAssignmentGui skillAssignmentGui, PartyGUI partyGUI) {
+                       StatManager statManager, TraderService traderService) {
         this.playerManager = playerManager;
         this.repository = repository;
         this.statManager = statManager;
         this.traderService = traderService;
-        this.skillTreeGui = skillTreeGui;
-        this.attributeGui = attributeGui;
-        this.skillAssignmentGui = skillAssignmentGui;
-        this.partyGUI = partyGUI;
     }
 
-    public void open(Player player) {
-        Inventory gui = Bukkit.createInventory(null, GUI_SIZE, GUI_TITLE);
+    @Override
+    public String getId() {
+        return ID;
+    }
+
+    @Override
+    public Component getTitle(Player player, GuiContext context) {
+        return GUI_TITLE;
+    }
+
+    @Override
+    public int getSize(Player player, GuiContext context) {
+        return GUI_SIZE;
+    }
+
+    @Override
+    public void render(GuiRenderContext context) {
+        Player player = context.player();
+        Inventory gui = context.inventory();
         fillBackground(gui);
 
         gui.setItem(9, createProfileIcon(player));
@@ -120,7 +124,6 @@ public class MainMenuGui implements Listener {
                 Component.text("メニューを閉じます。", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
         ));
 
-        player.openInventory(gui);
     }
 
     private ItemStack createProfileIcon(Player player) {
@@ -256,40 +259,25 @@ public class MainMenuGui implements Listener {
                 .decoration(TextDecoration.ITALIC, false);
     }
 
-    @EventHandler
-    public void onClick(InventoryClickEvent event) {
-        if (!event.getView().title().equals(GUI_TITLE)) return;
-        event.setCancelled(true);
-
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        ItemStack clicked = event.getCurrentItem();
+    @Override
+    public void onClick(GuiClickContext context) {
+        Player player = context.player();
+        ItemStack clicked = context.currentItem();
         if (clicked == null || !clicked.hasItemMeta()) return;
 
-        int slot = event.getSlot();
+        int slot = context.slot();
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
 
         switch (slot) {
-            case 37 -> {
-                player.closeInventory();
-                skillTreeGui.openSelectorOrFirst(player);
-            }
-            case 39 -> {
-                player.closeInventory();
-                attributeGui.open(player);
-            }
-            case 41 -> {
-                player.closeInventory();
-                skillAssignmentGui.open(player);
-            }
+            case 37 -> context.open("skilltree");
+            case 39 -> context.open(AttributeGui.ID);
+            case 41 -> context.open("skill_assignment");
             case 43 -> {
-                player.closeInventory();
+                context.close();
                 player.performCommand("status");
             }
-            case 45 -> {
-                player.closeInventory();
-                partyGUI.open(player);
-            }
-            case 49 -> player.closeInventory();
+            case 45 -> context.open("party");
+            case 49 -> context.close();
         }
     }
 }

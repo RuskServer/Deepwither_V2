@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.player.commands;
 import com.ruskserver.deepwither_V2.core.di.annotations.Command;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.gui.GuiService;
 import com.ruskserver.deepwither_V2.modules.player.gui.AttributeGui;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -17,11 +18,11 @@ import org.jetbrains.annotations.NotNull;
 @Command(name = "attribute", description = "ステータス割り振りGUIを開きます", aliases = {"att"})
 public class CommandAttribute implements BasicCommand {
 
-    private final AttributeGui gui;
+    private final GuiService guiService;
 
     @Inject
-    public CommandAttribute(AttributeGui gui) {
-        this.gui = gui;
+    public CommandAttribute(GuiService guiService) {
+        this.guiService = guiService;
     }
 
     @Override
@@ -30,6 +31,6 @@ public class CommandAttribute implements BasicCommand {
             stack.getSender().sendMessage("プレイヤーのみ実行可能です。");
             return;
         }
-        gui.open(player);
+        guiService.open(player, AttributeGui.ID);
     }
 }
