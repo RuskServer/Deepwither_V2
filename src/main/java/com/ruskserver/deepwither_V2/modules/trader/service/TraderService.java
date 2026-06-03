@@ -78,6 +78,12 @@ public class TraderService implements Startable {
         return "$" + MONEY_FORMAT.format(Math.max(0.0, amount));
     }
 
+    public boolean depositMoney(Player player, double amount) {
+        if (!vaultAvailable || economy == null) return false;
+        EconomyResponse response = economy.depositPlayer(player, amount);
+        return response.transactionSuccess();
+    }
+
     public boolean purchaseItem(Player player, String npcName, TraderProduct product) {
         if (!vaultAvailable || economy == null) {
             player.sendMessage("§c経済システムが利用できません。");

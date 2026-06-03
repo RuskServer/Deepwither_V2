@@ -9,6 +9,9 @@ import com.ruskserver.deepwither_V2.modules.mob.region.MobRegion;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
 import com.ruskserver.deepwither_V2.modules.mob.region.SpawnEntry;
 import com.ruskserver.deepwither_V2.modules.trader.provider.TraderReputationProvider;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,6 +31,7 @@ public class DailyTaskService implements Listener {
 
     private final PlayerDataRepository repository;
     private final TraderReputationService reputationService;
+    private final TraderService traderService;
     private final CustomMobManager mobManager;
     private final MobRegionConfig regionConfig;
     private final Random random = new Random();
@@ -41,9 +45,10 @@ public class DailyTaskService implements Listener {
     }
 
     @Inject
-    public DailyTaskService(PlayerDataRepository repository, TraderReputationService reputationService, CustomMobManager mobManager, MobRegionConfig regionConfig) {
+    public DailyTaskService(PlayerDataRepository repository, TraderReputationService reputationService, TraderService traderService, CustomMobManager mobManager, MobRegionConfig regionConfig) {
         this.repository = repository;
         this.reputationService = reputationService;
+        this.traderService = traderService;
         this.mobManager = mobManager;
         this.regionConfig = regionConfig;
     }
@@ -170,8 +175,25 @@ public class DailyTaskService implements Listener {
         ActiveTask task = activeTasks.remove(player.getUniqueId());
         if (task == null) return;
 
-        reputationService.completeTask(player, task.traderId, task.rewardReputation);
-        player.sendMessage("§6§lデイリータスク完了！ §a信用度が " + task.rewardReputation + " 上昇しました。");
+        // 報酬の計算 (ゴールド: 1000~4000, 信用度: 100~400)
+        int goldReward = 1000 + random.nextInt(3001);
+        int creditReward = 100 + random.nextInt(301);
+
+        // 報酬の付与
+        traderService.depositMoney(player, goldReward);
+        reputationService.completeTask(player, task.traderId, creditReward);
+
+        // メッセージの送信
+        player.sendMessage(Component.text("タスク完了！", NamedTextColor.GOLD, TextDecoration.BOLD)
+                .append(Component.text(" " + task.traderId + "のタスクをクリアしました！", NamedTextColor.WHITE))
+                .decoration(TextDecoration.ITALIC, false));
+        
+        player.sendMessage(Component.text("報酬: ", NamedTextColor.GOLD)
+                .append(Component.text(traderService.formatMoney(goldReward), NamedTextColor.GOLD))
+                .append(Component.text(" と ", NamedTextColor.WHITE))
+                .append(Component.text(creditReward, NamedTextColor.AQUA))
+                .append(Component.text(" 信用度を獲得！", NamedTextColor.WHITE))
+                .decoration(TextDecoration.ITALIC, false));
     }
 
     private static class ActiveTask {
