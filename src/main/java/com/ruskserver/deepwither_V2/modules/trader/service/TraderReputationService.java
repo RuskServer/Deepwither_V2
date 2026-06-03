@@ -19,11 +19,23 @@ import java.util.UUID;
 public class TraderReputationService {
 
     private final PlayerDataRepository repository;
-    private static final int MAX_DAILY_TASKS = 5;
+    public static final int MAX_DAILY_TASKS = 5;
 
     @Inject
     public TraderReputationService(PlayerDataRepository repository) {
         this.repository = repository;
+    }
+
+    /**
+     * 本日の合計タスク完了数を取得します。
+     */
+    public int getTotalCompletedTasksToday(Player player) {
+        return repository.get(player.getUniqueId())
+                .map(data -> {
+                    checkAndResetDaily(data);
+                    return data.get(TraderReputationProvider.KEY).getCompletedTasksToday();
+                })
+                .orElse(0);
     }
 
     /**

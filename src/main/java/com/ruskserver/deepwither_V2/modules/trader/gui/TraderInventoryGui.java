@@ -9,6 +9,8 @@ import com.ruskserver.deepwither_V2.modules.trader.service.DailyTaskService;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderReputationService;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -94,20 +96,7 @@ public class TraderInventoryGui implements Listener {
         }
         gui.setItem(19, balanceInfo);
 
-        int remainingSlots = reputationService.getRemainingTaskSlots(player);
-        ItemStack taskButton = new ItemStack(Material.BOOK);
-        ItemMeta taskMeta = taskButton.getItemMeta();
-        if (taskMeta != null) {
-            taskMeta.displayName(Component.text("§e§lデイリータスク"));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Component.text("§7残り受注回数: §f" + remainingSlots + " / 5"));
-            if (dailyTaskService.hasTask(player)) lore.add(Component.text("§6進行中: §f" + dailyTaskService.getProgressString(player)));
-            else if (remainingSlots > 0) lore.add(Component.text("§aクリックで受注"));
-            taskMeta.lore(lore);
-            taskMeta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "accept_task");
-            taskButton.setItemMeta(taskMeta);
-        }
-        gui.setItem(22, taskButton);
+        addDailyTaskButton(player, gui, 22, npcName);
 
         ItemStack sellButton = new ItemStack(Material.EMERALD);
         ItemMeta sellMeta = sellButton.getItemMeta();
@@ -118,6 +107,59 @@ public class TraderInventoryGui implements Listener {
             sellButton.setItemMeta(sellMeta);
         }
         gui.setItem(26, sellButton);
+    }
+
+    private void addDailyTaskButton(Player player, Inventory gui, int slot, String npcName) {
+        int totalCompleted = reputationService.getTotalCompletedTasksToday(player);
+        int[] progress = dailyTaskService.getActiveTaskProgress(player);
+        int current = progress[0];
+        int target = progress[1];
+        String targetMobDisplayName = dailyTaskService.getActiveTaskMobName(player);
+
+        ItemStack taskButton = new ItemStack(Material.WRITABLE_BOOK);
+        ItemMeta meta = taskButton.getItemMeta();
+        if (meta == null) return;
+
+        List<Component> lore = new ArrayList<>();
+
+        meta.displayName(Component.text("デイリータスク (" + npcName + ")", NamedTextColor.YELLOW)
+                .decoration(TextDecoration.ITALIC, false));
+        
+        meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "accept_task");
+
+        lore.add(Component.text("本日の全トレーダー合計達成数: ", NamedTextColor.GRAY)
+                .append(Component.text(totalCompleted + "/" + TraderReputationService.MAX_DAILY_TASKS, NamedTextColor.AQUA))
+                .decoration(TextDecoration.ITALIC, false));
+
+        if (totalCompleted >= TraderReputationService.MAX_DAILY_TASKS && target == 0) {
+            lore.add(Component.empty());
+            lore.add(Component.text(">> 本日の合計タスク制限に達しました <<", NamedTextColor.RED)
+                    .decoration(TextDecoration.ITALIC, false));
+            taskButton.setType(Material.BARRIER);
+        } else if (target != 0) {
+            lore.add(Component.text("--- 現在の目標 ---", NamedTextColor.GREEN)
+                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text((targetMobDisplayName != null ? targetMobDisplayName : "対象") + "討伐: ", NamedTextColor.GRAY)
+                    .append(Component.text(current + "/" + target, NamedTextColor.RED))
+                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.empty());
+            lore.add(Component.text("目標を達成して報告してください。", NamedTextColor.YELLOW)
+                    .decoration(TextDecoration.ITALIC, false));
+        } else {
+            lore.add(Component.empty());
+            lore.add(Component.text("[討伐依頼] ", NamedTextColor.GREEN)
+                    .append(Component.text("現在のエリア周辺の", NamedTextColor.GRAY))
+                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text("脅威となっている生命体を討伐する。", NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.empty());
+            lore.add(Component.text("クリックでタスクを受注", NamedTextColor.GREEN)
+                    .decoration(TextDecoration.ITALIC, false));
+        }
+
+        meta.lore(lore);
+        taskButton.setItemMeta(meta);
+        gui.setItem(slot, taskButton);
     }
 
     private ItemStack createProductDisplay(Player player, String npcName, TraderProduct product) {

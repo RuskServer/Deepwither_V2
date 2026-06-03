@@ -132,6 +132,23 @@ public class DailyTaskService implements Listener {
         return "§e" + task.targetMobDisplayName + "§f: " + task.currentCount + " / " + task.requiredCount;
     }
 
+    /**
+     * 現在進行中のタスクの対象モブ名を取得します。
+     */
+    public String getActiveTaskMobName(Player player) {
+        ActiveTask task = activeTasks.get(player.getUniqueId());
+        return task != null ? task.targetMobDisplayName : null;
+    }
+
+    /**
+     * 現在進行中のタスクの進捗状況を [現在数, 目標数] の配列で取得します。
+     */
+    public int[] getActiveTaskProgress(Player player) {
+        ActiveTask task = activeTasks.get(player.getUniqueId());
+        if (task == null) return new int[]{0, 0};
+        return new int[]{task.currentCount, task.requiredCount};
+    }
+
     @EventHandler
     public void onCustomMobKill(CustomMobDeathEvent event) {
         Player killer = event.getKiller();
