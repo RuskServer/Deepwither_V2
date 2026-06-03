@@ -71,6 +71,7 @@ public class GhoulMob extends CustomMob {
         // 自己登録：スポーン時にファクトリで新しいインスタンスを生成する
         mobManager.registerMob("ghoul", EntityType.ZOMBIE,
                 () -> new GhoulMob(mobManager, damageManager, itemManager));
+        mobManager.registerDisplayName("ghoul", "グール");
         this.damageManager = damageManager;
         this.itemManager = itemManager;
     }

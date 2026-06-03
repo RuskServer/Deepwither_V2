@@ -51,6 +51,9 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     private final Map<String, EntityType> mobEntityTypes = new ConcurrentHashMap<>();
     private final Map<String, Supplier<CustomMob>> mobFactories = new ConcurrentHashMap<>();
 
+    /** mob-id → ディスプレイネーム (タスク表示用) */
+    private final Map<String, String> mobDisplayNames = new ConcurrentHashMap<>();
+
     /** 現在アクティブなモブ: UUID → CustomMobインスタンス */
     private final Map<UUID, CustomMob> activeMobs = new ConcurrentHashMap<>();
 
@@ -133,6 +136,24 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
         if (plugin.isEnabled()) {
             log.info("[CustomMobManager] モブ登録: " + id + " (" + type.name() + ")");
         }
+    }
+
+    /**
+     * モブのディスプレイネームを登録します。
+     * @param id モブID
+     * @param name 表示名
+     */
+    public void registerDisplayName(String id, String name) {
+        mobDisplayNames.put(id, name);
+    }
+
+    /**
+     * モブのディスプレイネームを取得します。登録がない場合はIDを返します。
+     * @param id モブID
+     * @return 表示名
+     */
+    public String getDisplayName(String id) {
+        return mobDisplayNames.getOrDefault(id, id);
     }
 
     /** 登録されているモブIDのセットを返します。 */
