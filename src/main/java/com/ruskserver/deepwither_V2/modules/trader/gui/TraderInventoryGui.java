@@ -169,15 +169,8 @@ public class TraderInventoryGui implements Listener {
         ItemMeta meta = display.getItemMeta();
         if (meta == null) return display;
 
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(productIdKey, PersistentDataType.STRING, product.getItemId());
-        pdc.set(buyPriceKey, PersistentDataType.DOUBLE, product.getBuyPrice());
-        pdc.set(requiredRepKey, PersistentDataType.INTEGER, product.getRequiredReputation());
-
         int currentRep = reputationService.getReputation(player, npcName);
-        double balance = traderService.getBalance(player);
-        boolean repOk = currentRep >= product.getRequiredReputation();
-        boolean moneyOk = balance >= product.getBuyPrice();
+        boolean isUnlocked = currentRep >= product.getRequiredReputation();
 
         List<Component> lore = meta.lore();
         if (lore == null) {
@@ -186,14 +179,41 @@ public class TraderInventoryGui implements Listener {
             lore = new ArrayList<>(lore);
         }
 
-        lore.add(Component.text(""));
-        lore.add(Component.text("§7価格: §6" + traderService.formatMoney(product.getBuyPrice())));
-        if (product.getRequiredReputation() > 0) {
-            lore.add(Component.text("§7必要信用度: " + (repOk ? "§a" : "§c") + product.getRequiredReputation() + " §7(現在: §f" + currentRep + "§7)"));
+        lore.add(Component.empty());
+        lore.add(Component.text("--- 取引情報 ---", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
+
+        // 価格表示
+        if (product.getBuyPrice() > 0) {
+            lore.add(Component.text("価格: ", NamedTextColor.GRAY)
+                    .append(Component.text(traderService.formatMoney(product.getBuyPrice()), NamedTextColor.GOLD))
+                    .decoration(TextDecoration.ITALIC, false));
         }
-        lore.add(Component.text("§7所持金: " + (moneyOk ? "§a" : "§c") + traderService.formatMoney(balance)));
-        lore.add(Component.text(""));
-        lore.add(Component.text(repOk && moneyOk ? "§a▶ クリックで購入" : "§c✕ 条件を満たしていません"));
+
+        // 必要信用度
+        if (product.getRequiredReputation() > 0) {
+            lore.add(Component.text("必要信用度: ", NamedTextColor.GRAY)
+                    .append(Component.text(product.getRequiredReputation(), NamedTextColor.AQUA))
+                    .append(Component.text(" (現在: " + currentRep + ")", NamedTextColor.DARK_GRAY))
+                    .decoration(TextDecoration.ITALIC, false));
+        }
+
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        pdc.set(productIdKey, PersistentDataType.STRING, product.getItemId());
+        pdc.set(buyPriceKey, PersistentDataType.DOUBLE, product.getBuyPrice());
+        pdc.set(requiredRepKey, PersistentDataType.INTEGER, product.getRequiredReputation());
+
+        if (isUnlocked) {
+            lore.add(Component.empty());
+            lore.add(Component.text("▶ クリックで購入", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        } else {
+            display.setType(Material.GRAY_STAINED_GLASS_PANE);
+            lore.add(Component.empty());
+            lore.add(Component.text("【 ⚠ ロック中 】", NamedTextColor.RED, TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text("信用度が不足しています。", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+            
+            // ロック中は価格データを0にする（誤購入防止）
+            pdc.set(buyPriceKey, PersistentDataType.DOUBLE, 0.0);
+        }
 
         meta.lore(lore);
         display.setItemMeta(meta);
