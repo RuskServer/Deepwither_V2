@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.combat.placeholder;
 import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -15,11 +16,13 @@ public class DeepwitherPlaceholderExpansion extends PlaceholderExpansion {
     private final Deepwither_V2 plugin;
     private final ManaManager manaManager;
     private final VirtualHealthManager healthManager;
+    private final PlayerManager playerManager;
 
-    public DeepwitherPlaceholderExpansion(Deepwither_V2 plugin, ManaManager manaManager, VirtualHealthManager healthManager) {
+    public DeepwitherPlaceholderExpansion(Deepwither_V2 plugin, ManaManager manaManager, VirtualHealthManager healthManager, PlayerManager playerManager) {
         this.plugin = plugin;
         this.manaManager = manaManager;
         this.healthManager = healthManager;
+        this.playerManager = playerManager;
     }
 
     @Override
@@ -51,6 +54,7 @@ public class DeepwitherPlaceholderExpansion extends PlaceholderExpansion {
             case "mana_max" -> format(manaManager.getMaxMana(player));
             case "health_current" -> format(healthManager.getHealth(player));
             case "health_max" -> format(healthManager.getMaxHealth(player));
+            case "level" -> String.valueOf(playerManager.getPlayerLevel(player));
             default -> null;
         };
     }
