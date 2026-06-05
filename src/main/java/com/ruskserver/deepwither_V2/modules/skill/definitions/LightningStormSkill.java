@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -70,7 +71,7 @@ public class LightningStormSkill implements Skill {
             double range = 3.0 + Math.random() * 4.0;
             Location boltLoc = eyeLoc.clone().add(boltDir.multiply(range));
 
-            boltLoc.getWorld().spawnParticle(Particle.FLASH, boltLoc, 1, 0, 0, 0, 0);
+            boltLoc.getWorld().spawnParticle(Particle.FLASH, boltLoc, 1, 0, 0, 0, 0, Color.WHITE);
             boltLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, boltLoc, 15, 0.3, 0.3, 0.3, 0.05);
         }
 

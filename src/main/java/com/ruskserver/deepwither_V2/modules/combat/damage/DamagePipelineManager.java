@@ -10,13 +10,20 @@ import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
+import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
 import com.ruskserver.deepwither_V2.modules.revival.RevivalManager;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
+import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
+import net.citizensnpcs.api.CitizensAPI;
+import net.citizensnpcs.api.npc.NPC;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -24,6 +31,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +48,8 @@ public class DamagePipelineManager implements Listener {
     private final VirtualHealthManager healthManager;
     private final StatManager statManager;
     private final CustomMobManager customMobManager;
+    private final MobRegionConfig regionConfig;
+    private final TraderService traderService;
     private final DamageFeedbackService feedbackService;
     private final NamespacedKey corpseKey;
     private final List<DamagePhase> pipeline = new ArrayList<>();
@@ -48,10 +58,12 @@ public class DamagePipelineManager implements Listener {
     private final Map<UUID, Long> nextDamageTimeMap = new ConcurrentHashMap<>();
 
     @Inject
-    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, DamageFeedbackService feedbackService, org.bukkit.plugin.java.JavaPlugin plugin) {
+    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, MobRegionConfig regionConfig, TraderService traderService, DamageFeedbackService feedbackService, org.bukkit.plugin.java.JavaPlugin plugin) {
         this.healthManager = healthManager;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
+        this.regionConfig = regionConfig;
+        this.traderService = traderService;
         this.feedbackService = feedbackService;
         this.corpseKey = new NamespacedKey(plugin, RevivalManager.CORPSE_TAG);
 
@@ -74,7 +86,19 @@ public class DamagePipelineManager implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof LivingEntity defender)) return;
-        if (!(event.getDamager() instanceof LivingEntity attacker)) return;
+
+        if (isProtectedTrader(defender)) {
+            cancelDamage(event);
+            return;
+        }
+
+        LivingEntity attacker = resolveAttacker(event);
+        if (attacker == null) return;
+
+        if (isBlockedPvp(attacker, defender)) {
+            cancelDamage(event);
+            return;
+        }
 
         // 無敵時間（i-frame）のチェック
         long now = System.currentTimeMillis();
@@ -84,7 +108,7 @@ public class DamagePipelineManager implements Listener {
             return;
         }
 
-        event.setDamage(0);
+        cancelDamage(event);
 
         // ダメージタイプの判定（今回はデフォルトでPHYSICALとする。魔法アイテムならMAGICにするなどの拡張が可能）
         DamageType type = DamageType.PHYSICAL;
@@ -133,6 +157,11 @@ public class DamagePipelineManager implements Listener {
         if (event instanceof EntityDamageByEntityEvent) return;
         if (!(event.getEntity() instanceof LivingEntity defender)) return;
 
+        if (isProtectedTrader(defender)) {
+            cancelDamage(event);
+            return;
+        }
+
         // 無敵時間（i-frame）のチェック
         long now = System.currentTimeMillis();
         UUID id = defender.getUniqueId();
@@ -168,6 +197,41 @@ public class DamagePipelineManager implements Listener {
         }
     }
 
+    private LivingEntity resolveAttacker(EntityDamageByEntityEvent event) {
+        Entity damager = event.getDamager();
+        if (damager instanceof LivingEntity living) {
+            return living;
+        }
+        if (damager instanceof Projectile projectile) {
+            ProjectileSource shooter = projectile.getShooter();
+            if (shooter instanceof LivingEntity living) {
+                return living;
+            }
+        }
+        return null;
+    }
+
+    private boolean isProtectedTrader(LivingEntity entity) {
+        if (!Bukkit.getPluginManager().isPluginEnabled("Citizens")) {
+            return false;
+        }
+        NPC npc = CitizensAPI.getNPCRegistry().getNPC(entity);
+        return npc != null && traderService.getTrader(npc.getName()) != null;
+    }
+
+    private boolean isBlockedPvp(LivingEntity attacker, LivingEntity defender) {
+        if (!(attacker instanceof Player) || !(defender instanceof Player)) {
+            return false;
+        }
+        return regionConfig.isInSafeZone(attacker.getLocation())
+                || regionConfig.isInSafeZone(defender.getLocation());
+    }
+
+    private void cancelDamage(EntityDamageEvent event) {
+        event.setDamage(0);
+        event.setCancelled(true);
+    }
+
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         nextDamageTimeMap.remove(event.getPlayer().getUniqueId());
@@ -184,6 +248,10 @@ public class DamagePipelineManager implements Listener {
      * 距離倍率指定可能な processDamage のオーバーロード。
      */
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags, double distanceMultiplier) {
+        if (isProtectedTrader(defender) || isBlockedPvp(attacker, defender)) {
+            return;
+        }
+
         // 死体（ダウン中のマネキン）はダメージを受けない
         if (defender.getPersistentDataContainer().has(corpseKey, PersistentDataType.BYTE)) {
             return;

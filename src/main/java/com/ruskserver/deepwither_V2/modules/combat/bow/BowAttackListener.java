@@ -59,7 +59,7 @@ public class BowAttackListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onArrowDamage(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof AbstractArrow arrow)) return;
         if (!(event.getEntity() instanceof LivingEntity target)) return;
@@ -73,6 +73,7 @@ public class BowAttackListener implements Listener {
         if (!(arrow.getShooter() instanceof LivingEntity shooter)) return;
 
         event.setDamage(0);
+        event.setCancelled(true);
 
         // 距離計算
         Location origin = arrow.getOrigin();
