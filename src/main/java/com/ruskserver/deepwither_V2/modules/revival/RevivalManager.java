@@ -121,12 +121,9 @@ public class RevivalManager implements Startable, Stoppable, Listener {
         mannequin.setPersistent(false);
         mannequin.setRemoveWhenFarAway(false);
         mannequin.setCustomNameVisible(false);
-        mannequin.setProfile(ResolvableProfile.resolvableProfile()
-                .name(player.getName())
-                .uuid(player.getUniqueId())
-                .build());
+        mannequin.setProfile(ResolvableProfile.resolvableProfile().uuid(player.getUniqueId()).build());
         mannequin.setGlowing(true);
-        mannequin.setPose(Pose.SLEEPING, true);
+        mannequin.setPose(Pose.SWIMMING, true);
         if (player.getEquipment() != null) {
             mannequin.getEquipment().setHelmet(player.getEquipment().getHelmet());
             mannequin.getEquipment().setChestplate(player.getEquipment().getChestplate());
