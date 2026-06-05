@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillProjectileService;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -96,13 +97,13 @@ public class ThunderBlastSkill implements Skill {
             }
 
             private void detonate(Location location) {
-                location.getWorld().spawnParticle(Particle.FLASH, location, 1, 0, 0, 0, 0);
+                location.getWorld().spawnParticle(Particle.FLASH, location, 1, 0, 0, 0, 0, Color.WHITE);
                 location.getWorld().playSound(location, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.8f, 1.0f);
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     location.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, location, 1, 0, 0, 0, 0);
                     location.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, location, 40, 1.0, 1.0, 1.0, 0.15);
-                    location.getWorld().spawnParticle(Particle.FLASH, location, 3, 0.5, 0.5, 0.5, 0);
+                    location.getWorld().spawnParticle(Particle.FLASH, location, 3, 0.5, 0.5, 0.5, 0, Color.WHITE);
                     location.getWorld().playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.8f);
 
                     double damage = 90.0 + (context.getLevel() * 18.0);

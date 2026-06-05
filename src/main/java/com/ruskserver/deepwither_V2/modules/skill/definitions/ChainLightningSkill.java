@@ -6,6 +6,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillProjectileService;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -91,7 +92,7 @@ public class ChainLightningSkill implements Skill {
                 double damage = 25.0 + (context.getLevel() * 5.0);
                 damagePipelineManager.processDamage(context.getCaster(), hit, DamageType.MAGIC, damage, getTags());
 
-                origin.getWorld().spawnParticle(Particle.FLASH, hit.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0);
+                origin.getWorld().spawnParticle(Particle.FLASH, hit.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0, Color.WHITE);
                 origin.getWorld().playSound(hit.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.6f, 1.5f);
 
                 if (chainsRemaining <= 0) return;

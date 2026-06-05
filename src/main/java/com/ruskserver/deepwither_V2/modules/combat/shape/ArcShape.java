@@ -132,7 +132,7 @@ public class ArcShape implements HitShape {
         Location impactLoc = origin.clone().add(dir.clone().multiply(reach * 0.5));
         impactLoc.setY(origin.getY() - 1.5);
 
-        origin.getWorld().spawnParticle(Particle.FLASH, impactLoc.clone().add(0, 0.1, 0), 1, 0, 0, 0, 0);
+        origin.getWorld().spawnParticle(Particle.FLASH, impactLoc.clone().add(0, 0.1, 0), 1, 0, 0, 0, 0, Color.WHITE);
         origin.getWorld().spawnParticle(Particle.BLOCK, impactLoc, 15, 0.2, 0.1, 0.2, 0.1, org.bukkit.Material.STONE.createBlockData());
     }
 }

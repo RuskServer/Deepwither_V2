@@ -104,7 +104,7 @@ public class ThunderStrikeSkill implements Skill {
             }
 
             // 大爆発パーティクル
-            strikeLoc.getWorld().spawnParticle(Particle.FLASH, strikeLoc, 5, 1.0, 1.0, 1.0, 0);
+            strikeLoc.getWorld().spawnParticle(Particle.FLASH, strikeLoc, 5, 1.0, 1.0, 1.0, 0, Color.WHITE);
             strikeLoc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, strikeLoc, 3, 2.0, 0.5, 2.0, 0);
             strikeLoc.getWorld().spawnParticle(Particle.SONIC_BOOM, strikeLoc, 1, 0, 0, 0, 0);
 
