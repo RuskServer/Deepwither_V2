@@ -5,14 +5,11 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
-import com.ruskserver.deepwither_V2.modules.combat.shape.HitShape;
-import com.ruskserver.deepwither_V2.modules.combat.WeaponHitProfile;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.WandItem;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
-import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -24,21 +21,16 @@ import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 @Component
 public class CombatMeleeListener implements Listener {
 
-    private static final double[] SWORD_ROTATIONS = {0.0, 180.0, 45.0, 135.0};
-
     private final Map<UUID, Long> cooldowns = new HashMap<>();
-    private final Random random = new Random();
     private final StatManager statManager;
     private final ItemPDCUtil pdcUtil;
     private final ItemManager itemManager;
@@ -66,7 +58,33 @@ public class CombatMeleeListener implements Listener {
     @EventHandler
     public void onPlayerArmSwing(PlayerAnimationEvent event) {
         if (event.getAnimationType() != PlayerAnimationType.ARM_SWING) return;
-        Player player = event.getPlayer();
+        performCustomMeleeAttack(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        cooldowns.remove(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onVanillaMelee(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player player)) return;
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (hand == null || hand.isEmpty()) return;
+        if (isWand(hand)) return;
+
+        event.setDamage(0);
+
+        // EntityDamageByEntityEvent では PlayerAnimationEvent が発火しないため、
+        // ここで明示的に斬撃エフェクトを再生する
+        CombatWeaponType type = resolveWeaponType(hand);
+        if (type == null) return;
+
+        event.setCancelled(true);
+        performCustomMeleeAttack(player);
+    }
+
+    private void performCustomMeleeAttack(Player player) {
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand == null || hand.isEmpty()) return;
         if (isWand(hand)) return;
@@ -94,37 +112,6 @@ public class CombatMeleeListener implements Listener {
             statsService.recordHit(player, type, Math.max(0.0, statManager.getTotalStat(player, StatType.ATTACK_DAMAGE)));
             playHitSound(target);
         }
-    }
-
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        cooldowns.remove(event.getPlayer().getUniqueId());
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onVanillaMelee(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player player)) return;
-        ItemStack hand = player.getInventory().getItemInMainHand();
-        if (hand == null || hand.isEmpty()) return;
-        if (isWand(hand)) return;
-
-        event.setDamage(0);
-
-        // EntityDamageByEntityEvent では PlayerAnimationEvent が発火しないため、
-        // ここで明示的に斬撃エフェクトを再生する
-        CombatWeaponType type = resolveWeaponType(hand);
-        if (type == null) return;
-
-        WeaponHitProfile profile = WeaponHitProfile.from(type);
-        if (profile == null) return;
-
-        Location origin = player.getEyeLocation().subtract(0, 0.4, 0);
-        Vector direction = player.getEyeLocation().getDirection();
-        double rotation = 0;
-        if (profile.visualType() == HitShape.VisualType.SWORD) {
-            rotation = SWORD_ROTATIONS[random.nextInt(SWORD_ROTATIONS.length)];
-        }
-        profile.shape().spawnSlashEffect(origin, direction, profile.baseReach(), profile.visualType(), rotation);
     }
 
     private boolean isWand(ItemStack itemStack) {

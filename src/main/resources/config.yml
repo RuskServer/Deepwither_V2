@@ -46,6 +46,8 @@ mob-regions:
         weight: 30
       - mob-id: dark_elf
         weight: 10
+      - mob-id: ghoul_archer
+        weight: 8
 
   # ----- 別のZone例（コメントアウト） -----
   # dungeon_zone:
