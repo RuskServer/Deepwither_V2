@@ -5,11 +5,14 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.Duration;
 import java.util.List;
@@ -19,10 +22,12 @@ import java.util.Set;
 public class ThunderStrikeSkill implements Skill {
 
     private final DamagePipelineManager damagePipelineManager;
+    private final JavaPlugin plugin;
 
     @Inject
-    public ThunderStrikeSkill(DamagePipelineManager damagePipelineManager) {
+    public ThunderStrikeSkill(DamagePipelineManager damagePipelineManager, JavaPlugin plugin) {
         this.damagePipelineManager = damagePipelineManager;
+        this.plugin = plugin;
     }
 
     @Override
@@ -55,27 +60,74 @@ public class ThunderStrikeSkill implements Skill {
     public Duration getCooldown(SkillContext context) { return Duration.ofSeconds(7); }
 
     @Override
-    public Duration getCastTime(SkillContext context) { return Duration.ofMillis(800); }
+    public Duration getCastTime(SkillContext context) { return Duration.ofMillis(300); }
 
     @Override
     public CastResult cast(SkillContext context) {
         Location targetLoc = context.getTargetLocation();
         if (targetLoc == null) {
-            targetLoc = context.getCaster().getTargetBlock(null, 15).getLocation();
+            targetLoc = context.getCaster().getTargetBlock(null, 20).getLocation();
         }
 
-        Location strikeLoc = targetLoc.clone().add(0, 1, 0);
-        strikeLoc.getWorld().strikeLightningEffect(strikeLoc);
-        strikeLoc.getWorld().spawnParticle(Particle.FLASH, strikeLoc, 1, 0, 0, 0, 0);
-        strikeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, strikeLoc, 30, 0.4, 0.4, 0.4, 0.1);
-        strikeLoc.getWorld().playSound(strikeLoc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.0f, 1.0f);
+        // 中心座標をブロックの真ん中に調整
+        final Location strikeLoc = targetLoc.clone().add(0.5, 0.1, 0.5);
+        final double radius = 5.0;
+        final int level = context.getLevel();
+        final LivingEntity caster = context.getCaster();
 
-        double damage = 50.0 + (context.getLevel() * 10.0);
-        strikeLoc.getWorld().getNearbyEntities(strikeLoc, 3.0, 3.0, 3.0).forEach(entity -> {
-            if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+        // --- 予兆フェーズ (0.5秒) ---
+        // 魔法陣の展開音
+        strikeLoc.getWorld().playSound(strikeLoc, Sound.BLOCK_BEACON_ACTIVATE, 1.2f, 2.0f);
+        strikeLoc.getWorld().playSound(strikeLoc, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 0.5f);
+
+        // 予兆パーティクル (円を描く)
+        for (int i = 0; i < 36; i++) {
+            double angle = Math.toRadians(i * 10);
+            double x = Math.cos(angle) * radius;
+            double z = Math.sin(angle) * radius;
+            Location particleLoc = strikeLoc.clone().add(x, 0.2, z);
+            strikeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLoc, 2, 0, 0.1, 0, 0.05);
+        }
+        // 中心に集まるエネルギー
+        strikeLoc.getWorld().spawnParticle(Particle.ENCHANT, strikeLoc, 50, 2.0, 0.5, 2.0, 0.1);
+
+        // 10tick (0.5秒) 後に発動
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            // --- 発動フェーズ ---
+
+            // 派手な雷演出 (複数)
+            strikeLoc.getWorld().strikeLightningEffect(strikeLoc);
+            for (int i = 0; i < 3; i++) {
+                double ox = (Math.random() - 0.5) * 2.0;
+                double oz = (Math.random() - 0.5) * 2.0;
+                strikeLoc.getWorld().strikeLightningEffect(strikeLoc.clone().add(ox, 0, oz));
             }
-        });
+
+            // 大爆発パーティクル
+            strikeLoc.getWorld().spawnParticle(Particle.FLASH, strikeLoc, 5, 1.0, 1.0, 1.0, 0);
+            strikeLoc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, strikeLoc, 3, 2.0, 0.5, 2.0, 0);
+            strikeLoc.getWorld().spawnParticle(Particle.SONIC_BOOM, strikeLoc, 1, 0, 0, 0, 0);
+
+            // 衝撃波
+            for (int i = 0; i < 50; i++) {
+                double angle = Math.toRadians(i * (360.0 / 50.0));
+                double x = Math.cos(angle) * radius;
+                double z = Math.sin(angle) * radius;
+                Location particleLoc = strikeLoc.clone().add(x, 0.5, z);
+                strikeLoc.getWorld().spawnParticle(Particle.CLOUD, particleLoc, 1, 0, 0.1, 0, 0.1);
+            }
+
+            strikeLoc.getWorld().playSound(strikeLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 0.8f);
+            strikeLoc.getWorld().playSound(strikeLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.5f);
+
+            // ダメージ処理
+            double damage = 100.0 + (level * 25.0);
+            strikeLoc.getWorld().getNearbyEntities(strikeLoc, radius, 4.0, radius).forEach(entity -> {
+                if (entity instanceof LivingEntity victim && !entity.equals(caster)) {
+                    damagePipelineManager.processDamage(caster, victim, DamageType.MAGIC, damage, getTags());
+                }
+            });
+        }, 10L);
 
         return CastResult.success();
     }
