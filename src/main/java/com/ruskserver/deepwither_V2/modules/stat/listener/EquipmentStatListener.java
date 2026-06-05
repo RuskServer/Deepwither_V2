@@ -93,9 +93,11 @@ public class EquipmentStatListener implements Listener {
         for (StatType type : StatType.values()) {
             statManager.removeModifier(player.getUniqueId(), type, "equip_mainhand_base");
             statManager.removeModifier(player.getUniqueId(), type, "equip_mainhand_mod");
+            statManager.removeModifier(player.getUniqueId(), type, "equip_mainhand_mod_added");
             for (int i = 0; i < 4; i++) {
                 statManager.removeModifier(player.getUniqueId(), type, ARMOR_SOURCE_BASE[i]);
                 statManager.removeModifier(player.getUniqueId(), type, ARMOR_SOURCE_MOD[i]);
+                statManager.removeModifier(player.getUniqueId(), type, ARMOR_SOURCE_MOD[i] + "_added");
             }
         }
     }
@@ -125,9 +127,16 @@ public class EquipmentStatListener implements Listener {
             }
         }
 
+        // ベースへのランダムボーナス
         Map<StatType, Double> modifiers = pdcUtil.getModifiers(item);
         for (Map.Entry<StatType, Double> entry : modifiers.entrySet()) {
             statManager.setModifier(player.getUniqueId(), entry.getKey(), modSourceId, entry.getValue(), ModifierType.ADDITIVE);
+        }
+
+        // 新規追加ステータス
+        Map<StatType, Double> addedStats = pdcUtil.getAddedStats(item);
+        for (Map.Entry<StatType, Double> entry : addedStats.entrySet()) {
+            statManager.setModifier(player.getUniqueId(), entry.getKey(), modSourceId + "_added", entry.getValue(), ModifierType.ADDITIVE);
         }
     }
 }

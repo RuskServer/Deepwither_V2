@@ -1,6 +1,7 @@
 package com.ruskserver.deepwither_V2.modules.item.api;
 
 import com.ruskserver.deepwither_V2.core.stat.StatType;
+import com.ruskserver.deepwither_V2.modules.item.modifier.ItemCategory;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -56,6 +57,22 @@ public interface CustomItem {
      */
     default double getSellPrice() {
         return 0.0;
+    }
+
+    /**
+     * @return アイテムのカテゴリ。デフォルトではベースステータス構成から自動推定します。
+     */
+    default ItemCategory getItemCategory() {
+        return ItemCategory.fromItem(this);
+    }
+
+    /**
+     * @return このアイテムが「追加ステータス枠」として受け入れ可能な StatType を返します。
+     *         デフォルトは null（全候補からカテゴリ親和性に従って自動選択）。
+     *         特定のStatだけを追加可能にしたい場合はオーバーライドしてください。
+     */
+    default java.util.Set<StatType> getAllowedAddedStats() {
+        return null;
     }
 
     /**

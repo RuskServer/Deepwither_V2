@@ -5,6 +5,8 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierManager;
+import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierRollResult;
+import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectInstance;
 import com.ruskserver.deepwither_V2.core.di.container.DIContainer;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
@@ -101,11 +103,11 @@ public class ItemManager implements Startable {
         }
 
         // ランダムモディファイアの決定
-        Map<StatType, Double> modifiers = modifierManager.rollModifiers(customItem);
+        ModifierRollResult rollResult = modifierManager.rollModifiers(customItem);
 
         // PDCにデータを書き込む
         pdcUtil.setItemId(item, itemId);
-        pdcUtil.setModifiers(item, modifiers);
+        pdcUtil.setModifiers(item, rollResult);
 
         // Lore等を適用する
         updateItemMeta(item);
@@ -128,6 +130,8 @@ public class ItemManager implements Startable {
         if (customItem == null) return; // 未定義・削除済みのアイテム定義
 
         Map<StatType, Double> modifiers = pdcUtil.getModifiers(item);
+        Map<StatType, Double> addedStats = pdcUtil.getAddedStats(item);
+        List<SpecialEffectInstance> specialEffects = pdcUtil.getSpecialEffects(item);
         ItemMeta meta = item.getItemMeta();
 
         // バニラの属性表示を非表示にする
@@ -181,6 +185,27 @@ public class ItemManager implements Startable {
                     line += " §c(" + modValue + ")";
                 }
                 lore.add(Component.text(line).decoration(TextDecoration.ITALIC, false));
+            }
+
+            // 追加ステータス（ベースに存在しない新規ステータス）
+            for (Map.Entry<StatType, Double> entry : addedStats.entrySet()) {
+                StatType type = entry.getKey();
+                double value = entry.getValue();
+                String line = " §b+" + type.getDisplayName() + ": §f" + value;
+                lore.add(Component.text(line).decoration(TextDecoration.ITALIC, false));
+            }
+        }
+
+        // 4. 特殊効果
+        if (!specialEffects.isEmpty()) {
+            lore.add(Component.empty());
+            lore.add(Component.text("§8§m--------§6 特殊効果 §8§m--------")
+                    .decoration(TextDecoration.ITALIC, false));
+            for (SpecialEffectInstance effect : specialEffects) {
+                lore.add(Component.text(" §6・" + effect.getDisplayString())
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("   §7" + effect.getEffect().getDescription())
+                        .decoration(TextDecoration.ITALIC, false));
             }
         }
 
