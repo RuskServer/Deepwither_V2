@@ -16,6 +16,7 @@ import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -29,6 +30,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -51,6 +53,9 @@ public class RevivalManager implements Startable, Stoppable, Listener {
     private static final int PROGRESS_NEEDED = 50;
     private static final long TIMEOUT_MS = 120_000;
     private static final double REVIVE_HP_RATIO = 0.2;
+
+    public static final String CORPSE_TAG = "is_corpse";
+    private final NamespacedKey corpseKey;
 
     private final Map<UUID, DownedPlayerData> downedPlayers = new ConcurrentHashMap<>();
     private final Map<UUID, RevivalSession> sessions = new ConcurrentHashMap<>();
@@ -75,6 +80,11 @@ public class RevivalManager implements Startable, Stoppable, Listener {
         this.plugin = plugin;
         this.regionConfig = regionConfig;
         this.logger = plugin.getLogger();
+        this.corpseKey = new NamespacedKey(plugin, CORPSE_TAG);
+    }
+
+    public NamespacedKey getCorpseKey() {
+        return corpseKey;
     }
 
     @Override
@@ -98,6 +108,9 @@ public class RevivalManager implements Startable, Stoppable, Listener {
 
     public void enterDownState(Player player) {
         UUID uuid = player.getUniqueId();
+
+        // 二重ダウン防止
+        if (downedPlayers.containsKey(uuid)) return;
 
         int expAtDeath = 0;
         var dataOpt = repository.get(uuid);
@@ -123,6 +136,8 @@ public class RevivalManager implements Startable, Stoppable, Listener {
         mannequin.setCustomNameVisible(false);
         mannequin.setProfile(ResolvableProfile.resolvableProfile().uuid(player.getUniqueId()).build());
         mannequin.setGlowing(true);
+        mannequin.setInvulnerable(true);
+        mannequin.getPersistentDataContainer().set(corpseKey, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
         mannequin.setPose(Pose.SWIMMING, true);
         if (player.getEquipment() != null) {
             mannequin.getEquipment().setHelmet(player.getEquipment().getHelmet());

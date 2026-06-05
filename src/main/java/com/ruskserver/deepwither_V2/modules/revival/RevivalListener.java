@@ -12,7 +12,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
 import java.util.UUID;
@@ -40,6 +43,13 @@ public class RevivalListener implements Listener {
     @EventHandler
     public void onPlayerDown(PlayerDownEvent event) {
         Player player = event.getPlayer();
+        
+        // すでにダウン状態ならキャンセル
+        if (revivalManager.isDowned(player)) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (regionConfig.isInSafeZone(player.getLocation())) {
             event.setCancelled(true);
             return;
@@ -63,6 +73,27 @@ public class RevivalListener implements Listener {
     @EventHandler
     public void onEntityTarget(EntityTargetLivingEntityEvent event) {
         if (event.getTarget() instanceof Player target && revivalManager.isDowned(target)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onCorpseDamage(EntityDamageEvent event) {
+        if (event.getEntity().getPersistentDataContainer().has(revivalManager.getCorpseKey())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onCorpseInteract(PlayerInteractAtEntityEvent event) {
+        if (event.getRightClicked().getPersistentDataContainer().has(revivalManager.getCorpseKey())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
+        if (event.getRightClicked().getPersistentDataContainer().has(revivalManager.getCorpseKey())) {
             event.setCancelled(true);
         }
     }

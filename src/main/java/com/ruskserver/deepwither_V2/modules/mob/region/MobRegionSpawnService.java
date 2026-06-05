@@ -128,41 +128,56 @@ public class MobRegionSpawnService implements Startable, Stoppable {
     }
 
     /**
-     * 指定Regionに対してスポーンを1回試みます。
+     * 指定Regionに対してスポーンを試みます。
+     * プレイヤー人数に応じてスポーン数と上限を動的に調整します。
      */
     private void attemptSpawn(MobRegion region) {
-        // Region内にプレイヤーがいない場合はスポーンしない
-        List<org.bukkit.entity.Player> playersInRegion = getPlayersInRegion(region);
+        List<Player> playersInRegion = getPlayersInRegion(region);
         if (playersInRegion.isEmpty()) return;
 
         // 現在のRegion内アクティブモブ数をカウント
         long currentCount = countActiveMobsIn(region);
-        if (currentCount >= region.maxMobsPerRegion()) {
-            return;
+
+        // 動的な上限設定: 1人追加ごとに基本上限の50%をボーナスとして加算
+        int baseMax = region.maxMobsPerRegion();
+        int dynamicMax = baseMax + (playersInRegion.size() - 1) * (baseMax / 2);
+
+        // 各プレイヤーの周辺に対してスポーンを試行
+        for (Player target : playersInRegion) {
+            if (currentCount >= dynamicMax) {
+                break;
+            }
+
+            if (spawnOneMobNear(region, target)) {
+                currentCount++;
+            }
         }
+    }
 
-        // Weighted Randomでモブを選択
+    /**
+     * 指定プレイヤーの周辺にモブを1体スポーンさせます。
+     *
+     * @return スポーンに成功した場合は true
+     */
+    private boolean spawnOneMobNear(MobRegion region, Player target) {
         String selectedMobId = weightedRandom(region);
-        if (selectedMobId == null) return;
+        if (selectedMobId == null) return false;
 
-        // 登録されているか確認
         if (!mobManager.hasRegistration(selectedMobId)) {
             log.warning("[MobRegionSpawnService] Region '" + region.name()
                     + "' のスポーンテーブルに未登録のモブID: " + selectedMobId);
-            return;
+            return false;
         }
 
-        // プレイヤー周辺のランダムなスポーン座標を決定
-        org.bukkit.entity.Player target = playersInRegion.get(random.nextInt(playersInRegion.size()));
         Location spawnLoc = nearbyPlayerSurfaceLocation(region, target);
-        if (spawnLoc == null) return;
+        if (spawnLoc == null) return false;
 
-        // 対象プレイヤーのレベルと同等かつエリアの最大レベルを超えないように制限
         int playerLevel = playerManager.getPlayerLevel(target);
         int spawnLevel = Math.min(playerLevel, region.maxLevel());
         if (spawnLevel < 1) spawnLevel = 1;
 
         mobManager.spawnMob(selectedMobId, spawnLoc, spawnLevel);
+        return true;
     }
 
     /**

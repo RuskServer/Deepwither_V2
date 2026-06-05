@@ -10,7 +10,9 @@ import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
+import com.ruskserver.deepwither_V2.modules.revival.RevivalManager;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.LivingEntity;
@@ -21,6 +23,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,17 +41,19 @@ public class DamagePipelineManager implements Listener {
     private final StatManager statManager;
     private final CustomMobManager customMobManager;
     private final DamageFeedbackService feedbackService;
+    private final NamespacedKey corpseKey;
     private final List<DamagePhase> pipeline = new ArrayList<>();
 
     // 各エンティティの次回の攻撃可能時刻を管理 (無敵時間システム)
     private final Map<UUID, Long> nextDamageTimeMap = new ConcurrentHashMap<>();
 
     @Inject
-    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, DamageFeedbackService feedbackService) {
+    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, DamageFeedbackService feedbackService, org.bukkit.plugin.java.JavaPlugin plugin) {
         this.healthManager = healthManager;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
         this.feedbackService = feedbackService;
+        this.corpseKey = new NamespacedKey(plugin, RevivalManager.CORPSE_TAG);
 
         // パイプラインのフェーズを順番に登録する
         // 1. 基礎ダメージの設定
@@ -179,6 +184,11 @@ public class DamagePipelineManager implements Listener {
      * 距離倍率指定可能な processDamage のオーバーロード。
      */
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags, double distanceMultiplier) {
+        // 死体（ダウン中のマネキン）はダメージを受けない
+        if (defender.getPersistentDataContainer().has(corpseKey, PersistentDataType.BYTE)) {
+            return;
+        }
+
         // 無敵時間（i-frame）のチェック
         long now = System.currentTimeMillis();
         UUID id = defender.getUniqueId();
