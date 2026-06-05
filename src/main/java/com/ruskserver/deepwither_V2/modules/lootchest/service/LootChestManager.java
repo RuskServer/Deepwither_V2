@@ -33,7 +33,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class LootChestManager implements Startable, Stoppable {
 
     private static final NamespacedKey HOLOGRAM_KEY = new NamespacedKey("deepwither", "loot_chest_hologram");
-    
+    private static final double HOLOGRAM_SCAN_RADIUS = 2.0;
+
     private final JavaPlugin plugin;
     private final LootChestRepository repository;
     private final LootRegistry registry;
@@ -72,7 +73,9 @@ public class LootChestManager implements Startable, Stoppable {
             tickTask.cancel();
         }
         for (ArmorStand hologram : activeHolograms.values()) {
-            hologram.remove();
+            if (!hologram.isDead()) {
+                hologram.remove();
+            }
         }
     }
 
@@ -88,8 +91,10 @@ public class LootChestManager implements Startable, Stoppable {
 
     private void startTickTask() {
         tickTask = new BukkitRunnable() {
+            private int tick = 0;
             @Override
             public void run() {
+                tick++;
                 LocalDateTime now = LocalDateTime.now();
                 for (LootChestLocation loc : activeChests.values()) {
                     if (!loc.isSpawned()) {
@@ -102,9 +107,21 @@ public class LootChestManager implements Startable, Stoppable {
                         checkChestEmptied(loc);
                     }
                 }
+                // 定期的に全チェスト周辺の重複ホログラムを掃除（約30秒おき）
+                if (tick % 600 == 0) {
+                    sweepAllHolograms();
+                }
             }
         };
         tickTask.runTaskTimer(plugin, 20L, 20L); // 1秒おきに実行
+    }
+
+    private void sweepAllHolograms() {
+        for (LootChestLocation loc : activeChests.values()) {
+            if (!loc.isSpawned()) {
+                removeDuplicateHolograms(loc.getLocation());
+            }
+        }
     }
 
     public void registerNewChest(Location location, String lootTableId) {
@@ -226,6 +243,7 @@ public class LootChestManager implements Startable, Stoppable {
         ArmorStand as = activeHolograms.get(loc.getId());
         if (as == null || as.isDead()) {
             if (as != null) activeHolograms.remove(loc.getId());
+            removeDuplicateHolograms(loc.getLocation());
             as = createHologram(loc.getLocation());
             activeHolograms.put(loc.getId(), as);
         }
@@ -235,13 +253,7 @@ public class LootChestManager implements Startable, Stoppable {
     private ArmorStand createHologram(Location loc) {
         Location spawnLoc = loc.clone().add(0.5, 0.5, 0.5);
 
-        // 既存のホログラムが残っている場合は削除（チャンク再読み込み対策）
-        for (Entity entity : spawnLoc.getWorld().getNearbyEntities(spawnLoc, 0.1, 0.1, 0.1)) {
-            if (entity instanceof ArmorStand as
-                    && as.getPersistentDataContainer().has(HOLOGRAM_KEY, PersistentDataType.BYTE)) {
-                as.remove();
-            }
-        }
+        removeDuplicateHolograms(loc);
 
         ArmorStand as = (ArmorStand) spawnLoc.getWorld().spawnEntity(spawnLoc, EntityType.ARMOR_STAND);
         as.setGravity(false);
@@ -251,6 +263,20 @@ public class LootChestManager implements Startable, Stoppable {
         as.setSmall(true);
         as.getPersistentDataContainer().set(HOLOGRAM_KEY, PersistentDataType.BYTE, (byte) 1);
         return as;
+    }
+
+    // チェスト位置周辺に既存のホログラムが残っていれば全て削除（チャンク再読み込み・増殖対策）
+    private void removeDuplicateHolograms(Location loc) {
+        Location center = loc.clone().add(0.5, 0.5, 0.5);
+        center.getWorld().getNearbyEntities(center, HOLOGRAM_SCAN_RADIUS, HOLOGRAM_SCAN_RADIUS, HOLOGRAM_SCAN_RADIUS)
+                .stream()
+                .filter(e -> e instanceof ArmorStand)
+                .map(e -> (ArmorStand) e)
+                .filter(as -> as.getPersistentDataContainer().has(HOLOGRAM_KEY, PersistentDataType.BYTE))
+                .forEach(as -> {
+                    as.remove();
+                    activeHolograms.values().remove(as);
+                });
     }
 
     private void removeHologram(UUID id) {
