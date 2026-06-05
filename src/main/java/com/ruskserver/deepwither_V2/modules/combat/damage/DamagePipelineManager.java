@@ -100,10 +100,6 @@ public class DamagePipelineManager implements Listener {
             return;
         }
 
-        if (event.getDamager() instanceof Projectile) {
-            return;
-        }
-
         // 無敵時間（i-frame）のチェック
         long now = System.currentTimeMillis();
         UUID id = defender.getUniqueId();
