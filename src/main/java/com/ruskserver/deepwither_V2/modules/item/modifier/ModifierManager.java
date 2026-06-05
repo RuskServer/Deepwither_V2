@@ -149,11 +149,6 @@ public class ModifierManager {
         double pct = minPct + (random.nextDouble() * (maxPct - minPct));
         double bonus = baseValue * pct;
 
-        // 最低保証: 追加ステータスでベース値が小さい場合
-        if (isAddedStat && bonus < 0.5) {
-            bonus = 0.5;
-        }
-
         return Math.round(bonus * 10.0) / 10.0;
     }
 
@@ -165,14 +160,14 @@ public class ModifierManager {
         return switch (stat) {
             case HEALTH -> 10.0;
             case MAX_MANA -> 20.0;
-            case ATTACK_DAMAGE, MAGIC_DAMAGE -> 5.0;
-            case DEFENSE, MAGIC_DEFENSE -> 3.0;
-            case CRITICAL_CHANCE -> 2.0;
+            case ATTACK_DAMAGE, MAGIC_DAMAGE -> 8.0;
+            case DEFENSE, MAGIC_DEFENSE -> 8.0;
+            case CRITICAL_CHANCE -> 4.0;
             case CRITICAL_DAMAGE -> 10.0;
-            case ATTACK_SPEED -> 0.5;
-            case SPEED -> 0.3;
-            case COOLDOWN_REDUCTION -> 1.0;
-            case FIRE_DAMAGE, ICE_DAMAGE, LIGHTNING_DAMAGE -> 2.0;
+            case ATTACK_SPEED -> 1.2;
+            case SPEED -> 1.0;
+            case COOLDOWN_REDUCTION -> 3.0;
+            case FIRE_DAMAGE, ICE_DAMAGE, LIGHTNING_DAMAGE -> 4.0;
         };
     }
 
