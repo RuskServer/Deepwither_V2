@@ -1,8 +1,9 @@
 package com.ruskserver.deepwither_V2.modules.skilltree.service;
 
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillRegistry;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeContext;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeDefinition;
@@ -12,7 +13,7 @@ import com.ruskserver.deepwither_V2.modules.skilltree.api.UnlockResult;
 import com.ruskserver.deepwither_V2.modules.skilltree.event.SkillTreeNodeUnlockAttemptEvent;
 import com.ruskserver.deepwither_V2.modules.skilltree.event.SkillTreeNodeUnlockEvent;
 import com.ruskserver.deepwither_V2.modules.skilltree.event.SkillTreePointChangeEvent;
-import com.ruskserver.deepwither_V2.modules.skilltree.provider.PlayerSkillTreeProvider;
+import com.ruskserver.deepwither_V2.modules.skilltree.provider.CharacterSkillTreeProvider;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -28,13 +29,15 @@ public class SkillTreeService implements Listener {
 
     public static final int SKILL_POINTS_PER_LEVEL = 2;
 
-    private final PlayerDataRepository repository;
+    private final CharacterDataRepository characterDataRepository;
+    private final CharacterService characterService;
     private final SkillTreeRegistry treeRegistry;
     private final SkillRegistry skillRegistry;
 
     @Inject
-    public SkillTreeService(PlayerDataRepository repository, SkillTreeRegistry treeRegistry, SkillRegistry skillRegistry) {
-        this.repository = repository;
+    public SkillTreeService(CharacterDataRepository characterDataRepository, CharacterService characterService, SkillTreeRegistry treeRegistry, SkillRegistry skillRegistry) {
+        this.characterDataRepository = characterDataRepository;
+        this.characterService = characterService;
         this.treeRegistry = treeRegistry;
         this.skillRegistry = skillRegistry;
     }
@@ -46,15 +49,17 @@ public class SkillTreeService implements Listener {
 
     public void addSkillPoints(Player player, int amount, String reason) {
         if (amount == 0) return;
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerSkillTreeProvider.SkillTreeData treeData = data.get(PlayerSkillTreeProvider.KEY);
-            if (treeData == null) return;
+        characterService.getActiveCharacter(player.getUniqueId()).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                CharacterSkillTreeProvider.SkillTreeData treeData = data.get(CharacterSkillTreeProvider.KEY);
+                if (treeData == null) return;
 
-            int before = treeData.getSkillPoints();
-            treeData.addSkillPoints(amount);
-            data.markDirty(PlayerSkillTreeProvider.KEY);
-            repository.save(player.getUniqueId(), data);
-            Bukkit.getPluginManager().callEvent(new SkillTreePointChangeEvent(player, before, treeData.getSkillPoints(), reason));
+                int before = treeData.getSkillPoints();
+                treeData.addSkillPoints(amount);
+                data.markDirty(CharacterSkillTreeProvider.KEY);
+                characterDataRepository.save(c.characterId(), data);
+                Bukkit.getPluginManager().callEvent(new SkillTreePointChangeEvent(player, before, treeData.getSkillPoints(), reason));
+            });
         });
     }
 
@@ -67,9 +72,11 @@ public class SkillTreeService implements Listener {
         if (node == null) {
             return 0;
         }
-        var dataOpt = repository.get(player.getUniqueId());
+        var characterOpt = characterService.getActiveCharacter(player.getUniqueId());
+        if (characterOpt.isEmpty()) return 0;
+        var dataOpt = characterDataRepository.get(characterOpt.get().characterId());
         if (dataOpt.isEmpty()) return 0;
-        PlayerSkillTreeProvider.SkillTreeData treeData = dataOpt.get().get(PlayerSkillTreeProvider.KEY);
+        CharacterSkillTreeProvider.SkillTreeData treeData = dataOpt.get().get(CharacterSkillTreeProvider.KEY);
         return treeData == null ? 0 : treeData.getNodeLevel(node.getId());
     }
 
@@ -86,13 +93,18 @@ public class SkillTreeService implements Listener {
             return UnlockResult.fail(Component.text("習得がキャンセルされました。", NamedTextColor.RED));
         }
 
-        var dataOpt = repository.get(player.getUniqueId());
+        var characterOpt = characterService.getActiveCharacter(player.getUniqueId());
+        if (characterOpt.isEmpty()) {
+            return UnlockResult.fail(Component.text("アクティブなキャラクターがありません。", NamedTextColor.RED));
+        }
+        UUID characterId = characterOpt.get().characterId();
+        var dataOpt = characterDataRepository.get(characterId);
         if (dataOpt.isEmpty()) {
-            return UnlockResult.fail(Component.text("プレイヤーデータを読み込めません。", NamedTextColor.RED));
+            return UnlockResult.fail(Component.text("キャラクターデータを読み込めません。", NamedTextColor.RED));
         }
 
         var data = dataOpt.get();
-        PlayerSkillTreeProvider.SkillTreeData treeData = data.get(PlayerSkillTreeProvider.KEY);
+        CharacterSkillTreeProvider.SkillTreeData treeData = data.get(CharacterSkillTreeProvider.KEY);
         if (treeData == null) {
             return UnlockResult.fail(Component.text("スキルツリーデータを読み込めません。", NamedTextColor.RED));
         }
@@ -132,8 +144,8 @@ public class SkillTreeService implements Listener {
         treeData.setSkillPoints(treeData.getSkillPoints() - cost);
         int newLevel = currentLevel + 1;
         treeData.setNodeLevel(nodeId, newLevel);
-        data.markDirty(PlayerSkillTreeProvider.KEY);
-        repository.save(player.getUniqueId(), data);
+        data.markDirty(CharacterSkillTreeProvider.KEY);
+        characterDataRepository.save(characterId, data);
 
         recalculatePassives(player);
         Bukkit.getPluginManager().callEvent(new SkillTreeNodeUnlockEvent(player, tree, node, newLevel));
@@ -141,49 +153,64 @@ public class SkillTreeService implements Listener {
     }
 
     public void saveCamera(Player player, String treeId, int x, int y) {
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerSkillTreeProvider.SkillTreeData treeData = data.get(PlayerSkillTreeProvider.KEY);
-            if (treeData == null) return;
-            treeData.setCameraPosition(treeId, x, y);
-            data.markDirty(PlayerSkillTreeProvider.KEY);
-            repository.save(player.getUniqueId(), data);
+        characterService.getActiveCharacter(player.getUniqueId()).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                CharacterSkillTreeProvider.SkillTreeData treeData = data.get(CharacterSkillTreeProvider.KEY);
+                if (treeData == null) return;
+                treeData.setCameraPosition(treeId, x, y);
+                data.markDirty(CharacterSkillTreeProvider.KEY);
+                characterDataRepository.save(c.characterId(), data);
+            });
         });
     }
 
-    public PlayerSkillTreeProvider.CameraPosition getCamera(Player player, String treeId) {
-        var dataOpt = repository.get(player.getUniqueId());
-        if (dataOpt.isEmpty()) {
-            return new PlayerSkillTreeProvider.CameraPosition(0, 0);
+    public CharacterSkillTreeProvider.CameraPosition getCamera(Player player, String treeId) {
+        var characterOpt = characterService.getActiveCharacter(player.getUniqueId());
+        if (characterOpt.isEmpty()) {
+            return new CharacterSkillTreeProvider.CameraPosition(0, 0);
         }
-        PlayerSkillTreeProvider.SkillTreeData treeData = dataOpt.get().get(PlayerSkillTreeProvider.KEY);
-        return treeData == null ? new PlayerSkillTreeProvider.CameraPosition(0, 0) : treeData.getCameraPosition(treeId);
+        var dataOpt = characterDataRepository.get(characterOpt.get().characterId());
+        if (dataOpt.isEmpty()) {
+            return new CharacterSkillTreeProvider.CameraPosition(0, 0);
+        }
+        CharacterSkillTreeProvider.SkillTreeData treeData = dataOpt.get().get(CharacterSkillTreeProvider.KEY);
+        return treeData == null ? new CharacterSkillTreeProvider.CameraPosition(0, 0) : treeData.getCameraPosition(treeId);
     }
 
     public void recalculatePassives(Player player) {
         UUID uuid = player.getUniqueId();
-        var dataOpt = repository.get(uuid);
-        if (dataOpt.isEmpty()) return;
-        PlayerSkillTreeProvider.SkillTreeData treeData = dataOpt.get().get(PlayerSkillTreeProvider.KEY);
-        if (treeData == null) return;
+        characterService.getActiveCharacter(uuid).ifPresent(c -> {
+            var dataOpt = characterDataRepository.get(c.characterId());
+            if (dataOpt.isEmpty()) return;
+            CharacterSkillTreeProvider.SkillTreeData treeData = dataOpt.get().get(CharacterSkillTreeProvider.KEY);
+            if (treeData == null) return;
 
-        for (SkillTreeNode node : treeRegistry.getNodes()) {
-            if (node.getType() != SkillTreeNodeType.PASSIVE) continue;
-            SkillTreeDefinition tree = treeRegistry.getTreeByNode(node.getId());
-            SkillTreeContext context = new SkillTreeContext(player, tree, node, treeData);
-            node.getPassiveEffect().clear(player, context);
-        }
-        for (SkillTreeNode node : treeRegistry.getNodes()) {
-            if (node.getType() != SkillTreeNodeType.PASSIVE) continue;
-            int level = treeData.getNodeLevel(node.getId());
-            if (level <= 0) continue;
-            SkillTreeDefinition tree = treeRegistry.getTreeByNode(node.getId());
-            SkillTreeContext context = new SkillTreeContext(player, tree, node, treeData);
-            node.getPassiveEffect().apply(player, level, context);
-        }
+            for (SkillTreeNode node : treeRegistry.getNodes()) {
+                if (node.getType() != SkillTreeNodeType.PASSIVE) continue;
+                SkillTreeDefinition tree = treeRegistry.getTreeByNode(node.getId());
+                SkillTreeContext context = new SkillTreeContext(player, tree, node, treeData);
+                node.getPassiveEffect().clear(player, context);
+            }
+            for (SkillTreeNode node : treeRegistry.getNodes()) {
+                if (node.getType() != SkillTreeNodeType.PASSIVE) continue;
+                int level = treeData.getNodeLevel(node.getId());
+                if (level <= 0) continue;
+                SkillTreeDefinition tree = treeRegistry.getTreeByNode(node.getId());
+                SkillTreeContext context = new SkillTreeContext(player, tree, node, treeData);
+                node.getPassiveEffect().apply(player, level, context);
+            }
+        });
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
+        if (characterService.hasCachedActiveCharacter(event.getPlayer().getUniqueId())) {
+            recalculatePassives(event.getPlayer());
+        }
+    }
+
+    @EventHandler
+    public void onCharacterSelect(com.ruskserver.deepwither_V2.modules.character.event.CharacterSelectEvent event) {
         recalculatePassives(event.getPlayer());
     }
 }

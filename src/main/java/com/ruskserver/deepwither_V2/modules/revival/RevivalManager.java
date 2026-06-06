@@ -1,14 +1,15 @@
 package com.ruskserver.deepwither_V2.modules.revival;
 
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
-import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
+import com.ruskserver.deepwither_V2.modules.player.provider.CharacterLevelProvider;
 import io.papermc.paper.datacomponent.item.ResolvableProfile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -63,7 +64,8 @@ public class RevivalManager implements Startable, Stoppable, Listener {
     private final Map<UUID, BossBar> bossBars = new ConcurrentHashMap<>();
 
     private final VirtualHealthManager healthManager;
-    private final PlayerDataRepository repository;
+    private final CharacterDataRepository characterDataRepository;
+    private final CharacterService characterService;
     private final PlayerManager playerManager;
     private final JavaPlugin plugin;
     private final MobRegionConfig regionConfig;
@@ -72,10 +74,11 @@ public class RevivalManager implements Startable, Stoppable, Listener {
     private BukkitTask tickTask;
 
     @Inject
-    public RevivalManager(VirtualHealthManager healthManager, PlayerDataRepository repository,
-                          PlayerManager playerManager, JavaPlugin plugin, MobRegionConfig regionConfig) {
+    public RevivalManager(VirtualHealthManager healthManager, CharacterDataRepository characterDataRepository,
+                          CharacterService characterService, PlayerManager playerManager, JavaPlugin plugin, MobRegionConfig regionConfig) {
         this.healthManager = healthManager;
-        this.repository = repository;
+        this.characterDataRepository = characterDataRepository;
+        this.characterService = characterService;
         this.playerManager = playerManager;
         this.plugin = plugin;
         this.regionConfig = regionConfig;
@@ -113,11 +116,14 @@ public class RevivalManager implements Startable, Stoppable, Listener {
         if (downedPlayers.containsKey(uuid)) return;
 
         int expAtDeath = 0;
-        var dataOpt = repository.get(uuid);
-        if (dataOpt.isPresent()) {
-            PlayerLevelProvider.LevelData levelData = dataOpt.get().get(PlayerLevelProvider.KEY);
-            if (levelData != null) {
-                expAtDeath = levelData.getExp();
+        var characterOpt = characterService.getActiveCharacter(uuid);
+        if (characterOpt.isPresent()) {
+            var dataOpt = characterDataRepository.get(characterOpt.get().characterId());
+            if (dataOpt.isPresent()) {
+                CharacterLevelProvider.LevelData levelData = dataOpt.get().get(CharacterLevelProvider.KEY);
+                if (levelData != null) {
+                    expAtDeath = levelData.getExp();
+                }
             }
         }
 

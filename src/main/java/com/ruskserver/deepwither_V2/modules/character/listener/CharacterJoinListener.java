@@ -49,19 +49,23 @@ public class CharacterJoinListener implements Listener {
     private void ensureCharacterAsync(UUID playerId, String playerName) {
         try {
             Optional<GameCharacter> activeCharacter = characterService.ensureLegacyCharacter(playerId, playerName);
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
-                Player player = plugin.getServer().getPlayer(playerId);
-                if (player == null || !player.isOnline()) {
-                    return;
-                }
-                if (activeCharacter.isPresent()) {
-                    nameTagService.refresh(player, activeCharacter.get().mode());
-                } else {
+            if (activeCharacter.isPresent()) {
+                GameCharacter character = activeCharacter.get();
+                // インベントリ・位置データを非同期でロードしてからメインスレッドで反映
+                characterService.loadAndApplyCharacterDataAsync(playerId, character.characterId(), () -> {
+                    Player player = plugin.getServer().getPlayer(playerId);
+                    if (player == null || !player.isOnline()) return;
+                    nameTagService.refresh(player, character.mode());
+                });
+            } else {
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    Player player = plugin.getServer().getPlayer(playerId);
+                    if (player == null || !player.isOnline()) return;
                     nameTagService.refresh(player, CharacterMode.STANDARD);
                     player.sendMessage(net.kyori.adventure.text.Component.text("アクティブキャラクターがありません。キャラクターを選択または作成してください。", NamedTextColor.YELLOW));
                     guiService.open(player, CharacterSelectGui.ID);
-                }
-            });
+                });
+            }
         } catch (CharacterPersistenceException e) {
             logger.log(Level.SEVERE, "Failed to ensure character for joining player " + playerId, e);
             plugin.getServer().getScheduler().runTask(plugin, () -> {

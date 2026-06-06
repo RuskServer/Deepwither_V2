@@ -1,7 +1,7 @@
 package com.ruskserver.deepwither_V2.modules.skilltree.provider;
 
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataProvider;
 import com.ruskserver.deepwither_V2.core.database.player.DataKey;
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataProvider;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 
 import java.sql.Connection;
@@ -13,9 +13,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-public class PlayerSkillTreeProvider implements PlayerDataProvider<PlayerSkillTreeProvider.SkillTreeData> {
+public class CharacterSkillTreeProvider implements CharacterDataProvider<CharacterSkillTreeProvider.SkillTreeData> {
 
-    public static final DataKey<SkillTreeData> KEY = new DataKey<>("player_skill_tree");
+    public static final DataKey<SkillTreeData> KEY = new DataKey<>("character_skill_tree");
 
     @Override
     public DataKey<SkillTreeData> getKey() {
@@ -23,18 +23,18 @@ public class PlayerSkillTreeProvider implements PlayerDataProvider<PlayerSkillTr
     }
 
     @Override
-    public SkillTreeData loadFromDb(UUID uuid, Connection conn) throws Exception {
+    public SkillTreeData loadFromDb(UUID characterId, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "CREATE TABLE IF NOT EXISTS player_skill_trees (" +
-                        "uuid VARCHAR(36) PRIMARY KEY, " +
+                "CREATE TABLE IF NOT EXISTS character_skill_trees (" +
+                        "character_id VARCHAR(36) PRIMARY KEY, " +
                         "skill_points INT NOT NULL DEFAULT 0, " +
                         "unlocked_nodes CLOB, " +
                         "camera_positions CLOB)")) {
             stmt.execute();
         }
 
-        try (PreparedStatement stmt = conn.prepareStatement("SELECT skill_points, unlocked_nodes, camera_positions FROM player_skill_trees WHERE uuid = ?")) {
-            stmt.setString(1, uuid.toString());
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT skill_points, unlocked_nodes, camera_positions FROM character_skill_trees WHERE character_id = ?")) {
+            stmt.setString(1, characterId.toString());
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return new SkillTreeData(
@@ -49,10 +49,10 @@ public class PlayerSkillTreeProvider implements PlayerDataProvider<PlayerSkillTr
     }
 
     @Override
-    public void saveToDb(UUID uuid, SkillTreeData data, Connection conn) throws Exception {
+    public void saveToDb(UUID characterId, SkillTreeData data, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "MERGE INTO player_skill_trees (uuid, skill_points, unlocked_nodes, camera_positions) KEY(uuid) VALUES (?, ?, ?, ?)")) {
-            stmt.setString(1, uuid.toString());
+                "MERGE INTO character_skill_trees (character_id, skill_points, unlocked_nodes, camera_positions) KEY(character_id) VALUES (?, ?, ?, ?)")) {
+            stmt.setString(1, characterId.toString());
             stmt.setInt(2, data.getSkillPoints());
             stmt.setString(3, serializeLevels(data.getUnlockedNodes()));
             stmt.setString(4, serializeCameras(data.getCameraPositions()));

@@ -1,11 +1,12 @@
 package com.ruskserver.deepwither_V2.modules.revival;
 
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
-import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
+import com.ruskserver.deepwither_V2.modules.player.provider.CharacterLevelProvider;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
@@ -24,17 +25,19 @@ import java.util.UUID;
 public class RevivalListener implements Listener {
 
     private final RevivalManager revivalManager;
-    private final PlayerDataRepository repository;
+    private final CharacterDataRepository characterDataRepository;
+    private final CharacterService characterService;
     private final PlayerManager playerManager;
     private final MobRegionConfig regionConfig;
     private final VirtualHealthManager virtualHealthManager;
 
     @Inject
-    public RevivalListener(RevivalManager revivalManager, PlayerDataRepository repository,
-                           PlayerManager playerManager, MobRegionConfig regionConfig,
+    public RevivalListener(RevivalManager revivalManager, CharacterDataRepository characterDataRepository,
+                           CharacterService characterService, PlayerManager playerManager, MobRegionConfig regionConfig,
                            VirtualHealthManager virtualHealthManager) {
         this.revivalManager = revivalManager;
-        this.repository = repository;
+        this.characterDataRepository = characterDataRepository;
+        this.characterService = characterService;
         this.playerManager = playerManager;
         this.regionConfig = regionConfig;
         this.virtualHealthManager = virtualHealthManager;
@@ -99,24 +102,26 @@ public class RevivalListener implements Listener {
     }
 
     private void applyDeathPenalty(Player player) {
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerLevelProvider.LevelData levelData = data.get(PlayerLevelProvider.KEY);
-            if (levelData == null || levelData.getLevel() <= 0) return;
+        characterService.getActiveCharacter(player.getUniqueId()).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                CharacterLevelProvider.LevelData levelData = data.get(CharacterLevelProvider.KEY);
+                if (levelData == null || levelData.getLevel() <= 0) return;
 
-            int currentExp = levelData.getExp();
-            int deduction = (int) (currentExp * 0.05);
-            if (deduction <= 0) return;
+                int currentExp = levelData.getExp();
+                int deduction = (int) (currentExp * 0.05);
+                if (deduction <= 0) return;
 
-            int newExp = Math.max(0, currentExp - deduction);
-            levelData.setExp(newExp);
-            data.markDirty(PlayerLevelProvider.KEY);
-            repository.save(player.getUniqueId(), data);
+                int newExp = Math.max(0, currentExp - deduction);
+                levelData.setExp(newExp);
+                data.markDirty(CharacterLevelProvider.KEY);
+                characterDataRepository.save(c.characterId(), data);
 
-            playerManager.syncVanillaExp(player);
+                playerManager.syncVanillaExp(player);
 
-            player.sendMessage(Component.text("§c>> デスペナルティ: ")
-                    .append(Component.text(String.format("%,d", deduction) + " EXP", NamedTextColor.RED))
-                    .append(Component.text(" を失いました (5%)", NamedTextColor.GRAY)));
+                player.sendMessage(Component.text("§c>> デスペナルティ: ")
+                        .append(Component.text(String.format("%,d", deduction) + " EXP", NamedTextColor.RED))
+                        .append(Component.text(" を失いました (5%)", NamedTextColor.GRAY)));
+            });
         });
     }
 }

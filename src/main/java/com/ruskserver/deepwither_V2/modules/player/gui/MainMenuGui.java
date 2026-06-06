@@ -1,16 +1,17 @@
 package com.ruskserver.deepwither_V2.modules.player.gui;
 
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.AttributeType;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.gui.GuiClickContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiRenderContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiView;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
-import com.ruskserver.deepwither_V2.modules.player.provider.PlayerAttributeProvider;
-import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
+import com.ruskserver.deepwither_V2.modules.player.provider.CharacterAttributeProvider;
+import com.ruskserver.deepwither_V2.modules.player.provider.CharacterLevelProvider;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
 import net.kyori.adventure.text.Component;
@@ -36,14 +37,17 @@ public class MainMenuGui implements GuiView {
     private static final int GUI_SIZE = 54;
 
     private final PlayerManager playerManager;
-    private final PlayerDataRepository repository;
+    private final CharacterDataRepository characterDataRepository;
+    private final CharacterService characterService;
     private final StatManager statManager;
     private final TraderService traderService;
+
     @Inject
-    public MainMenuGui(PlayerManager playerManager, PlayerDataRepository repository,
-                       StatManager statManager, TraderService traderService) {
+    public MainMenuGui(PlayerManager playerManager, CharacterDataRepository characterDataRepository,
+                       CharacterService characterService, StatManager statManager, TraderService traderService) {
         this.playerManager = playerManager;
-        this.repository = repository;
+        this.characterDataRepository = characterDataRepository;
+        this.characterService = characterService;
         this.statManager = statManager;
         this.traderService = traderService;
     }
@@ -135,21 +139,23 @@ public class MainMenuGui implements GuiView {
         List<Component> lore = new ArrayList<>();
         lore.add(Component.empty());
 
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerLevelProvider.LevelData levelData = data.get(PlayerLevelProvider.KEY);
-            if (levelData != null) {
-                int level = levelData.getLevel();
-                int exp = levelData.getExp();
-                int nextExp = playerManager.getExpToNextLevel(level);
-                double percent = nextExp > 0 && nextExp != Integer.MAX_VALUE
-                        ? (double) exp / nextExp * 100 : 0.0;
-                lore.add(Component.text(" Level: ", NamedTextColor.GRAY)
-                        .append(Component.text(level, NamedTextColor.GREEN))
-                        .decoration(TextDecoration.ITALIC, false));
-                lore.add(Component.text(" Exp: ", NamedTextColor.GRAY)
-                        .append(Component.text(String.format("%.1f%%", percent), NamedTextColor.YELLOW))
-                        .decoration(TextDecoration.ITALIC, false));
-            }
+        characterService.getActiveCharacter(player.getUniqueId()).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                CharacterLevelProvider.LevelData levelData = data.get(CharacterLevelProvider.KEY);
+                if (levelData != null) {
+                    int level = levelData.getLevel();
+                    int exp = levelData.getExp();
+                    int nextExp = playerManager.getExpToNextLevel(level);
+                    double percent = nextExp > 0 && nextExp != Integer.MAX_VALUE
+                            ? (double) exp / nextExp * 100 : 0.0;
+                    lore.add(Component.text(" Level: ", NamedTextColor.GRAY)
+                            .append(Component.text(level, NamedTextColor.GREEN))
+                            .decoration(TextDecoration.ITALIC, false));
+                    lore.add(Component.text(" Exp: ", NamedTextColor.GRAY)
+                            .append(Component.text(String.format("%.1f%%", percent), NamedTextColor.YELLOW))
+                            .decoration(TextDecoration.ITALIC, false));
+                }
+            });
         });
 
         lore.add(Component.text(" Money: ", NamedTextColor.GRAY)
@@ -201,19 +207,21 @@ public class MainMenuGui implements GuiView {
         List<Component> lore = new ArrayList<>();
         lore.add(Component.empty());
 
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerAttributeProvider.AttributeData attrData = data.get(PlayerAttributeProvider.KEY);
-            if (attrData != null) {
-                lore.add(Component.text(" 残りポイント: ", NamedTextColor.GRAY)
-                        .append(Component.text(attrData.getRemainingPoints(), NamedTextColor.AQUA))
-                        .decoration(TextDecoration.ITALIC, false));
-                lore.add(Component.empty());
-                for (AttributeType type : AttributeType.values()) {
-                    lore.add(Component.text(" " + type.getDisplayName() + ": ", NamedTextColor.GRAY)
-                            .append(Component.text(attrData.getAttribute(type), NamedTextColor.GREEN))
+        characterService.getActiveCharacter(player.getUniqueId()).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                CharacterAttributeProvider.AttributeData attrData = data.get(CharacterAttributeProvider.KEY);
+                if (attrData != null) {
+                    lore.add(Component.text(" 残りポイント: ", NamedTextColor.GRAY)
+                            .append(Component.text(attrData.getRemainingPoints(), NamedTextColor.AQUA))
                             .decoration(TextDecoration.ITALIC, false));
+                    lore.add(Component.empty());
+                    for (AttributeType type : AttributeType.values()) {
+                        lore.add(Component.text(" " + type.getDisplayName() + ": ", NamedTextColor.GRAY)
+                                .append(Component.text(attrData.getAttribute(type), NamedTextColor.GREEN))
+                                .decoration(TextDecoration.ITALIC, false));
+                    }
                 }
-            }
+            });
         });
 
         lore.add(Component.empty());

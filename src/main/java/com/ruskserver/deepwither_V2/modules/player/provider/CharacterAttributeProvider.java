@@ -1,7 +1,7 @@
 package com.ruskserver.deepwither_V2.modules.player.provider;
 
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataProvider;
 import com.ruskserver.deepwither_V2.core.database.player.DataKey;
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataProvider;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.stat.AttributeType;
 
@@ -13,9 +13,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-public class PlayerAttributeProvider implements PlayerDataProvider<PlayerAttributeProvider.AttributeData> {
+public class CharacterAttributeProvider implements CharacterDataProvider<CharacterAttributeProvider.AttributeData> {
 
-    public static final DataKey<AttributeData> KEY = new DataKey<>("player_attributes");
+    public static final DataKey<AttributeData> KEY = new DataKey<>("character_attributes");
 
     @Override
     public DataKey<AttributeData> getKey() {
@@ -23,21 +23,21 @@ public class PlayerAttributeProvider implements PlayerDataProvider<PlayerAttribu
     }
 
     @Override
-    public AttributeData loadFromDb(UUID uuid, Connection conn) throws Exception {
+    public AttributeData loadFromDb(UUID characterId, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "CREATE TABLE IF NOT EXISTS player_attributes (" +
-                        "uuid VARCHAR(36) PRIMARY KEY, " +
+                "CREATE TABLE IF NOT EXISTS character_attributes (" +
+                        "character_id VARCHAR(36) PRIMARY KEY, " +
                         "points INT NOT NULL DEFAULT 0, " +
                         "str INT NOT NULL DEFAULT 0, " +
                         "vit INT NOT NULL DEFAULT 0, " +
                         "mnd INT NOT NULL DEFAULT 0, " +
-                        "int_val INT NOT NULL DEFAULT 0, " + // INTは予約語を避けるためint_val
+                        "int_val INT NOT NULL DEFAULT 0, " +
                         "agi INT NOT NULL DEFAULT 0)")) {
             stmt.execute();
         }
 
-        try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM player_attributes WHERE uuid = ?")) {
-            stmt.setString(1, uuid.toString());
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM character_attributes WHERE character_id = ?")) {
+            stmt.setString(1, characterId.toString());
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     AttributeData data = new AttributeData();
@@ -55,11 +55,11 @@ public class PlayerAttributeProvider implements PlayerDataProvider<PlayerAttribu
     }
 
     @Override
-    public void saveToDb(UUID uuid, AttributeData data, Connection conn) throws Exception {
+    public void saveToDb(UUID characterId, AttributeData data, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "MERGE INTO player_attributes (uuid, points, str, vit, mnd, int_val, agi) " +
-                        "KEY(uuid) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
-            stmt.setString(1, uuid.toString());
+                "MERGE INTO character_attributes (character_id, points, str, vit, mnd, int_val, agi) " +
+                        "KEY(character_id) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+            stmt.setString(1, characterId.toString());
             stmt.setInt(2, data.getRemainingPoints());
             stmt.setInt(3, data.getAttribute(AttributeType.STR));
             stmt.setInt(4, data.getAttribute(AttributeType.VIT));

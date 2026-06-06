@@ -130,15 +130,7 @@ public class CharacterRepository implements Startable {
              PreparedStatement stmt = conn.prepareStatement(
                      "MERGE INTO player_characters (character_id, owner_uuid, name, mode, status, created_at, died_at, last_played_at, migrated_from_legacy) " +
                              "KEY(character_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-            stmt.setString(1, character.characterId().toString());
-            stmt.setString(2, character.ownerUuid().toString());
-            stmt.setString(3, character.name());
-            stmt.setString(4, character.mode().name());
-            stmt.setString(5, character.status().name());
-            stmt.setLong(6, character.createdAt());
-            stmt.setLong(7, character.diedAt());
-            stmt.setLong(8, character.lastPlayedAt());
-            stmt.setBoolean(9, character.migratedFromLegacy());
+            bindCharacter(stmt, character);
             stmt.executeUpdate();
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to save character " + character.characterId(), e);
@@ -146,19 +138,60 @@ public class CharacterRepository implements Startable {
         }
     }
 
+    public void saveAndSetActiveCharacter(GameCharacter character) {
+        try (Connection conn = db.getConnection()) {
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "MERGE INTO player_characters (character_id, owner_uuid, name, mode, status, created_at, died_at, last_played_at, migrated_from_legacy) " +
+                                "KEY(character_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    bindCharacter(stmt, character);
+                    stmt.executeUpdate();
+                }
+                setActiveCharacter(conn, character.ownerUuid(), character.characterId());
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Failed to save and activate character " + character.characterId(), e);
+            throw new CharacterPersistenceException("Failed to save and activate character " + character.characterId(), e);
+        }
+    }
+
     public void setActiveCharacter(UUID ownerUuid, UUID characterId) {
         try (Connection conn = db.getConnection()) {
-            validateCharacterOwnership(conn, ownerUuid, characterId);
-            try (PreparedStatement stmt = conn.prepareStatement(
-                    "MERGE INTO player_active_characters (owner_uuid, character_id) KEY(owner_uuid) VALUES (?, ?)")) {
-                stmt.setString(1, ownerUuid.toString());
-                stmt.setString(2, characterId.toString());
-                stmt.executeUpdate();
-            }
+            setActiveCharacter(conn, ownerUuid, characterId);
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to set active character for " + ownerUuid, e);
             throw new CharacterPersistenceException("Failed to set active character for " + ownerUuid, e);
         }
+    }
+
+    private void setActiveCharacter(Connection conn, UUID ownerUuid, UUID characterId) throws SQLException {
+        validateCharacterOwnership(conn, ownerUuid, characterId);
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "MERGE INTO player_active_characters (owner_uuid, character_id) KEY(owner_uuid) VALUES (?, ?)")) {
+            stmt.setString(1, ownerUuid.toString());
+            stmt.setString(2, characterId.toString());
+            stmt.executeUpdate();
+        }
+    }
+
+    private void bindCharacter(PreparedStatement stmt, GameCharacter character) throws SQLException {
+        stmt.setString(1, character.characterId().toString());
+        stmt.setString(2, character.ownerUuid().toString());
+        stmt.setString(3, character.name());
+        stmt.setString(4, character.mode().name());
+        stmt.setString(5, character.status().name());
+        stmt.setLong(6, character.createdAt());
+        stmt.setLong(7, character.diedAt());
+        stmt.setLong(8, character.lastPlayedAt());
+        stmt.setBoolean(9, character.migratedFromLegacy());
     }
 
     private void validateCharacterOwnership(Connection conn, UUID ownerUuid, UUID characterId) throws SQLException {

@@ -1,7 +1,7 @@
 package com.ruskserver.deepwither_V2.modules.player.provider;
 
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataProvider;
 import com.ruskserver.deepwither_V2.core.database.player.DataKey;
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataProvider;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 
 import java.sql.Connection;
@@ -10,9 +10,9 @@ import java.sql.ResultSet;
 import java.util.UUID;
 
 @Component
-public class PlayerLevelProvider implements PlayerDataProvider<PlayerLevelProvider.LevelData> {
+public class CharacterLevelProvider implements CharacterDataProvider<CharacterLevelProvider.LevelData> {
 
-    public static final DataKey<LevelData> KEY = new DataKey<>("player_level_data");
+    public static final DataKey<LevelData> KEY = new DataKey<>("character_level_data");
 
     @Override
     public DataKey<LevelData> getKey() {
@@ -20,17 +20,17 @@ public class PlayerLevelProvider implements PlayerDataProvider<PlayerLevelProvid
     }
 
     @Override
-    public LevelData loadFromDb(UUID uuid, Connection conn) throws Exception {
+    public LevelData loadFromDb(UUID characterId, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "CREATE TABLE IF NOT EXISTS player_levels (" +
-                        "uuid VARCHAR(36) PRIMARY KEY, " +
+                "CREATE TABLE IF NOT EXISTS character_levels (" +
+                        "character_id VARCHAR(36) PRIMARY KEY, " +
                         "level INT NOT NULL DEFAULT 1, " +
                         "exp INT NOT NULL DEFAULT 0)")) {
             stmt.execute();
         }
 
-        try (PreparedStatement stmt = conn.prepareStatement("SELECT level, exp FROM player_levels WHERE uuid = ?")) {
-            stmt.setString(1, uuid.toString());
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT level, exp FROM character_levels WHERE character_id = ?")) {
+            stmt.setString(1, characterId.toString());
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return new LevelData(rs.getInt("level"), rs.getInt("exp"));
@@ -41,10 +41,10 @@ public class PlayerLevelProvider implements PlayerDataProvider<PlayerLevelProvid
     }
 
     @Override
-    public void saveToDb(UUID uuid, LevelData data, Connection conn) throws Exception {
+    public void saveToDb(UUID characterId, LevelData data, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "MERGE INTO player_levels (uuid, level, exp) KEY(uuid) VALUES (?, ?, ?)")) {
-            stmt.setString(1, uuid.toString());
+                "MERGE INTO character_levels (character_id, level, exp) KEY(character_id) VALUES (?, ?, ?)")) {
+            stmt.setString(1, characterId.toString());
             stmt.setInt(2, data.getLevel());
             stmt.setInt(3, data.getExp());
             stmt.executeUpdate();

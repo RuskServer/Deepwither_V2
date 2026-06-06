@@ -128,7 +128,10 @@ public class CharacterSelectionGateListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        lastPromptAt.remove(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+        // アクティブキャラクターのインベントリ・位置をDBへ保存
+        characterService.saveCharacterState(player);
+        lastPromptAt.remove(player.getUniqueId());
     }
 
     private boolean requiresCharacterSelection(Player player) {

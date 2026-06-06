@@ -120,11 +120,12 @@ public class CharacterCreateGui implements GuiView {
         CharacterMode selectedMode = mode;
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
         player.sendMessage(Component.text("キャラクターを作成しています...", NamedTextColor.GRAY));
+        characterService.saveCharacterState(player);
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 GameCharacter character = characterService.createGeneratedCharacter(playerId, playerName, selectedMode);
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                characterService.loadAndApplyCharacterDataAsync(playerId, character.characterId(), () -> {
                     Player online = plugin.getServer().getPlayer(playerId);
                     if (online == null || !online.isOnline()) {
                         return;

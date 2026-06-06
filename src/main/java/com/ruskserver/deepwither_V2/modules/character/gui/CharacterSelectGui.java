@@ -3,7 +3,6 @@ package com.ruskserver.deepwither_V2.modules.character.gui;
 import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
-import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterStatus;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
@@ -120,35 +119,25 @@ public class CharacterSelectGui implements GuiView {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
         player.sendMessage(Component.text("キャラクターを選択しています...", NamedTextColor.GRAY));
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                boolean selected = characterService.selectCharacter(playerId, characterId);
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+        characterService.switchCharacterAsync(player, characterId,
+                // 成功
+                () -> {
                     Player online = plugin.getServer().getPlayer(playerId);
-                    if (online == null || !online.isOnline()) {
-                        return;
-                    }
-                    if (selected) {
-                        nameTagService.refresh(online, character.mode());
-                        online.playSound(online.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.2f);
-                        online.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
-                                .append(Component.text(character.name(), NamedTextColor.YELLOW)));
-                        online.closeInventory();
-                    } else {
-                        online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
-                        online.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
-                    }
-                });
-            } catch (CharacterPersistenceException e) {
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    if (online == null || !online.isOnline()) return;
+                    nameTagService.refresh(online, character.mode());
+                    online.playSound(online.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.2f);
+                    online.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
+                            .append(Component.text(character.name(), NamedTextColor.YELLOW)));
+                    online.closeInventory();
+                },
+                // 失敗
+                () -> {
                     Player online = plugin.getServer().getPlayer(playerId);
-                    if (online != null && online.isOnline()) {
-                        online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
-                        online.sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED));
-                    }
-                });
-            }
-        });
+                    if (online == null || !online.isOnline()) return;
+                    online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
+                    online.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
+                }
+        );
     }
 
     private ItemStack createCharacterItem(GameCharacter character, boolean activeCharacter) {

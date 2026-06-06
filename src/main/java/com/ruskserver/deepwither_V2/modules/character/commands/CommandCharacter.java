@@ -127,15 +127,13 @@ public class CommandCharacter implements BasicCommand {
         }
 
         player.sendMessage(Component.text("キャラクターを作成しています...", NamedTextColor.GRAY));
+        characterService.saveCharacterState(player);
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                GameCharacter character = characterService.createCharacter(playerId, characterName, mode, false);
-                boolean selected = characterService.selectCharacter(playerId, character.characterId());
-                runSync(playerId, online -> {
-                    if (!selected) {
-                        online.sendMessage(Component.text("作成したキャラクターの選択に失敗しました。", NamedTextColor.RED));
-                        return;
-                    }
+                GameCharacter character = characterService.createAndSelectCharacter(playerId, characterName, mode, false);
+                characterService.loadAndApplyCharacterDataAsync(playerId, character.characterId(), () -> {
+                    Player online = plugin.getServer().getPlayer(playerId);
+                    if (online == null || !online.isOnline()) return;
                     nameTagService.refresh(online, mode);
                     online.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
                             .append(Component.text(character.name(), NamedTextColor.YELLOW))
@@ -172,16 +170,20 @@ public class CommandCharacter implements BasicCommand {
                     return;
                 }
 
-                if (!characterService.selectCharacter(playerId, character.characterId())) {
-                    runSync(playerId, online -> online.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED)));
-                    return;
-                }
-
-                runSync(playerId, online -> {
-                    nameTagService.refresh(online, character.mode());
-                    online.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
-                            .append(Component.text(character.name(), NamedTextColor.YELLOW)));
-                });
+                runSync(playerId, online -> characterService.switchCharacterAsync(online, character.characterId(),
+                        () -> {
+                            Player current = plugin.getServer().getPlayer(playerId);
+                            if (current == null || !current.isOnline()) return;
+                            nameTagService.refresh(current, character.mode());
+                            current.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
+                                    .append(Component.text(character.name(), NamedTextColor.YELLOW)));
+                        },
+                        () -> {
+                            Player current = plugin.getServer().getPlayer(playerId);
+                            if (current != null && current.isOnline()) {
+                                current.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
+                            }
+                        }));
             } catch (CharacterPersistenceException e) {
                 runSync(playerId, online -> online.sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED)));
             }

@@ -1,13 +1,14 @@
 package com.ruskserver.deepwither_V2.modules.player.commands;
 
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Command;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.AttributeType;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
-import com.ruskserver.deepwither_V2.modules.player.provider.PlayerAttributeProvider;
-import com.ruskserver.deepwither_V2.modules.player.provider.PlayerLevelProvider;
+import com.ruskserver.deepwither_V2.modules.player.provider.CharacterAttributeProvider;
+import com.ruskserver.deepwither_V2.modules.player.provider.CharacterLevelProvider;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderReputationService;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
@@ -29,17 +30,19 @@ public class CommandStatus implements BasicCommand {
 
     private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#,##0.##");
 
-    private final PlayerDataRepository repository;
+    private final CharacterDataRepository characterDataRepository;
+    private final CharacterService characterService;
     private final StatManager statManager;
     private final PlayerManager playerManager;
     private final TraderService traderService;
     private final TraderReputationService reputationService;
 
     @Inject
-    public CommandStatus(PlayerDataRepository repository, StatManager statManager,
-                         PlayerManager playerManager, TraderService traderService,
+    public CommandStatus(CharacterDataRepository characterDataRepository, CharacterService characterService,
+                         StatManager statManager, PlayerManager playerManager, TraderService traderService,
                          TraderReputationService reputationService) {
-        this.repository = repository;
+        this.characterDataRepository = characterDataRepository;
+        this.characterService = characterService;
         this.statManager = statManager;
         this.playerManager = playerManager;
         this.traderService = traderService;
@@ -60,33 +63,37 @@ public class CommandStatus implements BasicCommand {
         player.sendMessage(Component.empty());
 
         player.sendMessage(sectionTitle("基本情報"));
-        repository.get(uuid).ifPresent(data -> {
-            PlayerLevelProvider.LevelData levelData = data.get(PlayerLevelProvider.KEY);
-            if (levelData != null) {
-                int level = levelData.getLevel();
-                int exp = levelData.getExp();
-                int nextExp = playerManager.getExpToNextLevel(level);
-                double percent = nextExp > 0 && nextExp != Integer.MAX_VALUE
-                        ? (double) exp / nextExp * 100 : 0.0;
+        characterService.getActiveCharacter(uuid).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                CharacterLevelProvider.LevelData levelData = data.get(CharacterLevelProvider.KEY);
+                if (levelData != null) {
+                    int level = levelData.getLevel();
+                    int exp = levelData.getExp();
+                    int nextExp = playerManager.getExpToNextLevel(level);
+                    double percent = nextExp > 0 && nextExp != Integer.MAX_VALUE
+                            ? (double) exp / nextExp * 100 : 0.0;
 
-                player.sendMessage(Component.text("  Lv: ", NamedTextColor.GRAY)
-                        .append(Component.text(level, NamedTextColor.GREEN))
-                        .append(Component.text(String.format(" (%.1f%%)", percent), NamedTextColor.YELLOW)));
-            }
+                    player.sendMessage(Component.text("  Lv: ", NamedTextColor.GRAY)
+                            .append(Component.text(level, NamedTextColor.GREEN))
+                            .append(Component.text(String.format(" (%.1f%%)", percent), NamedTextColor.YELLOW)));
+                }
+            });
         });
         player.sendMessage(Component.text("  所持金: ", NamedTextColor.GRAY)
                 .append(Component.text(formatMoney(traderService.getBalance(player)), NamedTextColor.GOLD)));
         player.sendMessage(Component.empty());
 
         player.sendMessage(sectionTitle("基本能力値"));
-        repository.get(uuid).ifPresent(data -> {
-            PlayerAttributeProvider.AttributeData attrData = data.get(PlayerAttributeProvider.KEY);
-            if (attrData != null) {
-                for (AttributeType type : AttributeType.values()) {
-                    player.sendMessage(statLine(type.getDisplayName(), attrData.getAttribute(type), NamedTextColor.GREEN));
+        characterService.getActiveCharacter(uuid).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                CharacterAttributeProvider.AttributeData attrData = data.get(CharacterAttributeProvider.KEY);
+                if (attrData != null) {
+                    for (AttributeType type : AttributeType.values()) {
+                        player.sendMessage(statLine(type.getDisplayName(), attrData.getAttribute(type), NamedTextColor.GREEN));
+                    }
+                    player.sendMessage(statLine("残りポイント", attrData.getRemainingPoints(), NamedTextColor.AQUA));
                 }
-                player.sendMessage(statLine("残りポイント", attrData.getRemainingPoints(), NamedTextColor.AQUA));
-            }
+            });
         });
         player.sendMessage(Component.empty());
 

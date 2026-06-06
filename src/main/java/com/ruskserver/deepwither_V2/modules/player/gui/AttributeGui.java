@@ -1,15 +1,16 @@
 package com.ruskserver.deepwither_V2.modules.player.gui;
 
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.AttributeType;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.gui.GuiClickContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiRenderContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiView;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
-import com.ruskserver.deepwither_V2.modules.player.provider.PlayerAttributeProvider;
+import com.ruskserver.deepwither_V2.modules.player.provider.CharacterAttributeProvider;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
@@ -31,12 +32,14 @@ public class AttributeGui implements GuiView {
     private static final int GUI_SIZE = 27;
 
     private final PlayerManager playerManager;
-    private final PlayerDataRepository repository;
+    private final CharacterDataRepository characterDataRepository;
+    private final CharacterService characterService;
 
     @Inject
-    public AttributeGui(PlayerManager playerManager, PlayerDataRepository repository) {
+    public AttributeGui(PlayerManager playerManager, CharacterDataRepository characterDataRepository, CharacterService characterService) {
         this.playerManager = playerManager;
-        this.repository = repository;
+        this.characterDataRepository = characterDataRepository;
+        this.characterService = characterService;
     }
 
     @Override
@@ -59,25 +62,27 @@ public class AttributeGui implements GuiView {
         Player player = context.player();
         Inventory gui = context.inventory();
         gui.setItem(22, createBackButton());
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            var attrData = data.get(PlayerAttributeProvider.KEY);
-            if (attrData == null) {
-                return;
-            }
+        characterService.getActiveCharacter(player.getUniqueId()).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                var attrData = data.get(CharacterAttributeProvider.KEY);
+                if (attrData == null) {
+                    return;
+                }
 
-            AttributeType[] guiStats = { AttributeType.STR, AttributeType.VIT, AttributeType.MND, AttributeType.INT, AttributeType.AGI };
+                AttributeType[] guiStats = { AttributeType.STR, AttributeType.VIT, AttributeType.MND, AttributeType.INT, AttributeType.AGI };
 
-            for (AttributeType type : guiStats) {
-                ItemStack icon = getStatIcon(type, attrData);
-                int slot = switch (type) {
-                    case STR -> 9;
-                    case VIT -> 11;
-                    case MND -> 13;
-                    case INT -> 15;
-                    case AGI -> 17;
-                };
-                gui.setItem(slot, icon);
-            }
+                for (AttributeType type : guiStats) {
+                    ItemStack icon = getStatIcon(type, attrData);
+                    int slot = switch (type) {
+                        case STR -> 9;
+                        case VIT -> 11;
+                        case MND -> 13;
+                        case INT -> 15;
+                        case AGI -> 17;
+                    };
+                    gui.setItem(slot, icon);
+                }
+            });
         });
     }
 
@@ -90,7 +95,7 @@ public class AttributeGui implements GuiView {
         return item;
     }
 
-    private ItemStack getStatIcon(AttributeType type, PlayerAttributeProvider.AttributeData attrData) {
+    private ItemStack getStatIcon(AttributeType type, CharacterAttributeProvider.AttributeData attrData) {
         Material mat = switch (type) {
             case STR -> Material.IRON_SWORD;
             case VIT -> Material.GOLDEN_APPLE;

@@ -1,15 +1,16 @@
 package com.ruskserver.deepwither_V2.modules.skilltree.gui;
 
 import com.ruskserver.deepwither_V2.Deepwither_V2;
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillRegistry;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeDefinition;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeNode;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeNodeType;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.UnlockResult;
 import com.ruskserver.deepwither_V2.modules.skilltree.event.SkillTreeOpenEvent;
-import com.ruskserver.deepwither_V2.modules.skilltree.provider.PlayerSkillTreeProvider;
+import com.ruskserver.deepwither_V2.modules.skilltree.provider.CharacterSkillTreeProvider;
 import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeRegistry;
 import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeService;
 import net.kyori.adventure.text.Component;
@@ -45,7 +46,8 @@ public class SkillTreeGui implements Listener {
     private static final int VIEW_COLUMNS = 9;
 
     private final Deepwither_V2 plugin;
-    private final PlayerDataRepository repository;
+    private final CharacterDataRepository characterDataRepository;
+    private final CharacterService characterService;
     private final SkillTreeRegistry treeRegistry;
     private final SkillTreeService treeService;
     private final SkillRegistry skillRegistry;
@@ -58,13 +60,15 @@ public class SkillTreeGui implements Listener {
     @Inject
     public SkillTreeGui(
             Deepwither_V2 plugin,
-            PlayerDataRepository repository,
+            CharacterDataRepository characterDataRepository,
+            CharacterService characterService,
             SkillTreeRegistry treeRegistry,
             SkillTreeService treeService,
             SkillRegistry skillRegistry
     ) {
         this.plugin = plugin;
-        this.repository = repository;
+        this.characterDataRepository = characterDataRepository;
+        this.characterService = characterService;
         this.treeRegistry = treeRegistry;
         this.treeService = treeService;
         this.skillRegistry = skillRegistry;
@@ -105,7 +109,7 @@ public class SkillTreeGui implements Listener {
     }
 
     public void openTree(Player player, String treeId) {
-        PlayerSkillTreeProvider.CameraPosition camera = treeService.getCamera(player, treeId);
+        CharacterSkillTreeProvider.CameraPosition camera = treeService.getCamera(player, treeId);
         openTree(player, treeId, camera.x(), camera.y());
     }
 
@@ -117,35 +121,37 @@ public class SkillTreeGui implements Listener {
         }
 
         Bukkit.getPluginManager().callEvent(new SkillTreeOpenEvent(player, treeId));
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerSkillTreeProvider.SkillTreeData treeData = data.get(PlayerSkillTreeProvider.KEY);
-            if (treeData == null) return;
+        characterService.getActiveCharacter(player.getUniqueId()).ifPresent(c -> {
+            characterDataRepository.get(c.characterId()).ifPresent(data -> {
+                CharacterSkillTreeProvider.SkillTreeData treeData = data.get(CharacterSkillTreeProvider.KEY);
+                if (treeData == null) return;
 
-            Inventory inventory = Bukkit.createInventory(null, GUI_ROWS * 9, Component.text("Skilltree: " + tree.getDisplayName(), NamedTextColor.DARK_AQUA));
-            for (SkillTreeNode node : tree.getNodes()) {
-                int screenX = node.getX() - cameraX;
-                int screenY = node.getY() - cameraY;
-                if (screenX < 0 || screenX >= VIEW_COLUMNS || screenY < 0 || screenY >= VIEW_ROWS) continue;
-                int slot = screenY * 9 + screenX;
-                inventory.setItem(slot, buildNodeItem(player, treeData, node, treeId, cameraX, cameraY));
-            }
+                Inventory inventory = Bukkit.createInventory(null, GUI_ROWS * 9, Component.text("Skilltree: " + tree.getDisplayName(), NamedTextColor.DARK_AQUA));
+                for (SkillTreeNode node : tree.getNodes()) {
+                    int screenX = node.getX() - cameraX;
+                    int screenY = node.getY() - cameraY;
+                    if (screenX < 0 || screenX >= VIEW_COLUMNS || screenY < 0 || screenY >= VIEW_ROWS) continue;
+                    int slot = screenY * 9 + screenX;
+                    inventory.setItem(slot, buildNodeItem(player, treeData, node, treeId, cameraX, cameraY));
+                }
 
-            ItemStack separator = namedItem(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "));
-            for (int i = 45; i < 54; i++) {
-                inventory.setItem(i, separator);
-            }
-            inventory.setItem(45, buildControl(Material.RED_STAINED_GLASS_PANE, "← 左へ", "LEFT", treeId, cameraX, cameraY));
-            inventory.setItem(46, buildControl(Material.LIME_STAINED_GLASS_PANE, "↑ 上へ", "UP", treeId, cameraX, cameraY));
-            inventory.setItem(49, buildControl(Material.COMPASS, "位置リセット (" + cameraX + ", " + cameraY + ")", "RESET", treeId, cameraX, cameraY));
-            inventory.setItem(50, buildPointItem(treeData.getSkillPoints()));
-            inventory.setItem(52, buildControl(Material.LIME_STAINED_GLASS_PANE, "↓ 下へ", "DOWN", treeId, cameraX, cameraY));
-            inventory.setItem(53, buildControl(Material.RED_STAINED_GLASS_PANE, "右へ →", "RIGHT", treeId, cameraX, cameraY));
+                ItemStack separator = namedItem(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "));
+                for (int i = 45; i < 54; i++) {
+                    inventory.setItem(i, separator);
+                }
+                inventory.setItem(45, buildControl(Material.RED_STAINED_GLASS_PANE, "← 左へ", "LEFT", treeId, cameraX, cameraY));
+                inventory.setItem(46, buildControl(Material.LIME_STAINED_GLASS_PANE, "↑ 上へ", "UP", treeId, cameraX, cameraY));
+                inventory.setItem(49, buildControl(Material.COMPASS, "位置リセット (" + cameraX + ", " + cameraY + ")", "RESET", treeId, cameraX, cameraY));
+                inventory.setItem(50, buildPointItem(treeData.getSkillPoints()));
+                inventory.setItem(52, buildControl(Material.LIME_STAINED_GLASS_PANE, "↓ 下へ", "DOWN", treeId, cameraX, cameraY));
+                inventory.setItem(53, buildControl(Material.RED_STAINED_GLASS_PANE, "右へ →", "RIGHT", treeId, cameraX, cameraY));
 
-            player.openInventory(inventory);
+                player.openInventory(inventory);
+            });
         });
     }
 
-    private ItemStack buildNodeItem(Player player, PlayerSkillTreeProvider.SkillTreeData treeData, SkillTreeNode node, String treeId, int cameraX, int cameraY) {
+    private ItemStack buildNodeItem(Player player, CharacterSkillTreeProvider.SkillTreeData treeData, SkillTreeNode node, String treeId, int cameraX, int cameraY) {
         int level = treeData.getNodeLevel(node.getId());
         boolean learned = level > 0;
         boolean maxed = level >= node.getMaxLevel();
@@ -316,7 +322,7 @@ public class SkillTreeGui implements Listener {
         return trees;
     }
 
-    private boolean areRequirementsMet(PlayerSkillTreeProvider.SkillTreeData data, SkillTreeNode node) {
+    private boolean areRequirementsMet(CharacterSkillTreeProvider.SkillTreeData data, SkillTreeNode node) {
         for (String requirement : node.getRequirements()) {
             SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
             if (requiredNode == null || data.getNodeLevel(requirement) < requiredNode.getMaxLevel()) {
@@ -326,7 +332,7 @@ public class SkillTreeGui implements Listener {
         return true;
     }
 
-    private boolean isConflicted(PlayerSkillTreeProvider.SkillTreeData data, SkillTreeNode node) {
+    private boolean isConflicted(CharacterSkillTreeProvider.SkillTreeData data, SkillTreeNode node) {
         for (String conflict : node.getConflicts()) {
             if (data.hasNode(conflict)) return true;
         }
