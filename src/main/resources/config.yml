@@ -4,7 +4,8 @@
 #
 # mob-regions:
 #   <region名（任意の識別名）>:
-#     safe-zone: <boolean>           # true の場合このRegionではモブがスポーンしません
+#     safe-zone: <boolean>           # true の場合このRegionではモブがスポーンせずPvPも無効です
+#     pvp-enabled: <boolean>         # true の場合このRegion内のPvPを許可します（デフォルト: false）
 #     world: <ワールド名>
 #     worldguard-region: <WG Region名>  # /rg define で作成した WorldGuard Region の名前
 #     spawn-interval-ticks: <int>    # スポーンを試みるtick間隔 (20 = 1秒)
@@ -27,6 +28,7 @@ mob-regions:
   # /rg define spawn_area で作成した WorldGuard Region に対応
   spawn_area:
     safe-zone: true
+    pvp-enabled: false
     world: world
     worldguard-region: spawn_area
 
@@ -34,6 +36,7 @@ mob-regions:
   # /rg define forest_zone で作成した WorldGuard Region に対応
   forest_zone:
     safe-zone: false
+    pvp-enabled: false
     world: world
     worldguard-region: forest_zone
     spawn-interval-ticks: 200    # 10秒ごとにスポーン試行
@@ -52,6 +55,7 @@ mob-regions:
   # ----- 別のZone例（コメントアウト） -----
   # dungeon_zone:
   #   safe-zone: false
+  #   pvp-enabled: true
   #   world: world
   #   worldguard-region: dungeon_zone
   #   spawn-interval-ticks: 100

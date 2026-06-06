@@ -72,6 +72,13 @@ public class MobRegionConfig implements Startable {
                 .anyMatch(sz -> sz.contains(location));
     }
 
+    /** 指定座標がPvP無効Region内かどうかを判定します。 */
+    public boolean isInPvpDisabledRegion(Location location) {
+        return regions.stream()
+                .filter(region -> !region.pvpEnabled())
+                .anyMatch(region -> region.contains(location));
+    }
+
     // --- 内部処理 ---
 
     /** config.yml が存在しない場合、デフォルト設定をコピーします。 */
@@ -122,6 +129,7 @@ public class MobRegionConfig implements Startable {
 
     private MobRegion parseRegion(String name, ConfigurationSection section) {
         boolean isSafeZone = section.getBoolean("safe-zone", false);
+        boolean pvpEnabled = !isSafeZone && section.getBoolean("pvp-enabled", false);
 
         String worldName = section.getString("world", "world");
         World world = resolveWorld(worldName);
@@ -167,7 +175,7 @@ public class MobRegionConfig implements Startable {
             }
         }
 
-        return new MobRegion(name, isSafeZone, world, wgRegion, spawnTable, spawnIntervalTicks, maxMobs, maxLevel);
+        return new MobRegion(name, isSafeZone, pvpEnabled, world, wgRegion, spawnTable, spawnIntervalTicks, maxMobs, maxLevel);
     }
 
     private World resolveWorld(String configuredName) {

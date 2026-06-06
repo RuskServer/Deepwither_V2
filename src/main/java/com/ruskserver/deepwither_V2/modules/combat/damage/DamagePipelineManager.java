@@ -223,8 +223,8 @@ public class DamagePipelineManager implements Listener {
         if (!(attacker instanceof Player) || !(defender instanceof Player)) {
             return false;
         }
-        return regionConfig.isInSafeZone(attacker.getLocation())
-                || regionConfig.isInSafeZone(defender.getLocation());
+        return regionConfig.isInPvpDisabledRegion(attacker.getLocation())
+                || regionConfig.isInPvpDisabledRegion(defender.getLocation());
     }
 
     private void cancelDamage(EntityDamageEvent event) {
