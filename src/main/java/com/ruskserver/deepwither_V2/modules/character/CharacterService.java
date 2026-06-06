@@ -5,14 +5,19 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class CharacterService {
     private static final int MAX_NAME_LENGTH = 32;
 
     private final CharacterRepository repository;
+    private final Map<UUID, GameCharacter> activeCharacters = new ConcurrentHashMap<>();
+    private final Set<UUID> selectionLockedPlayers = ConcurrentHashMap.newKeySet();
 
     @Inject
     public CharacterService(CharacterRepository repository) {
@@ -26,11 +31,17 @@ public class CharacterService {
     public Optional<GameCharacter> ensureLegacyCharacter(UUID ownerUuid, String playerName) {
         List<GameCharacter> existing = repository.findByOwner(ownerUuid);
         if (!existing.isEmpty()) {
-            return repository.findActiveCharacter(ownerUuid).filter(GameCharacter::isSelectable);
+            Optional<GameCharacter> active = repository.findActiveCharacter(ownerUuid).filter(GameCharacter::isSelectable);
+            active.ifPresentOrElse(
+                    character -> activeCharacters.put(ownerUuid, character),
+                    () -> activeCharacters.remove(ownerUuid)
+            );
+            return active;
         }
 
         GameCharacter character = createCharacter(ownerUuid, playerName, CharacterMode.STANDARD, true);
         repository.setActiveCharacter(ownerUuid, character.characterId());
+        activeCharacters.put(ownerUuid, character);
         return Optional.of(character);
     }
 
@@ -52,6 +63,9 @@ public class CharacterService {
     }
 
     public GameCharacter createGeneratedCharacter(Player player, CharacterMode mode) {
+        if (isSelectionLocked(player.getUniqueId())) {
+            throw new CharacterPersistenceException("Character selection is locked for " + player.getUniqueId(), null);
+        }
         String baseName = player.getName() + "-" + (getCharacters(player.getUniqueId()).size() + 1);
         GameCharacter character = createCharacter(player.getUniqueId(), baseName, mode, false);
         selectCharacter(player, character.characterId());
@@ -63,22 +77,38 @@ public class CharacterService {
     }
 
     public Optional<GameCharacter> getActiveCharacter(UUID ownerUuid) {
-        return repository.findActiveCharacter(ownerUuid);
+        Optional<GameCharacter> active = repository.findActiveCharacter(ownerUuid);
+        active.ifPresentOrElse(
+                character -> activeCharacters.put(ownerUuid, character),
+                () -> activeCharacters.remove(ownerUuid)
+        );
+        return active;
+    }
+
+    public Optional<GameCharacter> getCachedActiveCharacter(UUID ownerUuid) {
+        return Optional.ofNullable(activeCharacters.get(ownerUuid)).filter(GameCharacter::isSelectable);
     }
 
     public boolean selectCharacter(Player player, UUID characterId) {
+        UUID ownerUuid = player.getUniqueId();
+        if (isSelectionLocked(ownerUuid)) {
+            return false;
+        }
+
         Optional<GameCharacter> optional = repository.findById(characterId);
         if (optional.isEmpty()) {
             return false;
         }
 
         GameCharacter character = optional.get();
-        if (!character.ownerUuid().equals(player.getUniqueId()) || !character.isSelectable()) {
+        if (!character.ownerUuid().equals(ownerUuid) || !character.isSelectable()) {
             return false;
         }
 
-        repository.setActiveCharacter(player.getUniqueId(), characterId);
-        repository.save(character.withLastPlayedAt(System.currentTimeMillis()));
+        GameCharacter selected = character.withLastPlayedAt(System.currentTimeMillis());
+        repository.setActiveCharacter(ownerUuid, characterId);
+        repository.save(selected);
+        activeCharacters.put(ownerUuid, selected);
         return true;
     }
 
@@ -99,15 +129,18 @@ public class CharacterService {
         if (active.isEmpty()) {
             return Optional.empty();
         }
+        return markCharacterDead(ownerUuid, active.get());
+    }
 
-        GameCharacter character = active.get();
-        if (!character.mode().isHardcore()) {
+    public Optional<GameCharacter> markCharacterDead(UUID ownerUuid, GameCharacter deathSnapshot) {
+        if (!deathSnapshot.ownerUuid().equals(ownerUuid) || !deathSnapshot.isSelectable() || !deathSnapshot.mode().isHardcore()) {
             return Optional.empty();
         }
 
-        GameCharacter dead = character.withStatus(CharacterStatus.DEAD, System.currentTimeMillis());
+        GameCharacter dead = deathSnapshot.withStatus(CharacterStatus.DEAD, System.currentTimeMillis());
         repository.save(dead);
-        repository.clearActiveCharacter(ownerUuid);
+        repository.clearActiveCharacterIfMatches(ownerUuid, deathSnapshot.characterId());
+        activeCharacters.remove(ownerUuid);
         return Optional.of(dead);
     }
 
@@ -124,6 +157,18 @@ public class CharacterService {
 
         repository.save(character.withStatus(CharacterStatus.ALIVE, 0L));
         return true;
+    }
+
+    public boolean lockSelection(UUID ownerUuid) {
+        return selectionLockedPlayers.add(ownerUuid);
+    }
+
+    public void unlockSelection(UUID ownerUuid) {
+        selectionLockedPlayers.remove(ownerUuid);
+    }
+
+    public boolean isSelectionLocked(UUID ownerUuid) {
+        return selectionLockedPlayers.contains(ownerUuid);
     }
 
     private String normalizeName(String rawName, CharacterMode mode) {

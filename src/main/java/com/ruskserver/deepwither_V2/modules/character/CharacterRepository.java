@@ -185,6 +185,19 @@ public class CharacterRepository implements Startable {
         }
     }
 
+    public void clearActiveCharacterIfMatches(UUID ownerUuid, UUID characterId) {
+        try (Connection conn = db.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                     "DELETE FROM player_active_characters WHERE owner_uuid = ? AND character_id = ?")) {
+            stmt.setString(1, ownerUuid.toString());
+            stmt.setString(2, characterId.toString());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Failed to clear active character for " + ownerUuid, e);
+            throw new CharacterPersistenceException("Failed to clear active character for " + ownerUuid, e);
+        }
+    }
+
     private GameCharacter mapCharacter(ResultSet rs) throws SQLException {
         try {
             return new GameCharacter(

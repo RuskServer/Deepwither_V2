@@ -115,6 +115,11 @@ public class CommandCharacter implements BasicCommand {
             return;
         }
 
+        if (characterService.isSelectionLocked(player.getUniqueId())) {
+            player.sendMessage(Component.text("死亡処理が完了するまでキャラクターを作成できません。", NamedTextColor.RED));
+            return;
+        }
+
         try {
             GameCharacter character = characterService.createCharacter(player.getUniqueId(), args[1], mode, false);
             if (!characterService.selectCharacter(player, character.characterId())) {

@@ -47,13 +47,20 @@ public class HardcoreDeathListener implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
+        Optional<GameCharacter> deathSnapshot = characterService.getCachedActiveCharacter(playerId);
+        if (deathSnapshot.isEmpty() || !deathSnapshot.get().mode().isHardcore()) {
+            return;
+        }
+        if (!characterService.lockSelection(playerId)) {
+            return;
+        }
         processingDeaths.add(playerId);
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> processHardcoreDeathAsync(playerId));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> processHardcoreDeathAsync(playerId, deathSnapshot.get()));
     }
 
-    private void processHardcoreDeathAsync(UUID playerId) {
+    private void processHardcoreDeathAsync(UUID playerId, GameCharacter deathSnapshot) {
         try {
-            Optional<GameCharacter> deadCharacter = characterService.markActiveCharacterDead(playerId);
+            Optional<GameCharacter> deadCharacter = characterService.markCharacterDead(playerId, deathSnapshot);
             plugin.getServer().getScheduler().runTask(plugin, () -> finishDeathProcessing(playerId, deadCharacter));
         } catch (CharacterPersistenceException e) {
             logger.log(Level.SEVERE, "Failed to process hardcore death for " + playerId, e);
@@ -63,6 +70,7 @@ public class HardcoreDeathListener implements Listener {
 
     private void finishDeathProcessing(UUID playerId, Optional<GameCharacter> deadCharacter) {
         processingDeaths.remove(playerId);
+        characterService.unlockSelection(playerId);
         if (deadCharacter.isEmpty()) {
             respawnedBeforeDeathSave.remove(playerId);
             return;
@@ -109,6 +117,7 @@ public class HardcoreDeathListener implements Listener {
         processingDeaths.remove(playerId);
         pendingSelectionGui.remove(playerId);
         respawnedBeforeDeathSave.remove(playerId);
+        characterService.unlockSelection(playerId);
     }
 
     private void sendDeathNotice(Player player, GameCharacter deadCharacter) {
