@@ -6,6 +6,7 @@
 #   <region名（任意の識別名）>:
 #     safe-zone: <boolean>           # true の場合このRegionではモブがスポーンせずPvPも無効です
 #     pvp-enabled: <boolean>         # true の場合このRegion内のPvPを許可します（デフォルト: false）
+#                                      # 重複時はWG優先度が高いRegion、同優先度ではより小さいRegionが有効
 #     world: <ワールド名>
 #     worldguard-region: <WG Region名>  # /rg define で作成した WorldGuard Region の名前
 #     spawn-interval-ticks: <int>    # スポーンを試みるtick間隔 (20 = 1秒)

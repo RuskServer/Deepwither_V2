@@ -248,6 +248,7 @@ mob-regions:
 > **Region PvPの既定値**
 > セーフゾーンは常にPvP無効です。通常Regionも `pvp-enabled` を省略した場合はPvP無効として扱われ、
 > PvPを許可したいRegionだけ `pvp-enabled: true` を設定します。
+> Regionが重なる場合は、WorldGuardの優先度が高いRegion、同じ優先度ではより小さいRegionの設定が有効になります。
 > V2の独自ダメージパイプライン（通常攻撃・弓・スキルなどの `DamagePipelineManager#processDamage()`）でも同じ判定が使われます。
 
 > [!NOTE]
