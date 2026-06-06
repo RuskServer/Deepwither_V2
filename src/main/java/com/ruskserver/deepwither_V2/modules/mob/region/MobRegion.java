@@ -14,7 +14,8 @@ import java.util.List;
  * config.yml の {@code worldguard-region} キーで指定した WorldGuard Region名に対応します。
  *
  * @param name               Region名（config.yml のキーと一致）
- * @param isSafeZone         true の場合、このRegionではモブのスポーンが行われません
+ * @param isSafeZone         true の場合、このRegionではモブのスポーンとPvPが無効になります
+ * @param pvpEnabled         true の場合、このRegion内のプレイヤーへのPvPダメージを許可します
  * @param world              対象ワールド
  * @param wgRegion           WorldGuard の ProtectedRegion
  * @param spawnTable         このRegionに出現するモブのスポーンテーブル
@@ -24,6 +25,7 @@ import java.util.List;
 public record MobRegion(
         String name,
         boolean isSafeZone,
+        boolean pvpEnabled,
         World world,
         ProtectedRegion wgRegion,
         List<SpawnEntry> spawnTable,

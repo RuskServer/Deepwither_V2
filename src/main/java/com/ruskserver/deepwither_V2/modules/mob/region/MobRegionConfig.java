@@ -20,7 +20,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -70,6 +72,26 @@ public class MobRegionConfig implements Startable {
         return regions.stream()
                 .filter(MobRegion::isSafeZone)
                 .anyMatch(sz -> sz.contains(location));
+    }
+
+    /** 指定座標がPvP無効Region内かどうかを判定します。 */
+    public boolean isInPvpDisabledRegion(Location location) {
+        if (isInSafeZone(location)) {
+            return true;
+        }
+        return getEffectiveRegion(location)
+                .map(region -> !region.pvpEnabled())
+                .orElse(false);
+    }
+
+    /** 指定座標に対して、WorldGuardの優先度と範囲サイズを考慮した有効Regionを返します。 */
+    public Optional<MobRegion> getEffectiveRegion(Location location) {
+        return regions.stream()
+                .filter(region -> region.contains(location))
+                .min(Comparator
+                        .comparingInt((MobRegion region) -> region.wgRegion().getPriority())
+                        .reversed()
+                        .thenComparingInt(region -> region.wgRegion().volume()));
     }
 
     // --- 内部処理 ---
@@ -122,6 +144,7 @@ public class MobRegionConfig implements Startable {
 
     private MobRegion parseRegion(String name, ConfigurationSection section) {
         boolean isSafeZone = section.getBoolean("safe-zone", false);
+        boolean pvpEnabled = !isSafeZone && section.getBoolean("pvp-enabled", false);
 
         String worldName = section.getString("world", "world");
         World world = resolveWorld(worldName);
@@ -167,7 +190,7 @@ public class MobRegionConfig implements Startable {
             }
         }
 
-        return new MobRegion(name, isSafeZone, world, wgRegion, spawnTable, spawnIntervalTicks, maxMobs, maxLevel);
+        return new MobRegion(name, isSafeZone, pvpEnabled, world, wgRegion, spawnTable, spawnIntervalTicks, maxMobs, maxLevel);
     }
 
     private World resolveWorld(String configuredName) {
