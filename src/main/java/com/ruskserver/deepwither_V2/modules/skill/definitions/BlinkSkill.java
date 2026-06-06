@@ -84,9 +84,12 @@ public class BlinkSkill implements Skill {
             return CastResult.fail(net.kyori.adventure.text.Component.text("安全な瞬間移動先が見つかりません。", NamedTextColor.RED));
         }
 
-        Location from = player.getLocation();
+        Location from = player.getLocation().clone();
+        if (!player.teleport(target)) {
+            return CastResult.fail(net.kyori.adventure.text.Component.text("瞬間移動に失敗しました。", NamedTextColor.RED));
+        }
+
         player.getWorld().spawnParticle(Particle.PORTAL, from.add(0.0, 1.0, 0.0), 28, 0.35, 0.65, 0.35, 0.08);
-        player.teleport(target);
         player.getWorld().spawnParticle(Particle.PORTAL, target.clone().add(0.0, 1.0, 0.0), 28, 0.35, 0.65, 0.35, 0.08);
         player.playSound(target, Sound.ENTITY_ENDERMAN_TELEPORT, 0.9f, 1.2f);
         return CastResult.success();
