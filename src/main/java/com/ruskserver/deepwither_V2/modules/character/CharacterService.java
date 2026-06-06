@@ -4,6 +4,8 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +19,7 @@ public class CharacterService {
 
     private final CharacterRepository repository;
     private final Map<UUID, GameCharacter> activeCharacters = new ConcurrentHashMap<>();
+    private final Map<UUID, List<GameCharacter>> characterCache = new ConcurrentHashMap<>();
     private final Set<UUID> selectionLockedPlayers = ConcurrentHashMap.newKeySet();
 
     @Inject
@@ -31,6 +34,7 @@ public class CharacterService {
     public Optional<GameCharacter> ensureLegacyCharacter(UUID ownerUuid, String playerName) {
         List<GameCharacter> existing = repository.findByOwner(ownerUuid);
         if (!existing.isEmpty()) {
+            cacheCharacters(ownerUuid, existing);
             Optional<GameCharacter> active = repository.findActiveCharacter(ownerUuid).filter(GameCharacter::isSelectable);
             active.ifPresentOrElse(
                     character -> activeCharacters.put(ownerUuid, character),
@@ -42,7 +46,19 @@ public class CharacterService {
         GameCharacter character = createCharacter(ownerUuid, playerName, CharacterMode.STANDARD, true);
         repository.setActiveCharacter(ownerUuid, character.characterId());
         activeCharacters.put(ownerUuid, character);
+        cacheCharacters(ownerUuid, List.of(character));
         return Optional.of(character);
+    }
+
+    public List<GameCharacter> refreshCharacterCache(UUID ownerUuid) {
+        List<GameCharacter> characters = repository.findByOwner(ownerUuid);
+        cacheCharacters(ownerUuid, characters);
+        Optional<GameCharacter> active = repository.findActiveCharacter(ownerUuid).filter(GameCharacter::isSelectable);
+        active.ifPresentOrElse(
+                character -> activeCharacters.put(ownerUuid, character),
+                () -> activeCharacters.remove(ownerUuid)
+        );
+        return getCachedCharacters(ownerUuid);
     }
 
     public GameCharacter createCharacter(UUID ownerUuid, String name, CharacterMode mode, boolean migratedFromLegacy) {
@@ -59,21 +75,33 @@ public class CharacterService {
                 migratedFromLegacy
         );
         repository.save(character);
+        addCachedCharacter(ownerUuid, character);
         return character;
     }
 
     public GameCharacter createGeneratedCharacter(Player player, CharacterMode mode) {
-        if (isSelectionLocked(player.getUniqueId())) {
-            throw new CharacterPersistenceException("Character selection is locked for " + player.getUniqueId(), null);
+        return createGeneratedCharacter(player.getUniqueId(), player.getName(), mode);
+    }
+
+    public GameCharacter createGeneratedCharacter(UUID ownerUuid, String playerName, CharacterMode mode) {
+        if (isSelectionLocked(ownerUuid)) {
+            throw new CharacterPersistenceException("Character selection is locked for " + ownerUuid, null);
         }
-        String baseName = player.getName() + "-" + (getCharacters(player.getUniqueId()).size() + 1);
-        GameCharacter character = createCharacter(player.getUniqueId(), baseName, mode, false);
-        selectCharacter(player, character.characterId());
+        if (!characterCache.containsKey(ownerUuid)) {
+            refreshCharacterCache(ownerUuid);
+        }
+        String baseName = playerName + "-" + (getCachedCharacters(ownerUuid).size() + 1);
+        GameCharacter character = createCharacter(ownerUuid, baseName, mode, false);
+        selectCharacter(ownerUuid, character.characterId());
         return character;
     }
 
     public List<GameCharacter> getCharacters(UUID ownerUuid) {
-        return repository.findByOwner(ownerUuid);
+        return refreshCharacterCache(ownerUuid);
+    }
+
+    public List<GameCharacter> getCachedCharacters(UUID ownerUuid) {
+        return characterCache.getOrDefault(ownerUuid, List.of());
     }
 
     public Optional<GameCharacter> getActiveCharacter(UUID ownerUuid) {
@@ -89,8 +117,15 @@ public class CharacterService {
         return Optional.ofNullable(activeCharacters.get(ownerUuid)).filter(GameCharacter::isSelectable);
     }
 
+    public boolean hasCachedActiveCharacter(UUID ownerUuid) {
+        return getCachedActiveCharacter(ownerUuid).isPresent();
+    }
+
     public boolean selectCharacter(Player player, UUID characterId) {
-        UUID ownerUuid = player.getUniqueId();
+        return selectCharacter(player.getUniqueId(), characterId);
+    }
+
+    public boolean selectCharacter(UUID ownerUuid, UUID characterId) {
         if (isSelectionLocked(ownerUuid)) {
             return false;
         }
@@ -109,6 +144,7 @@ public class CharacterService {
         repository.setActiveCharacter(ownerUuid, characterId);
         repository.save(selected);
         activeCharacters.put(ownerUuid, selected);
+        replaceCachedCharacter(ownerUuid, selected);
         return true;
     }
 
@@ -141,6 +177,7 @@ public class CharacterService {
         repository.save(dead);
         repository.clearActiveCharacterIfMatches(ownerUuid, deathSnapshot.characterId());
         activeCharacters.remove(ownerUuid);
+        replaceCachedCharacter(ownerUuid, dead);
         return Optional.of(dead);
     }
 
@@ -155,7 +192,9 @@ public class CharacterService {
             return false;
         }
 
-        repository.save(character.withStatus(CharacterStatus.ALIVE, 0L));
+        GameCharacter revived = character.withStatus(CharacterStatus.ALIVE, 0L);
+        repository.save(revived);
+        replaceCachedCharacter(ownerUuid, revived);
         return true;
     }
 
@@ -169,6 +208,33 @@ public class CharacterService {
 
     public boolean isSelectionLocked(UUID ownerUuid) {
         return selectionLockedPlayers.contains(ownerUuid);
+    }
+
+    private void cacheCharacters(UUID ownerUuid, List<GameCharacter> characters) {
+        characterCache.put(ownerUuid, List.copyOf(characters));
+    }
+
+    private void addCachedCharacter(UUID ownerUuid, GameCharacter character) {
+        List<GameCharacter> current = new ArrayList<>(getCachedCharacters(ownerUuid));
+        current.add(character);
+        cacheCharacters(ownerUuid, current);
+    }
+
+    private void replaceCachedCharacter(UUID ownerUuid, GameCharacter replacement) {
+        List<GameCharacter> current = new ArrayList<>(getCachedCharacters(ownerUuid));
+        boolean replaced = false;
+        for (int i = 0; i < current.size(); i++) {
+            if (current.get(i).characterId().equals(replacement.characterId())) {
+                current.set(i, replacement);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            current.add(replacement);
+        }
+        current.sort(java.util.Comparator.comparing(GameCharacter::createdAt));
+        cacheCharacters(ownerUuid, Collections.unmodifiableList(current));
     }
 
     private String normalizeName(String rawName, CharacterMode mode) {

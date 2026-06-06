@@ -1,5 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.character.commands;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Command;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.character.CharacterMode;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Command(name = "character", description = "キャラクターを管理します", aliases = {"char"})
 public class CommandCharacter implements BasicCommand {
@@ -34,12 +36,14 @@ public class CommandCharacter implements BasicCommand {
     private final CharacterService characterService;
     private final CharacterNameTagService nameTagService;
     private final GuiService guiService;
+    private final Deepwither_V2 plugin;
 
     @Inject
-    public CommandCharacter(CharacterService characterService, CharacterNameTagService nameTagService, GuiService guiService) {
+    public CommandCharacter(CharacterService characterService, CharacterNameTagService nameTagService, GuiService guiService, Deepwither_V2 plugin) {
         this.characterService = characterService;
         this.nameTagService = nameTagService;
         this.guiService = guiService;
+        this.plugin = plugin;
     }
 
     @Override
@@ -77,8 +81,8 @@ public class CommandCharacter implements BasicCommand {
     }
 
     public void showCharacterList(Player player) {
-        List<GameCharacter> characters = characterService.getCharacters(player.getUniqueId());
-        Optional<GameCharacter> active = characterService.getActiveCharacter(player.getUniqueId());
+        List<GameCharacter> characters = characterService.getCachedCharacters(player.getUniqueId());
+        Optional<GameCharacter> active = characterService.getCachedActiveCharacter(player.getUniqueId());
 
         player.sendMessage(Component.text("===== キャラクター一覧 =====", NamedTextColor.GOLD));
         if (characters.isEmpty()) {
@@ -115,26 +119,34 @@ public class CommandCharacter implements BasicCommand {
             return;
         }
 
-        if (characterService.isSelectionLocked(player.getUniqueId())) {
+        UUID playerId = player.getUniqueId();
+        String characterName = args[1];
+        if (characterService.isSelectionLocked(playerId)) {
             player.sendMessage(Component.text("死亡処理が完了するまでキャラクターを作成できません。", NamedTextColor.RED));
             return;
         }
 
-        try {
-            GameCharacter character = characterService.createCharacter(player.getUniqueId(), args[1], mode, false);
-            if (!characterService.selectCharacter(player, character.characterId())) {
-                player.sendMessage(Component.text("作成したキャラクターの選択に失敗しました。", NamedTextColor.RED));
-                return;
+        player.sendMessage(Component.text("キャラクターを作成しています...", NamedTextColor.GRAY));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                GameCharacter character = characterService.createCharacter(playerId, characterName, mode, false);
+                boolean selected = characterService.selectCharacter(playerId, character.characterId());
+                runSync(playerId, online -> {
+                    if (!selected) {
+                        online.sendMessage(Component.text("作成したキャラクターの選択に失敗しました。", NamedTextColor.RED));
+                        return;
+                    }
+                    nameTagService.refresh(online, mode);
+                    online.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
+                            .append(Component.text(character.name(), NamedTextColor.YELLOW))
+                            .append(Component.text(" (", NamedTextColor.GRAY))
+                            .append(Component.text(mode.getDisplayName(), NamedTextColor.AQUA))
+                            .append(Component.text(")", NamedTextColor.GRAY)));
+                });
+            } catch (CharacterPersistenceException e) {
+                runSync(playerId, online -> online.sendMessage(Component.text("キャラクターの作成に失敗しました。", NamedTextColor.RED)));
             }
-            nameTagService.refresh(player);
-            player.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
-                    .append(Component.text(character.name(), NamedTextColor.YELLOW))
-                    .append(Component.text(" (", NamedTextColor.GRAY))
-                    .append(Component.text(mode.getDisplayName(), NamedTextColor.AQUA))
-                    .append(Component.text(")", NamedTextColor.GRAY)));
-        } catch (CharacterPersistenceException e) {
-            player.sendMessage(Component.text("キャラクターの作成に失敗しました。", NamedTextColor.RED));
-        }
+        });
     }
 
     private void handleSelect(Player player, String[] args) {
@@ -143,45 +155,41 @@ public class CommandCharacter implements BasicCommand {
             return;
         }
 
-        Optional<GameCharacter> optional;
-        try {
-            optional = characterService.findOwnedCharacter(player.getUniqueId(), args[1]);
-        } catch (CharacterPersistenceException e) {
-            player.sendMessage(Component.text("キャラクターデータの読み込みに失敗しました。", NamedTextColor.RED));
-            return;
-        }
-        if (optional.isEmpty()) {
-            player.sendMessage(Component.text("キャラクターが見つかりません。", NamedTextColor.RED));
-            return;
-        }
+        UUID playerId = player.getUniqueId();
+        String token = args[1];
+        player.sendMessage(Component.text("キャラクターを選択しています...", NamedTextColor.GRAY));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                Optional<GameCharacter> optional = characterService.findOwnedCharacter(playerId, token);
+                if (optional.isEmpty()) {
+                    runSync(playerId, online -> online.sendMessage(Component.text("キャラクターが見つかりません。", NamedTextColor.RED)));
+                    return;
+                }
 
-        GameCharacter character = optional.get();
-        if (!character.isSelectable()) {
-            player.sendMessage(Component.text("死亡済みまたはアーカイブ済みのキャラクターは選択できません。", NamedTextColor.RED));
-            return;
-        }
+                GameCharacter character = optional.get();
+                if (!character.isSelectable()) {
+                    runSync(playerId, online -> online.sendMessage(Component.text("死亡済みまたはアーカイブ済みのキャラクターは選択できません。", NamedTextColor.RED)));
+                    return;
+                }
 
-        try {
-            if (!characterService.selectCharacter(player, character.characterId())) {
-                player.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
-                return;
+                if (!characterService.selectCharacter(playerId, character.characterId())) {
+                    runSync(playerId, online -> online.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED)));
+                    return;
+                }
+
+                runSync(playerId, online -> {
+                    nameTagService.refresh(online, character.mode());
+                    online.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
+                            .append(Component.text(character.name(), NamedTextColor.YELLOW)));
+                });
+            } catch (CharacterPersistenceException e) {
+                runSync(playerId, online -> online.sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED)));
             }
-            nameTagService.refresh(player);
-            player.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
-                    .append(Component.text(character.name(), NamedTextColor.YELLOW)));
-        } catch (CharacterPersistenceException e) {
-            player.sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED));
-        }
+        });
     }
 
     private void handleInfo(Player player) {
-        Optional<GameCharacter> active;
-        try {
-            active = characterService.getActiveCharacter(player.getUniqueId());
-        } catch (CharacterPersistenceException e) {
-            player.sendMessage(Component.text("キャラクターデータの読み込みに失敗しました。", NamedTextColor.RED));
-            return;
-        }
+        Optional<GameCharacter> active = characterService.getCachedActiveCharacter(player.getUniqueId());
         if (active.isEmpty()) {
             player.sendMessage(Component.text("アクティブキャラクターがありません。", NamedTextColor.RED));
             return;
@@ -196,6 +204,15 @@ public class CommandCharacter implements BasicCommand {
         if (character.diedAt() > 0) {
             player.sendMessage(line("死亡", DATE_FORMAT.format(Instant.ofEpochMilli(character.diedAt()))));
         }
+    }
+
+    private void runSync(UUID playerId, java.util.function.Consumer<Player> action) {
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            Player online = plugin.getServer().getPlayer(playerId);
+            if (online != null && online.isOnline()) {
+                action.accept(online);
+            }
+        });
     }
 
     private Component line(String label, String value) {

@@ -1,5 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.character.gui;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
@@ -22,6 +23,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class CharacterSelectGui implements GuiView {
@@ -36,11 +38,13 @@ public class CharacterSelectGui implements GuiView {
 
     private final CharacterService characterService;
     private final CharacterNameTagService nameTagService;
+    private final Deepwither_V2 plugin;
 
     @Inject
-    public CharacterSelectGui(CharacterService characterService, CharacterNameTagService nameTagService) {
+    public CharacterSelectGui(CharacterService characterService, CharacterNameTagService nameTagService, Deepwither_V2 plugin) {
         this.characterService = characterService;
         this.nameTagService = nameTagService;
+        this.plugin = plugin;
     }
 
     @Override
@@ -65,8 +69,8 @@ public class CharacterSelectGui implements GuiView {
         }
 
         Player player = context.player();
-        List<GameCharacter> characters = characterService.getCharacters(player.getUniqueId());
-        Optional<GameCharacter> active = characterService.getActiveCharacter(player.getUniqueId());
+        List<GameCharacter> characters = characterService.getCachedCharacters(player.getUniqueId());
+        Optional<GameCharacter> active = characterService.getCachedActiveCharacter(player.getUniqueId());
 
         for (int i = 0; i < Math.min(characters.size(), CHARACTER_SLOTS.length); i++) {
             GameCharacter character = characters.get(i);
@@ -99,7 +103,7 @@ public class CharacterSelectGui implements GuiView {
             return;
         }
 
-        List<GameCharacter> characters = characterService.getCharacters(player.getUniqueId());
+        List<GameCharacter> characters = characterService.getCachedCharacters(player.getUniqueId());
         if (index >= characters.size()) {
             return;
         }
@@ -111,21 +115,40 @@ public class CharacterSelectGui implements GuiView {
             return;
         }
 
-        try {
-            if (characterService.selectCharacter(player, character.characterId())) {
-                nameTagService.refresh(player);
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.2f);
-                player.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
-                        .append(Component.text(character.name(), NamedTextColor.YELLOW)));
-                context.close();
-            } else {
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
-                player.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
+        UUID playerId = player.getUniqueId();
+        UUID characterId = character.characterId();
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+        player.sendMessage(Component.text("キャラクターを選択しています...", NamedTextColor.GRAY));
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                boolean selected = characterService.selectCharacter(playerId, characterId);
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    Player online = plugin.getServer().getPlayer(playerId);
+                    if (online == null || !online.isOnline()) {
+                        return;
+                    }
+                    if (selected) {
+                        nameTagService.refresh(online, character.mode());
+                        online.playSound(online.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.2f);
+                        online.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
+                                .append(Component.text(character.name(), NamedTextColor.YELLOW)));
+                        online.closeInventory();
+                    } else {
+                        online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
+                        online.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
+                    }
+                });
+            } catch (CharacterPersistenceException e) {
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    Player online = plugin.getServer().getPlayer(playerId);
+                    if (online != null && online.isOnline()) {
+                        online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
+                        online.sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED));
+                    }
+                });
             }
-        } catch (CharacterPersistenceException e) {
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
-            player.sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED));
-        }
+        });
     }
 
     private ItemStack createCharacterItem(GameCharacter character, boolean activeCharacter) {

@@ -1,5 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.character.gui;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.character.CharacterMode;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
@@ -18,6 +19,8 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class CharacterCreateGui implements GuiView {
     public static final String ID = "character_create";
@@ -29,11 +32,13 @@ public class CharacterCreateGui implements GuiView {
 
     private final CharacterService characterService;
     private final CharacterNameTagService nameTagService;
+    private final Deepwither_V2 plugin;
 
     @Inject
-    public CharacterCreateGui(CharacterService characterService, CharacterNameTagService nameTagService) {
+    public CharacterCreateGui(CharacterService characterService, CharacterNameTagService nameTagService, Deepwither_V2 plugin) {
         this.characterService = characterService;
         this.nameTagService = nameTagService;
+        this.plugin = plugin;
     }
 
     @Override
@@ -110,16 +115,35 @@ public class CharacterCreateGui implements GuiView {
         }
 
         Player player = context.player();
-        try {
-            GameCharacter character = characterService.createGeneratedCharacter(player, mode);
-            nameTagService.refresh(player);
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.0f);
-            player.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
-                    .append(Component.text(character.name(), NamedTextColor.YELLOW)));
-            context.open(CharacterSelectGui.ID);
-        } catch (CharacterPersistenceException e) {
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
-            player.sendMessage(Component.text("キャラクターの作成に失敗しました。", NamedTextColor.RED));
-        }
+        UUID playerId = player.getUniqueId();
+        String playerName = player.getName();
+        CharacterMode selectedMode = mode;
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+        player.sendMessage(Component.text("キャラクターを作成しています...", NamedTextColor.GRAY));
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                GameCharacter character = characterService.createGeneratedCharacter(playerId, playerName, selectedMode);
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    Player online = plugin.getServer().getPlayer(playerId);
+                    if (online == null || !online.isOnline()) {
+                        return;
+                    }
+                    nameTagService.refresh(online, character.mode());
+                    online.playSound(online.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.0f);
+                    online.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
+                            .append(Component.text(character.name(), NamedTextColor.YELLOW)));
+                    online.closeInventory();
+                });
+            } catch (CharacterPersistenceException e) {
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    Player online = plugin.getServer().getPlayer(playerId);
+                    if (online != null && online.isOnline()) {
+                        online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
+                        online.sendMessage(Component.text("キャラクターの作成に失敗しました。", NamedTextColor.RED));
+                    }
+                });
+            }
+        });
     }
 }
