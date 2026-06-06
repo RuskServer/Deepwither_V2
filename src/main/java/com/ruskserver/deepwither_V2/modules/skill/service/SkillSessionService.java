@@ -1,7 +1,8 @@
 package com.ruskserver.deepwither_V2.modules.skill.service;
 
 import com.ruskserver.deepwither_V2.Deepwither_V2;
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterData;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
@@ -9,7 +10,8 @@ import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
-import com.ruskserver.deepwither_V2.modules.skill.provider.PlayerSkillSlotProvider;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
+import com.ruskserver.deepwither_V2.modules.skill.provider.CharacterSkillSlotProvider;
 import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -27,7 +29,8 @@ import java.util.UUID;
 public class SkillSessionService implements Startable, Stoppable {
 
     private final Deepwither_V2 plugin;
-    private final PlayerDataRepository repository;
+    private final CharacterDataRepository characterDataRepository;
+    private final CharacterService characterService;
     private final SkillRegistry registry;
     private final SkillCastService castService;
     private final SkillCooldownService cooldownService;
@@ -39,7 +42,8 @@ public class SkillSessionService implements Startable, Stoppable {
     @Inject
     public SkillSessionService(
             Deepwither_V2 plugin,
-            PlayerDataRepository repository,
+            CharacterDataRepository characterDataRepository,
+            CharacterService characterService,
             SkillRegistry registry,
             SkillCastService castService,
             SkillCooldownService cooldownService,
@@ -47,7 +51,8 @@ public class SkillSessionService implements Startable, Stoppable {
             SkillTreeService skillTreeService
     ) {
         this.plugin = plugin;
-        this.repository = repository;
+        this.characterDataRepository = characterDataRepository;
+        this.characterService = characterService;
         this.registry = registry;
         this.castService = castService;
         this.cooldownService = cooldownService;
@@ -93,8 +98,8 @@ public class SkillSessionService implements Startable, Stoppable {
     }
 
     public void castSlot(Player player, int slot) {
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerSkillSlotProvider.SkillSlotData slotData = data.get(PlayerSkillSlotProvider.KEY);
+        getActiveSkillData(player).ifPresent(data -> {
+            CharacterSkillSlotProvider.SkillSlotData slotData = data.get(CharacterSkillSlotProvider.KEY);
             if (slotData == null) return;
 
             String skillId = slotData.getSkill(slot);
@@ -123,12 +128,12 @@ public class SkillSessionService implements Startable, Stoppable {
                 continue;
             }
 
-            repository.get(player.getUniqueId()).ifPresent(data -> {
-                PlayerSkillSlotProvider.SkillSlotData slotData = data.get(PlayerSkillSlotProvider.KEY);
+            getActiveSkillData(player).ifPresent(data -> {
+                CharacterSkillSlotProvider.SkillSlotData slotData = data.get(CharacterSkillSlotProvider.KEY);
                 if (slotData == null) return;
 
                 Component bar = Component.empty();
-                for (int i = 0; i < PlayerSkillSlotProvider.SLOT_COUNT; i++) {
+                for (int i = 0; i < CharacterSkillSlotProvider.SLOT_COUNT; i++) {
                     String skillId = slotData.getSkill(i);
                     if (skillId == null) continue;
 
@@ -163,5 +168,10 @@ public class SkillSessionService implements Startable, Stoppable {
             return Component.text("x " + skill.getDisplayName(), NamedTextColor.BLUE);
         }
         return Component.text(skill.getDisplayName(), NamedTextColor.GREEN, TextDecoration.BOLD);
+    }
+
+    private java.util.Optional<CharacterData> getActiveSkillData(Player player) {
+        return characterService.getCachedActiveCharacter(player.getUniqueId())
+                .flatMap(character -> characterDataRepository.get(character.characterId()));
     }
 }

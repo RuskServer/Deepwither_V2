@@ -1,7 +1,7 @@
 package com.ruskserver.deepwither_V2.modules.skill.provider;
 
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataProvider;
 import com.ruskserver.deepwither_V2.core.database.player.DataKey;
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataProvider;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 
 import java.sql.Connection;
@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-public class PlayerSkillSlotProvider implements PlayerDataProvider<PlayerSkillSlotProvider.SkillSlotData> {
+public class CharacterSkillSlotProvider implements CharacterDataProvider<CharacterSkillSlotProvider.SkillSlotData> {
 
-    public static final DataKey<SkillSlotData> KEY = new DataKey<>("player_skill_slots");
+    public static final DataKey<SkillSlotData> KEY = new DataKey<>("character_skill_slots");
     public static final int SLOT_COUNT = 9;
 
     @Override
@@ -24,18 +24,18 @@ public class PlayerSkillSlotProvider implements PlayerDataProvider<PlayerSkillSl
     }
 
     @Override
-    public SkillSlotData loadFromDb(UUID uuid, Connection conn) throws Exception {
+    public SkillSlotData loadFromDb(UUID characterId, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "CREATE TABLE IF NOT EXISTS player_skill_slots (" +
-                        "uuid VARCHAR(36) PRIMARY KEY, " +
+                "CREATE TABLE IF NOT EXISTS character_skill_slots (" +
+                        "character_id VARCHAR(36) PRIMARY KEY, " +
                         "slot0 VARCHAR(64), slot1 VARCHAR(64), slot2 VARCHAR(64), " +
                         "slot3 VARCHAR(64), slot4 VARCHAR(64), slot5 VARCHAR(64), " +
                         "slot6 VARCHAR(64), slot7 VARCHAR(64), slot8 VARCHAR(64))")) {
             stmt.execute();
         }
 
-        try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM player_skill_slots WHERE uuid = ?")) {
-            stmt.setString(1, uuid.toString());
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM character_skill_slots WHERE character_id = ?")) {
+            stmt.setString(1, characterId.toString());
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     SkillSlotData data = new SkillSlotData();
@@ -46,15 +46,15 @@ public class PlayerSkillSlotProvider implements PlayerDataProvider<PlayerSkillSl
                 }
             }
         }
-        return new SkillSlotData();
+        return null;
     }
 
     @Override
-    public void saveToDb(UUID uuid, SkillSlotData data, Connection conn) throws Exception {
+    public void saveToDb(UUID characterId, SkillSlotData data, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "MERGE INTO player_skill_slots (uuid, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8) " +
-                        "KEY(uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-            stmt.setString(1, uuid.toString());
+                "MERGE INTO character_skill_slots (character_id, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8) " +
+                        "KEY(character_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+            stmt.setString(1, characterId.toString());
             for (int i = 0; i < SLOT_COUNT; i++) {
                 stmt.setString(i + 2, data.getSkill(i));
             }

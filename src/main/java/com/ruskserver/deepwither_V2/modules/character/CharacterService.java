@@ -10,6 +10,7 @@ import com.ruskserver.deepwither_V2.modules.character.provider.CharacterInventor
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterInventoryProvider.InventorySaveData;
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterLocationProvider;
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterLocationProvider.CharacterLocationData;
+import com.ruskserver.deepwither_V2.modules.skill.provider.CharacterSkillSlotProvider;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -119,6 +120,9 @@ public class CharacterService {
                 migratedFromLegacy
         );
         repository.saveAndSetActiveCharacter(character);
+        if (!migratedFromLegacy) {
+            initializeEmptyCharacterState(character.characterId());
+        }
         activeCharacters.put(ownerUuid, character);
         addCachedCharacter(ownerUuid, character);
         return character;
@@ -341,6 +345,14 @@ public class CharacterService {
         characterDataRepository.save(characterId, data);
     }
 
+    private void initializeEmptyCharacterState(UUID characterId) {
+        CharacterData data = characterDataRepository.get(characterId)
+                .orElseGet(() -> new CharacterData(characterId));
+        data.set(CharacterInventoryProvider.KEY, new InventorySaveData());
+        data.set(CharacterSkillSlotProvider.KEY, new CharacterSkillSlotProvider.SkillSlotData());
+        characterDataRepository.save(characterId, data);
+    }
+
     /**
      * 指定キャラクターIDのインベントリ・位置をDBから同期的にロードし、プレイヤーへ反映する。
      * メインスレッドから呼び出すこと（DB同期呼び出しが発生するため、非同期化が望ましい場合は
@@ -442,8 +454,8 @@ public class CharacterService {
     private void applyCharacterDataToPlayer(Player player, CharacterData data) {
         // インベントリ復元
         InventorySaveData invData = data.get(CharacterInventoryProvider.KEY);
-        player.getInventory().clear();
-        if (invData != null && !invData.getItems().isEmpty()) {
+        if (invData != null) {
+            player.getInventory().clear();
             ItemStack[] contents = new ItemStack[player.getInventory().getSize()];
             for (Map.Entry<Integer, String> entry : invData.getItems().entrySet()) {
                 int slot = entry.getKey();

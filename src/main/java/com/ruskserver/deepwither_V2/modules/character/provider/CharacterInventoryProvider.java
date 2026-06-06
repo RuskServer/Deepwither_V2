@@ -59,7 +59,7 @@ public class CharacterInventoryProvider implements CharacterDataProvider<Charact
                 }
             }
         }
-        return new InventorySaveData();
+        return null;
     }
 
     @Override
