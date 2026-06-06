@@ -120,7 +120,9 @@ public class CharacterRepository implements Startable {
     }
 
     public Optional<GameCharacter> findActiveCharacter(UUID ownerUuid) {
-        return findActiveCharacterId(ownerUuid).flatMap(this::findById);
+        return findActiveCharacterId(ownerUuid)
+                .flatMap(this::findById)
+                .filter(character -> character.ownerUuid().equals(ownerUuid));
     }
 
     public void save(GameCharacter character) {
@@ -145,15 +147,30 @@ public class CharacterRepository implements Startable {
     }
 
     public void setActiveCharacter(UUID ownerUuid, UUID characterId) {
-        try (Connection conn = db.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                     "MERGE INTO player_active_characters (owner_uuid, character_id) KEY(owner_uuid) VALUES (?, ?)")) {
-            stmt.setString(1, ownerUuid.toString());
-            stmt.setString(2, characterId.toString());
-            stmt.executeUpdate();
+        try (Connection conn = db.getConnection()) {
+            validateCharacterOwnership(conn, ownerUuid, characterId);
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "MERGE INTO player_active_characters (owner_uuid, character_id) KEY(owner_uuid) VALUES (?, ?)")) {
+                stmt.setString(1, ownerUuid.toString());
+                stmt.setString(2, characterId.toString());
+                stmt.executeUpdate();
+            }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to set active character for " + ownerUuid, e);
             throw new CharacterPersistenceException("Failed to set active character for " + ownerUuid, e);
+        }
+    }
+
+    private void validateCharacterOwnership(Connection conn, UUID ownerUuid, UUID characterId) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT 1 FROM player_characters WHERE owner_uuid = ? AND character_id = ?")) {
+            stmt.setString(1, ownerUuid.toString());
+            stmt.setString(2, characterId.toString());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    throw new SQLException("Character " + characterId + " does not belong to owner " + ownerUuid);
+                }
+            }
         }
     }
 

@@ -9,11 +9,14 @@ import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
 import com.ruskserver.deepwither_V2.modules.character.commands.CommandCharacter;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +30,9 @@ public class HardcoreDeathListener implements Listener {
     private final CommandCharacter commandCharacter;
     private final Deepwither_V2 plugin;
     private final Logger logger;
+    private final Set<UUID> processingDeaths = ConcurrentHashMap.newKeySet();
     private final Set<UUID> pendingSelectionGui = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> respawnedBeforeDeathSave = ConcurrentHashMap.newKeySet();
 
     @Inject
     public HardcoreDeathListener(CharacterService characterService, CharacterNameTagService nameTagService,
@@ -41,27 +46,72 @@ public class HardcoreDeathListener implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        processingDeaths.add(playerId);
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> processHardcoreDeathAsync(playerId));
+    }
+
+    private void processHardcoreDeathAsync(UUID playerId) {
         try {
-            characterService.markActiveCharacterDead(event.getPlayer()).ifPresent(deadCharacter -> {
-                sendDeathNotice(event.getPlayer(), deadCharacter);
-                nameTagService.clear(event.getPlayer());
-                pendingSelectionGui.add(event.getPlayer().getUniqueId());
-            });
+            Optional<GameCharacter> deadCharacter = characterService.markActiveCharacterDead(playerId);
+            plugin.getServer().getScheduler().runTask(plugin, () -> finishDeathProcessing(playerId, deadCharacter));
         } catch (CharacterPersistenceException e) {
-            logger.log(Level.SEVERE, "Failed to process hardcore death for " + event.getPlayer().getUniqueId(), e);
-            event.getPlayer().sendMessage(net.kyori.adventure.text.Component.text("キャラクター死亡処理の保存に失敗しました。管理者に連絡してください。", NamedTextColor.RED));
+            logger.log(Level.SEVERE, "Failed to process hardcore death for " + playerId, e);
+            plugin.getServer().getScheduler().runTask(plugin, () -> failDeathProcessing(playerId));
+        }
+    }
+
+    private void finishDeathProcessing(UUID playerId, Optional<GameCharacter> deadCharacter) {
+        processingDeaths.remove(playerId);
+        if (deadCharacter.isEmpty()) {
+            respawnedBeforeDeathSave.remove(playerId);
+            return;
+        }
+
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (player != null && player.isOnline()) {
+            sendDeathNotice(player, deadCharacter.get());
+            nameTagService.clear(player);
+            if (respawnedBeforeDeathSave.remove(playerId)) {
+                commandCharacter.openCharacterSelect(player);
+            } else {
+                pendingSelectionGui.add(playerId);
+            }
+        } else {
+            clearPendingState(playerId);
+        }
+    }
+
+    private void failDeathProcessing(UUID playerId) {
+        clearPendingState(playerId);
+        Player player = plugin.getServer().getPlayer(playerId);
+        if (player != null && player.isOnline()) {
+            player.sendMessage(net.kyori.adventure.text.Component.text("キャラクター死亡処理の保存に失敗しました。管理者に連絡してください。", NamedTextColor.RED));
         }
     }
 
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        if (!pendingSelectionGui.remove(event.getPlayer().getUniqueId())) {
-            return;
+        UUID playerId = event.getPlayer().getUniqueId();
+        if (pendingSelectionGui.remove(playerId)) {
+            plugin.getServer().getScheduler().runTask(plugin, () -> commandCharacter.openCharacterSelect(event.getPlayer()));
+        } else if (processingDeaths.contains(playerId)) {
+            respawnedBeforeDeathSave.add(playerId);
         }
-        plugin.getServer().getScheduler().runTask(plugin, () -> commandCharacter.openCharacterSelect(event.getPlayer()));
     }
 
-    private void sendDeathNotice(org.bukkit.entity.Player player, GameCharacter deadCharacter) {
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        clearPendingState(event.getPlayer().getUniqueId());
+    }
+
+    private void clearPendingState(UUID playerId) {
+        processingDeaths.remove(playerId);
+        pendingSelectionGui.remove(playerId);
+        respawnedBeforeDeathSave.remove(playerId);
+    }
+
+    private void sendDeathNotice(Player player, GameCharacter deadCharacter) {
         player.sendMessage(net.kyori.adventure.text.Component.text("キャラクターが死亡しました: ", NamedTextColor.RED)
                 .append(net.kyori.adventure.text.Component.text(deadCharacter.name(), NamedTextColor.YELLOW))
                 .append(net.kyori.adventure.text.Component.text(" (", NamedTextColor.GRAY))

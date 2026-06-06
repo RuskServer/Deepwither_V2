@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.character.listener;
 import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.character.CharacterMode;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
@@ -46,7 +47,7 @@ public class CharacterJoinListener implements Listener {
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 Player player = plugin.getServer().getPlayer(playerId);
                 if (player != null && player.isOnline()) {
-                    nameTagService.refresh(player, character.mode());
+                    nameTagService.refresh(player, character.isSelectable() ? character.mode() : CharacterMode.STANDARD);
                 }
             });
         } catch (CharacterPersistenceException e) {

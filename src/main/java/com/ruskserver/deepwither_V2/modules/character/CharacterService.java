@@ -96,7 +96,10 @@ public class CharacterService {
     }
 
     public Optional<GameCharacter> markActiveCharacterDead(Player player) {
-        UUID ownerUuid = player.getUniqueId();
+        return markActiveCharacterDead(player.getUniqueId());
+    }
+
+    public Optional<GameCharacter> markActiveCharacterDead(UUID ownerUuid) {
         Optional<GameCharacter> active = repository.findActiveCharacter(ownerUuid);
         if (active.isEmpty()) {
             return Optional.empty();
