@@ -1,0 +1,79 @@
+# キャラクターシステム実装計画
+
+## 確定仕様
+
+* キャラクター種別は `STANDARD`、`SOFT_HARDCORE`、`TRUE_HARDCORE` の3種類。
+* スタンダードは従来通り死亡後に通常リスポーンする。
+* ソフトHCと真HCは死亡時に現在のキャラクターを死亡済みにし、キャラクター選択へ戻す。
+* ソフトHC死亡キャラの復活は管理者コマンドのみ許可する。
+* ソフトHCキャラ名とネームタグには `[SHC] `、真HCキャラ名とネームタグには `[THC] ` のprefixを付ける。
+* 真HCキャラは複数作成可能。ただし所持金、トレーダー信用度、レベルなどは真HCキャラごとに独立する。
+* レベル、経験値、ステータス、スキルツリーは全モードでキャラクター別に扱う。
+* スタンダードとソフトHCは所持金とトレーダー信用度を共有する。
+* ソフトHCで稼いだ所持金とトレーダー信用度はスタンダードでも利用でき、逆も同様。
+* 真HCの所持金とトレーダー信用度はスタンダード/ソフトHC共有データとは分離し、他の真HCキャラとも共有しない。
+* 既存データは初回ログイン時に1体目のスタンダードキャラクターとして登録する。
+* 旧テーブルは当面削除せず、移行元または互換用として残す。
+
+## Vault / EssentialsX 経済の扱い
+
+現状は Vault 経由で EssentialsX の経済基盤に乗っているため、初期実装では Vault 残高同期を採用する。
+
+* Deepwither 側では、スタンダード/ソフトHC共有財布と真HCキャラ別財布をDBに保持する。
+* ログイン時、キャラ選択時、キャラ作成時に現在のスコープの残高を Vault 残高へ同期する。
+* キャラ切り替え前には Vault の現在残高を旧アクティブキャラの財布へ取り込む。
+* スタンダード/ソフトHCを選んだ場合は共有財布を Vault に反映する。
+* 真HCを選んだ場合はその真HCキャラ専用財布を Vault に反映する。
+* 将来的に独自経済へ移行する場合は、`MoneyService` を正として Vault Provider 化またはVault非依存化する。
+
+Vault 同期は `Economy#set` がない前提で、現在残高との差分を `depositPlayer` / `withdrawPlayer` で調整する。
+
+## 初期実装済みの基盤
+
+現段階では以下の基盤を追加している。
+
+* `player_characters` テーブルでキャラクター本体を管理する。
+* `player_active_characters` テーブルでアクティブキャラクターを管理する。
+* 初回ログイン時に既存プレイヤーを1体目のスタンダードキャラクターとして自動登録する。
+* `/character list`、`/character create`、`/character select`、`/character info` を追加する。
+* `/character` と `/character list` でキャラクター選択GUI、`/character create` でキャラクター作成GUIを開く。
+* キャラクター作成GUIではモード選択で自動命名キャラクターを作成し、ソフトHC/真HCはprefix付きで登録する。
+* アクティブキャラクターのモードに応じて、ネームタグとTabリスト名にもソフトHC/真HC prefixを反映する。
+* `/characteradmin revive` で死亡キャラクターを管理者のみ復活可能にする。
+* ソフトHC/真HC死亡時にキャラクターを死亡済みにし、アクティブキャラを解除する。
+
+## 今後の実装フェーズ
+
+### Phase 1: キャラクターデータ化
+
+* `CharacterData`、`CharacterDataProvider<T>`、`CharacterDataRepository` を追加する。
+* 既存の `PlayerLevelProvider` 相当を `CharacterLevelProvider` へ移す。
+* 既存の `PlayerAttributeProvider` 相当を `CharacterAttributeProvider` へ移す。
+* 既存の `PlayerSkillTreeProvider` 相当を `CharacterSkillTreeProvider` へ移す。
+* `PlayerManager`、ステータスGUI、スキルツリーGUIなどの参照先をアクティブキャラクター基準に変更する。
+
+### Phase 2: 所持金スコープとVault同期
+
+* `MoneyService` を追加する。
+* スタンダード/ソフトHC共有財布用テーブルを追加する。
+* 真HCキャラ別財布用テーブルを追加する。
+* `TraderService` の Vault 直接操作を `MoneyService` 経由へ置き換える。
+* ログイン時とキャラ選択時に Vault 残高を同期する。
+
+### Phase 3: トレーダー信用度スコープ
+
+* スタンダード/ソフトHC共有信用度テーブルを追加する。
+* 真HCキャラ別信用度テーブルを追加する。
+* `TraderReputationService` をアクティブキャラクターのスコープに応じて読み書きするよう変更する。
+
+### Phase 4: キャラクター選択GUI
+
+* キャラクター選択GUIと作成GUIの初期版は実装済み。
+* 今後はページング、名前入力、詳細表示、作成確認などを追加する。
+
+### Phase 5: 既存データ移行の本実装
+
+* 既存レベル、経験値、ステータス、スキルツリーを初回作成されたスタンダードキャラクターへコピーする。
+* 既存 Vault 残高をスタンダード/ソフトHC共有財布へ取り込む。
+* 既存トレーダー信用度をスタンダード/ソフトHC共有信用度へ取り込む。
+* 移行済みフラグを保存し、二重移行を防ぐ。
