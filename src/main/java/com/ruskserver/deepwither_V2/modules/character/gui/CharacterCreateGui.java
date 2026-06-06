@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.character.gui;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.character.CharacterMode;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
+import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
 import com.ruskserver.deepwither_V2.modules.gui.GuiClickContext;
@@ -109,11 +110,16 @@ public class CharacterCreateGui implements GuiView {
         }
 
         Player player = context.player();
-        GameCharacter character = characterService.createGeneratedCharacter(player, mode);
-        nameTagService.refresh(player);
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.0f);
-        player.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
-                .append(Component.text(character.name(), NamedTextColor.YELLOW)));
-        context.open(CharacterSelectGui.ID);
+        try {
+            GameCharacter character = characterService.createGeneratedCharacter(player, mode);
+            nameTagService.refresh(player);
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.0f);
+            player.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
+                    .append(Component.text(character.name(), NamedTextColor.YELLOW)));
+            context.open(CharacterSelectGui.ID);
+        } catch (CharacterPersistenceException e) {
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
+            player.sendMessage(Component.text("キャラクターの作成に失敗しました。", NamedTextColor.RED));
+        }
     }
 }

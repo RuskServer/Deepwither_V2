@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.character.commands;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Command;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -14,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Command(name = "characteradmin", description = "キャラクター管理者コマンド", aliases = {"charadmin"})
 public class CommandCharacterAdmin implements BasicCommand {
@@ -36,17 +38,28 @@ public class CommandCharacterAdmin implements BasicCommand {
             return;
         }
 
-        @SuppressWarnings("deprecation")
-        OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
-        if (target.getUniqueId() == null) {
-            stack.getSender().sendMessage(Component.text("プレイヤーが見つかりません。", NamedTextColor.RED));
+        OfflinePlayer target = resolveCachedPlayer(args[1]);
+        if (target == null) {
+            stack.getSender().sendMessage(Component.text("プレイヤーがキャッシュに見つかりません。UUIDまたは既知のプレイヤー名を指定してください。", NamedTextColor.RED));
             return;
         }
 
-        if (characterService.reviveCharacter(target.getUniqueId(), args[2])) {
-            stack.getSender().sendMessage(Component.text("キャラクターを復活しました。", NamedTextColor.GREEN));
-        } else {
-            stack.getSender().sendMessage(Component.text("死亡済みキャラクターが見つからないか、復活できません。", NamedTextColor.RED));
+        try {
+            if (characterService.reviveCharacter(target.getUniqueId(), args[2])) {
+                stack.getSender().sendMessage(Component.text("キャラクターを復活しました。", NamedTextColor.GREEN));
+            } else {
+                stack.getSender().sendMessage(Component.text("死亡済みキャラクターが見つからないか、復活できません。", NamedTextColor.RED));
+            }
+        } catch (CharacterPersistenceException e) {
+            stack.getSender().sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED));
+        }
+    }
+
+    private OfflinePlayer resolveCachedPlayer(String token) {
+        try {
+            return Bukkit.getOfflinePlayer(UUID.fromString(token));
+        } catch (IllegalArgumentException ignored) {
+            return Bukkit.getOfflinePlayerIfCached(token);
         }
     }
 

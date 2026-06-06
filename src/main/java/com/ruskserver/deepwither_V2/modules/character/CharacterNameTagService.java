@@ -29,6 +29,10 @@ public class CharacterNameTagService {
         apply(player, mode);
     }
 
+    public void refresh(Player player, CharacterMode mode) {
+        apply(player, mode);
+    }
+
     public void clear(Player player) {
         apply(player, CharacterMode.STANDARD);
     }

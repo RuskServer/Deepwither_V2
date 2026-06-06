@@ -34,6 +34,7 @@ public class CharacterRepository implements Startable {
             createTables(conn);
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to initialize character tables", e);
+            throw new CharacterPersistenceException("Failed to initialize character tables", e);
         }
     }
 
@@ -76,6 +77,7 @@ public class CharacterRepository implements Startable {
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to load characters for " + ownerUuid, e);
+            throw new CharacterPersistenceException("Failed to load characters for " + ownerUuid, e);
         }
         characters.sort(Comparator.comparing(GameCharacter::createdAt));
         return characters;
@@ -92,6 +94,7 @@ public class CharacterRepository implements Startable {
             }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to load character " + characterId, e);
+            throw new CharacterPersistenceException("Failed to load character " + characterId, e);
         }
         return Optional.empty();
     }
@@ -102,11 +105,16 @@ public class CharacterRepository implements Startable {
             stmt.setString(1, ownerUuid.toString());
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(UUID.fromString(rs.getString("character_id")));
+                    try {
+                        return Optional.of(UUID.fromString(rs.getString("character_id")));
+                    } catch (IllegalArgumentException e) {
+                        throw new SQLException("Invalid active character UUID: " + rs.getString("character_id"), e);
+                    }
                 }
             }
-        } catch (SQLException | IllegalArgumentException e) {
+        } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to load active character for " + ownerUuid, e);
+            throw new CharacterPersistenceException("Failed to load active character for " + ownerUuid, e);
         }
         return Optional.empty();
     }
@@ -132,6 +140,7 @@ public class CharacterRepository implements Startable {
             stmt.executeUpdate();
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to save character " + character.characterId(), e);
+            throw new CharacterPersistenceException("Failed to save character " + character.characterId(), e);
         }
     }
 
@@ -144,6 +153,7 @@ public class CharacterRepository implements Startable {
             stmt.executeUpdate();
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to set active character for " + ownerUuid, e);
+            throw new CharacterPersistenceException("Failed to set active character for " + ownerUuid, e);
         }
     }
 
@@ -154,20 +164,25 @@ public class CharacterRepository implements Startable {
             stmt.executeUpdate();
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to clear active character for " + ownerUuid, e);
+            throw new CharacterPersistenceException("Failed to clear active character for " + ownerUuid, e);
         }
     }
 
     private GameCharacter mapCharacter(ResultSet rs) throws SQLException {
-        return new GameCharacter(
-                UUID.fromString(rs.getString("character_id")),
-                UUID.fromString(rs.getString("owner_uuid")),
-                rs.getString("name"),
-                CharacterMode.valueOf(rs.getString("mode")),
-                CharacterStatus.valueOf(rs.getString("status")),
-                rs.getLong("created_at"),
-                rs.getLong("died_at"),
-                rs.getLong("last_played_at"),
-                rs.getBoolean("migrated_from_legacy")
-        );
+        try {
+            return new GameCharacter(
+                    UUID.fromString(rs.getString("character_id")),
+                    UUID.fromString(rs.getString("owner_uuid")),
+                    rs.getString("name"),
+                    CharacterMode.valueOf(rs.getString("mode")),
+                    CharacterStatus.valueOf(rs.getString("status")),
+                    rs.getLong("created_at"),
+                    rs.getLong("died_at"),
+                    rs.getLong("last_played_at"),
+                    rs.getBoolean("migrated_from_legacy")
+            );
+        } catch (IllegalArgumentException e) {
+            throw new SQLException("Invalid character row values", e);
+        }
     }
 }

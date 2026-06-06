@@ -4,6 +4,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Command;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.character.CharacterMode;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
+import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterStatus;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
@@ -114,14 +115,21 @@ public class CommandCharacter implements BasicCommand {
             return;
         }
 
-        GameCharacter character = characterService.createCharacter(player.getUniqueId(), args[1], mode, false);
-        characterService.selectCharacter(player, character.characterId());
-        nameTagService.refresh(player);
-        player.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
-                .append(Component.text(character.name(), NamedTextColor.YELLOW))
-                .append(Component.text(" (", NamedTextColor.GRAY))
-                .append(Component.text(mode.getDisplayName(), NamedTextColor.AQUA))
-                .append(Component.text(")", NamedTextColor.GRAY)));
+        try {
+            GameCharacter character = characterService.createCharacter(player.getUniqueId(), args[1], mode, false);
+            if (!characterService.selectCharacter(player, character.characterId())) {
+                player.sendMessage(Component.text("作成したキャラクターの選択に失敗しました。", NamedTextColor.RED));
+                return;
+            }
+            nameTagService.refresh(player);
+            player.sendMessage(Component.text("キャラクターを作成して選択しました: ", NamedTextColor.GREEN)
+                    .append(Component.text(character.name(), NamedTextColor.YELLOW))
+                    .append(Component.text(" (", NamedTextColor.GRAY))
+                    .append(Component.text(mode.getDisplayName(), NamedTextColor.AQUA))
+                    .append(Component.text(")", NamedTextColor.GRAY)));
+        } catch (CharacterPersistenceException e) {
+            player.sendMessage(Component.text("キャラクターの作成に失敗しました。", NamedTextColor.RED));
+        }
     }
 
     private void handleSelect(Player player, String[] args) {
@@ -130,7 +138,13 @@ public class CommandCharacter implements BasicCommand {
             return;
         }
 
-        Optional<GameCharacter> optional = characterService.findOwnedCharacter(player.getUniqueId(), args[1]);
+        Optional<GameCharacter> optional;
+        try {
+            optional = characterService.findOwnedCharacter(player.getUniqueId(), args[1]);
+        } catch (CharacterPersistenceException e) {
+            player.sendMessage(Component.text("キャラクターデータの読み込みに失敗しました。", NamedTextColor.RED));
+            return;
+        }
         if (optional.isEmpty()) {
             player.sendMessage(Component.text("キャラクターが見つかりません。", NamedTextColor.RED));
             return;
@@ -142,18 +156,27 @@ public class CommandCharacter implements BasicCommand {
             return;
         }
 
-        if (!characterService.selectCharacter(player, character.characterId())) {
-            player.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
-            return;
+        try {
+            if (!characterService.selectCharacter(player, character.characterId())) {
+                player.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
+                return;
+            }
+            nameTagService.refresh(player);
+            player.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
+                    .append(Component.text(character.name(), NamedTextColor.YELLOW)));
+        } catch (CharacterPersistenceException e) {
+            player.sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED));
         }
-
-        nameTagService.refresh(player);
-        player.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
-                .append(Component.text(character.name(), NamedTextColor.YELLOW)));
     }
 
     private void handleInfo(Player player) {
-        Optional<GameCharacter> active = characterService.getActiveCharacter(player.getUniqueId());
+        Optional<GameCharacter> active;
+        try {
+            active = characterService.getActiveCharacter(player.getUniqueId());
+        } catch (CharacterPersistenceException e) {
+            player.sendMessage(Component.text("キャラクターデータの読み込みに失敗しました。", NamedTextColor.RED));
+            return;
+        }
         if (active.isEmpty()) {
             player.sendMessage(Component.text("アクティブキャラクターがありません。", NamedTextColor.RED));
             return;

@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.character.gui;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
+import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterStatus;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
@@ -110,12 +111,20 @@ public class CharacterSelectGui implements GuiView {
             return;
         }
 
-        if (characterService.selectCharacter(player, character.characterId())) {
-            nameTagService.refresh(player);
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.2f);
-            player.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
-                    .append(Component.text(character.name(), NamedTextColor.YELLOW)));
-            context.close();
+        try {
+            if (characterService.selectCharacter(player, character.characterId())) {
+                nameTagService.refresh(player);
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.2f);
+                player.sendMessage(Component.text("キャラクターを選択しました: ", NamedTextColor.GREEN)
+                        .append(Component.text(character.name(), NamedTextColor.YELLOW)));
+                context.close();
+            } else {
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
+                player.sendMessage(Component.text("キャラクターの選択に失敗しました。", NamedTextColor.RED));
+            }
+        } catch (CharacterPersistenceException e) {
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
+            player.sendMessage(Component.text("キャラクターデータの保存に失敗しました。", NamedTextColor.RED));
         }
     }
 

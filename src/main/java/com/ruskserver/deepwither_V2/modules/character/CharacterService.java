@@ -21,17 +21,20 @@ public class CharacterService {
     }
 
     public GameCharacter ensureLegacyCharacter(Player player) {
-        UUID ownerUuid = player.getUniqueId();
+        return ensureLegacyCharacter(player.getUniqueId(), player.getName());
+    }
+
+    public GameCharacter ensureLegacyCharacter(UUID ownerUuid, String playerName) {
         List<GameCharacter> existing = repository.findByOwner(ownerUuid);
         if (!existing.isEmpty()) {
-            repository.findActiveCharacter(ownerUuid)
+            Optional<GameCharacter> active = repository.findActiveCharacter(ownerUuid)
                     .filter(GameCharacter::isSelectable)
-                    .or(() -> existing.stream().filter(GameCharacter::isSelectable).min(Comparator.comparing(GameCharacter::createdAt)))
-                    .ifPresent(character -> selectCharacter(player, character.characterId()));
-            return existing.get(0);
+                    .or(() -> existing.stream().filter(GameCharacter::isSelectable).min(Comparator.comparing(GameCharacter::createdAt)));
+            active.ifPresent(character -> repository.setActiveCharacter(ownerUuid, character.characterId()));
+            return active.orElse(existing.get(0));
         }
 
-        GameCharacter character = createCharacter(ownerUuid, player.getName(), CharacterMode.STANDARD, true);
+        GameCharacter character = createCharacter(ownerUuid, playerName, CharacterMode.STANDARD, true);
         repository.setActiveCharacter(ownerUuid, character.characterId());
         return character;
     }
