@@ -8,12 +8,15 @@ import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
+import com.ruskserver.deepwither_V2.modules.character.gui.CharacterSelectGui;
+import com.ruskserver.deepwither_V2.modules.gui.GuiService;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,14 +25,16 @@ import java.util.logging.Logger;
 public class CharacterJoinListener implements Listener {
     private final CharacterService characterService;
     private final CharacterNameTagService nameTagService;
+    private final GuiService guiService;
     private final Deepwither_V2 plugin;
     private final Logger logger;
 
     @Inject
     public CharacterJoinListener(CharacterService characterService, CharacterNameTagService nameTagService,
-                                 Deepwither_V2 plugin, Logger logger) {
+                                 GuiService guiService, Deepwither_V2 plugin, Logger logger) {
         this.characterService = characterService;
         this.nameTagService = nameTagService;
+        this.guiService = guiService;
         this.plugin = plugin;
         this.logger = logger;
     }
@@ -43,11 +48,18 @@ public class CharacterJoinListener implements Listener {
 
     private void ensureCharacterAsync(UUID playerId, String playerName) {
         try {
-            GameCharacter character = characterService.ensureLegacyCharacter(playerId, playerName);
+            Optional<GameCharacter> activeCharacter = characterService.ensureLegacyCharacter(playerId, playerName);
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 Player player = plugin.getServer().getPlayer(playerId);
-                if (player != null && player.isOnline()) {
-                    nameTagService.refresh(player, character.isSelectable() ? character.mode() : CharacterMode.STANDARD);
+                if (player == null || !player.isOnline()) {
+                    return;
+                }
+                if (activeCharacter.isPresent()) {
+                    nameTagService.refresh(player, activeCharacter.get().mode());
+                } else {
+                    nameTagService.refresh(player, CharacterMode.STANDARD);
+                    player.sendMessage(net.kyori.adventure.text.Component.text("アクティブキャラクターがありません。キャラクターを選択または作成してください。", NamedTextColor.YELLOW));
+                    guiService.open(player, CharacterSelectGui.ID);
                 }
             });
         } catch (CharacterPersistenceException e) {

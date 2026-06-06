@@ -4,7 +4,6 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import org.bukkit.entity.Player;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,23 +19,19 @@ public class CharacterService {
         this.repository = repository;
     }
 
-    public GameCharacter ensureLegacyCharacter(Player player) {
+    public Optional<GameCharacter> ensureLegacyCharacter(Player player) {
         return ensureLegacyCharacter(player.getUniqueId(), player.getName());
     }
 
-    public GameCharacter ensureLegacyCharacter(UUID ownerUuid, String playerName) {
+    public Optional<GameCharacter> ensureLegacyCharacter(UUID ownerUuid, String playerName) {
         List<GameCharacter> existing = repository.findByOwner(ownerUuid);
         if (!existing.isEmpty()) {
-            Optional<GameCharacter> active = repository.findActiveCharacter(ownerUuid)
-                    .filter(GameCharacter::isSelectable)
-                    .or(() -> existing.stream().filter(GameCharacter::isSelectable).min(Comparator.comparing(GameCharacter::createdAt)));
-            active.ifPresent(character -> repository.setActiveCharacter(ownerUuid, character.characterId()));
-            return active.orElse(existing.get(0));
+            return repository.findActiveCharacter(ownerUuid).filter(GameCharacter::isSelectable);
         }
 
         GameCharacter character = createCharacter(ownerUuid, playerName, CharacterMode.STANDARD, true);
         repository.setActiveCharacter(ownerUuid, character.characterId());
-        return character;
+        return Optional.of(character);
     }
 
     public GameCharacter createCharacter(UUID ownerUuid, String name, CharacterMode mode, boolean migratedFromLegacy) {
