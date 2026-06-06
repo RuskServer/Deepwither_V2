@@ -76,6 +76,9 @@ public class MobRegionConfig implements Startable {
 
     /** 指定座標がPvP無効Region内かどうかを判定します。 */
     public boolean isInPvpDisabledRegion(Location location) {
+        if (isInSafeZone(location)) {
+            return true;
+        }
         return getEffectiveRegion(location)
                 .map(region -> !region.pvpEnabled())
                 .orElse(false);
