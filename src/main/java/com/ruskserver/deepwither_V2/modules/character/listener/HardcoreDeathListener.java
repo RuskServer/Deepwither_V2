@@ -78,6 +78,8 @@ public class HardcoreDeathListener implements Listener {
 
         Player player = plugin.getServer().getPlayer(playerId);
         if (player != null && player.isOnline()) {
+            // 真HCキャラのVault残高を没収
+            characterService.confiscateEconomy(player, deadCharacter.get());
             sendDeathNotice(player, deadCharacter.get());
             nameTagService.clear(player);
             if (respawnedBeforeDeathSave.remove(playerId)) {

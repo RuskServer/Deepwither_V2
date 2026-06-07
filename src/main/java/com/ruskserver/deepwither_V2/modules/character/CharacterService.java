@@ -3,17 +3,24 @@ package com.ruskserver.deepwither_V2.modules.character;
 import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.database.character.CharacterData;
 import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
+import com.ruskserver.deepwither_V2.core.database.player.PlayerData;
+import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.modules.character.event.CharacterSelectEvent;
+import com.ruskserver.deepwither_V2.modules.character.provider.CharacterEconomyProvider;
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterInventoryProvider;
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterInventoryProvider.InventorySaveData;
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterLocationProvider;
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterLocationProvider.CharacterLocationData;
+import com.ruskserver.deepwither_V2.modules.character.provider.SharedEconomyProvider;
 import com.ruskserver.deepwither_V2.modules.skill.provider.CharacterSkillSlotProvider;
+import net.milkbowl.vault.economy.Economy;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -34,20 +41,51 @@ public class CharacterService {
 
     private final CharacterRepository repository;
     private final CharacterDataRepository characterDataRepository;
+    private final PlayerDataRepository playerDataRepository;
     private final Deepwither_V2 plugin;
     private final Logger logger;
     private final Map<UUID, GameCharacter> activeCharacters = new ConcurrentHashMap<>();
     private final Map<UUID, List<GameCharacter>> characterCache = new ConcurrentHashMap<>();
     private final Set<UUID> selectionLockedPlayers = ConcurrentHashMap.newKeySet();
+    /**
+     * 真HCキャラ切替時に、標準/SHCキャラの共有残高を一時保存する。
+     * キー = プレイヤーUUID, 値 = Vault残高（切り替え前の共有残高）
+     */
+    private final Map<UUID, Double> sharedBalanceCache = new ConcurrentHashMap<>();
+    private Economy economy;
+    private boolean vaultAvailable;
 
     @Inject
     public CharacterService(CharacterRepository repository,
                             CharacterDataRepository characterDataRepository,
+                            PlayerDataRepository playerDataRepository,
                             Deepwither_V2 plugin) {
         this.repository = repository;
         this.characterDataRepository = characterDataRepository;
+        this.playerDataRepository = playerDataRepository;
         this.plugin = plugin;
         this.logger = Logger.getLogger("CharacterService");
+        setupEconomy();
+    }
+
+    private void setupEconomy() {
+        if (Bukkit.getPluginManager().getPlugin("Vault") == null) return;
+        RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) return;
+        economy = rsp.getProvider();
+        vaultAvailable = economy != null;
+        if (!vaultAvailable) {
+            logger.warning("[CharacterService] Vault economy is unavailable.");
+        }
+    }
+
+    /**
+     * Vault経済が未初期化の場合に再試行します（コンストラクタ時点ではVaultが未準備の可能性あり）。
+     */
+    private void ensureEconomy() {
+        if (!vaultAvailable) {
+            setupEconomy();
+        }
     }
 
     public Optional<GameCharacter> ensureLegacyCharacter(Player player) {
@@ -350,6 +388,7 @@ public class CharacterService {
                 .orElseGet(() -> new CharacterData(characterId));
         data.set(CharacterInventoryProvider.KEY, new InventorySaveData());
         data.set(CharacterSkillSlotProvider.KEY, new CharacterSkillSlotProvider.SkillSlotData());
+        data.set(CharacterEconomyProvider.KEY, CharacterEconomyProvider.INITIAL_BALANCE);
         characterDataRepository.save(characterId, data);
     }
 
@@ -386,6 +425,7 @@ public class CharacterService {
         getCachedActiveCharacter(playerId).ifPresent(prev -> {
             if (!prev.characterId().equals(characterId)) {
                 saveCharacterState(player, prev.characterId());
+                saveEconomyForCharacter(player, prev);
             }
         });
 
@@ -414,6 +454,7 @@ public class CharacterService {
                 if (online == null || !online.isOnline()) return;
 
                 applyCharacterDataToPlayer(online, data);
+                restoreEconomyForCharacter(online, characterId);
 
                 // 選択イベント発火（SkillTreeServiceやPlayerManagerが受け取る）
                 getCachedActiveCharacter(playerId).ifPresent(selected2 ->
@@ -442,6 +483,7 @@ public class CharacterService {
                 Player online = plugin.getServer().getPlayer(playerId);
                 if (online == null || !online.isOnline()) return;
                 applyCharacterDataToPlayer(online, data);
+                restoreEconomyForCharacter(online, characterId);
                 afterApply.run();
             });
         });
@@ -476,6 +518,145 @@ public class CharacterService {
             if (loc != null) {
                 player.teleport(loc);
             }
+        }
+    }
+
+    // =========================================================
+    //  Vault経済のキャラクター単位同期（真HCのみ）
+    // =========================================================
+
+    /**
+     * 指定キャラクターが真HCかどうかを判定します。
+     */
+    private boolean isTrueHardcore(GameCharacter character) {
+        return character.mode() == CharacterMode.TRUE_HARDCORE;
+    }
+
+    /**
+     * 真HCキャラのVault残高をDBへ保存します。
+     * 標準/SHCキャラの場合は共有残高をキャッシュに退避します。
+     */
+    private void saveEconomyForCharacter(Player player, GameCharacter character) {
+        ensureEconomy();
+        if (!vaultAvailable || economy == null) return;
+
+        double currentBalance = economy.getBalance(player);
+
+        if (isTrueHardcore(character)) {
+            // 真HC: 現在のVault残高をDBに保存
+            CharacterData data = characterDataRepository.get(character.characterId())
+                    .orElseGet(() -> new CharacterData(character.characterId()));
+            data.set(CharacterEconomyProvider.KEY, currentBalance);
+            characterDataRepository.save(character.characterId(), data);
+        } else {
+            // 標準/SHC: 共有残高をキャッシュ+DBに退避（クラッシュ復旧用）
+            sharedBalanceCache.put(player.getUniqueId(), currentBalance);
+            saveSharedBalanceToDb(player.getUniqueId(), currentBalance);
+        }
+    }
+
+    /**
+     * キャラクター切替時にVault残高を復元します。
+     * 真HCキャラの場合はDBから読み込んだ残高をVaultに設定し、
+     * 標準/SHCキャラの場合はキャッシュされた共有残高を復元します。
+     */
+    private void restoreEconomyForCharacter(Player player, UUID characterId) {
+        ensureEconomy();
+        if (!vaultAvailable || economy == null) return;
+
+        Optional<GameCharacter> character = getCachedActiveCharacter(player.getUniqueId());
+        if (character.isEmpty()) return;
+
+        GameCharacter active = character.get();
+        if (!active.characterId().equals(characterId)) return;
+
+        if (isTrueHardcore(active)) {
+            // 真HC: DBから残高を読み込み、Vaultに設定
+            CharacterData data = characterDataRepository.get(characterId)
+                    .orElseGet(() -> new CharacterData(characterId));
+            Double savedBalance = data.get(CharacterEconomyProvider.KEY);
+            double targetBalance = savedBalance != null ? savedBalance : CharacterEconomyProvider.INITIAL_BALANCE;
+            setVaultBalance(player, targetBalance);
+        } else {
+            // 標准/SHC: キャッシュ or DBから共有残高を復元
+            Double cached = sharedBalanceCache.remove(player.getUniqueId());
+            if (cached == null) {
+                cached = loadSharedBalanceFromDb(player.getUniqueId());
+            }
+            if (cached != null) {
+                setVaultBalance(player, cached);
+            }
+        }
+    }
+
+    /**
+     * Vault残高を指定金額に設定します。
+     *差額をdeposit/withdrawで調整します。
+     */
+    private void setVaultBalance(Player player, double targetBalance) {
+        if (!vaultAvailable || economy == null) return;
+
+        double currentBalance = economy.getBalance(player);
+        double diff = targetBalance - currentBalance;
+
+        if (Math.abs(diff) < 0.001) return; // ほぼ同じなら何もしない
+
+        if (diff > 0) {
+            economy.depositPlayer(player, diff);
+        } else {
+            economy.withdrawPlayer(player, -diff);
+        }
+    }
+
+    /**
+     * 真HCキャラのVault残高を0にリセットします（死亡時の没収）。
+     * DBにも0を保存します。
+     */
+    public void confiscateEconomy(Player player, GameCharacter character) {
+        ensureEconomy();
+        if (!vaultAvailable || economy == null) return;
+        if (!isTrueHardcore(character)) return;
+
+        // Vault残高を0に設定
+        setVaultBalance(player, 0.0);
+
+        // DBにも0を保存
+        CharacterData data = characterDataRepository.get(character.characterId())
+                .orElseGet(() -> new CharacterData(character.characterId()));
+        data.set(CharacterEconomyProvider.KEY, 0.0);
+        characterDataRepository.save(character.characterId(), data);
+    }
+
+    /**
+     * プレイヤー退出時に共有残高キャッシュをクリーンアップします。
+     */
+    public void clearSharedBalanceCache(UUID playerId) {
+        sharedBalanceCache.remove(playerId);
+    }
+
+    // =========================================================
+    //  共有残高のDB永続化（クラッシュ復旧用）
+    // =========================================================
+
+    private void saveSharedBalanceToDb(UUID playerUuid, double balance) {
+        try {
+            PlayerData data = playerDataRepository.get(playerUuid)
+                    .orElseGet(() -> new PlayerData(playerUuid));
+            data.set(SharedEconomyProvider.KEY, balance);
+            playerDataRepository.save(playerUuid, data);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "共有残高のDB保存に失敗しました: " + playerUuid, e);
+        }
+    }
+
+    private Double loadSharedBalanceFromDb(UUID playerUuid) {
+        try {
+            return playerDataRepository.get(playerUuid)
+                    .map(data -> data.get(SharedEconomyProvider.KEY))
+                    .orElse(null);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "共有残高のDB読み込みに失敗しました: " + playerUuid, e);
+            return null;
         }
     }
 }

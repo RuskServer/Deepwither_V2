@@ -131,6 +131,8 @@ public class CharacterSelectionGateListener implements Listener {
         Player player = event.getPlayer();
         // アクティブキャラクターのインベントリ・位置をDBへ保存
         characterService.saveCharacterState(player);
+        // 共有残高キャッシュをクリーンアップ
+        characterService.clearSharedBalanceCache(player.getUniqueId());
         lastPromptAt.remove(player.getUniqueId());
     }
 
