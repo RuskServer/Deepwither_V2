@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegion;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
 import com.ruskserver.deepwither_V2.modules.mob.region.SpawnEntry;
+import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import com.ruskserver.deepwither_V2.modules.trader.provider.TraderReputationProvider;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -34,7 +35,20 @@ public class DailyTaskService implements Listener {
     private final TraderService traderService;
     private final CustomMobManager mobManager;
     private final MobRegionConfig regionConfig;
+    private final PlayerManager playerManager;
     private final Random random = new Random();
+
+    /** タスク報酬の基礎経験値 */
+    private static final int BASE_EXP_REWARD = 200;
+
+    /**
+     * レベルに応じてスケーリングされた経験値報酬を計算します。
+     * 式: BASE_EXP_REWARD * (1.0 + level * 0.05)
+     * Lv1 → 210, Lv20 → 400, Lv50 → 700, Lv100 → 1200
+     */
+    private int calcExpReward(int level) {
+        return (int) Math.round(BASE_EXP_REWARD * (1.0 + level * 0.05));
+    }
 
     /** プレイヤーUUID -> (モブID -> 討伐数) の一時的な進行状況（DBに保存してもよいが、今回はメモリ管理） */
     private final Map<UUID, ActiveTask> activeTasks = new HashMap<>();
@@ -45,12 +59,13 @@ public class DailyTaskService implements Listener {
     }
 
     @Inject
-    public DailyTaskService(PlayerDataRepository repository, TraderReputationService reputationService, TraderService traderService, CustomMobManager mobManager, MobRegionConfig regionConfig) {
+    public DailyTaskService(PlayerDataRepository repository, TraderReputationService reputationService, TraderService traderService, CustomMobManager mobManager, MobRegionConfig regionConfig, PlayerManager playerManager) {
         this.repository = repository;
         this.reputationService = reputationService;
         this.traderService = traderService;
         this.mobManager = mobManager;
         this.regionConfig = regionConfig;
+        this.playerManager = playerManager;
     }
 
     /**
@@ -61,13 +76,13 @@ public class DailyTaskService implements Listener {
     }
 
     /**
-     * プレイヤーの現在位置に基づいて最適なタスクを生成・受注させます。
+     * プレイヤーの現在位置に基づいてタスクを生成・受注させます。
      *
      * @param player   プレイヤー
      * @param traderId トレーダーID
      * @return 受注に成功した場合は true
      */
-    public boolean acceptDynamicTask(Player player, String traderId) {
+    public boolean acceptTask(Player player, String traderId) {
         if (reputationService.getRemainingTaskSlots(player) <= 0) {
             player.sendMessage("§c本日のタスク受注上限に達しています。");
             return false;
@@ -84,14 +99,16 @@ public class DailyTaskService implements Listener {
                 .orElse(null);
 
         String targetMobId = "ghoul"; // デフォルト
-        int requiredCount = 5 + random.nextInt(6); // 5~10体
+        int requiredCount = 5 + random.nextInt(11); // 5~15体
 
         if (currentRegion != null && !currentRegion.isSafeZone() && !currentRegion.spawnTable().isEmpty()) {
-            // リージョンのスポーンテーブルから抽選
             targetMobId = selectRandomMob(currentRegion);
         }
 
-        return acceptTask(player, traderId, targetMobId, requiredCount, 10);
+        String displayName = mobManager.getDisplayName(targetMobId);
+        activeTasks.put(player.getUniqueId(), new ActiveTask(traderId, targetMobId, displayName, requiredCount));
+        player.sendMessage("§aデイリータスクを受注しました: §e" + displayName + " を " + requiredCount + " 体討伐する");
+        return true;
     }
 
     private String selectRandomMob(MobRegion region) {
@@ -107,25 +124,6 @@ public class DailyTaskService implements Listener {
             }
         }
         return "ghoul";
-    }
-
-    /**
-     * タスクを受注します。
-     */
-    public boolean acceptTask(Player player, String traderId, String mobId, int requiredCount, int rewardRep) {
-        if (reputationService.getRemainingTaskSlots(player) <= 0) {
-            player.sendMessage("§c本日のタスク受注上限に達しています。");
-            return false;
-        }
-        if (hasTask(player)) {
-            player.sendMessage("§c既に他のタスクを受注しています。");
-            return false;
-        }
-
-        String displayName = mobManager.getDisplayName(mobId);
-        activeTasks.put(player.getUniqueId(), new ActiveTask(traderId, mobId, displayName, requiredCount, rewardRep));
-        player.sendMessage("§aデイリータスクを受注しました: §e" + displayName + " を " + requiredCount + " 体討伐する");
-        return true;
     }
 
     /**
@@ -179,9 +177,14 @@ public class DailyTaskService implements Listener {
         int goldReward = 1000 + random.nextInt(3001);
         int creditReward = 100 + random.nextInt(301);
 
+        // 経験値報酬（プレイヤーレベルでスケーリング）
+        int playerLevel = playerManager.getPlayerLevel(player);
+        int expReward = calcExpReward(playerLevel);
+
         // 報酬の付与
         traderService.depositMoney(player, goldReward);
         reputationService.completeTask(player, task.traderId, creditReward);
+        playerManager.addExp(player, expReward);
 
         // メッセージの送信
         player.sendMessage(Component.text("タスク完了！", NamedTextColor.GOLD, TextDecoration.BOLD)
@@ -201,15 +204,13 @@ public class DailyTaskService implements Listener {
         final String targetMobId;
         final String targetMobDisplayName;
         final int requiredCount;
-        final int rewardReputation;
         int currentCount = 0;
 
-        ActiveTask(String traderId, String mobId, String displayName, int requiredCount, int rewardReputation) {
+        ActiveTask(String traderId, String mobId, String displayName, int requiredCount) {
             this.traderId = traderId;
             this.targetMobId = mobId;
             this.targetMobDisplayName = displayName;
             this.requiredCount = requiredCount;
-            this.rewardReputation = rewardReputation;
         }
     }
 }

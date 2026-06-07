@@ -239,7 +239,7 @@ public class TraderInventoryGui implements Listener {
             return;
         }
         if ("accept_task".equals(action)) {
-            if (dailyTaskService.acceptDynamicTask(player, npcName)) openTraderGui(player, npcName);
+            if (dailyTaskService.acceptTask(player, npcName)) openTraderGui(player, npcName);
             return;
         }
 
