@@ -52,6 +52,12 @@ public class BattleCrySkill implements Skill {
     public Set<String> getTags() { return Set.of("melee", "warrior", "defense"); }
 
     @Override
+    public Set<SkillTag.Role> getRoles() { return Set.of(SkillTag.Role.SUPPORT, SkillTag.Role.DEFENSE); }
+
+    @Override
+    public Set<SkillTag.Constraint> getConstraints() { return Set.of(SkillTag.Constraint.LONG_CD); }
+
+    @Override
     public double getManaCost(SkillContext context) { return 30.0; }
 
     @Override

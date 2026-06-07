@@ -56,6 +56,18 @@ public class ColossusSkill implements Skill {
     public Set<String> getTags() { return Set.of("melee", "warrior", "heavy"); }
 
     @Override
+    public Set<SkillTag.Role> getRoles() { return Set.of(SkillTag.Role.ATTACK, SkillTag.Role.CONTROL, SkillTag.Role.SUPPORT); }
+
+    @Override
+    public Set<SkillTag.Tactic> getTactics() { return Set.of(SkillTag.Tactic.BURST, SkillTag.Tactic.DISPLACE); }
+
+    @Override
+    public Set<SkillTag.Scaling> getScalings() { return Set.of(SkillTag.Scaling.PHYSICAL); }
+
+    @Override
+    public Set<SkillTag.Constraint> getConstraints() { return Set.of(SkillTag.Constraint.CHANNELING, SkillTag.Constraint.HIGH_COST, SkillTag.Constraint.LONG_CD); }
+
+    @Override
     public double getManaCost(SkillContext context) { return 50.0; }
 
     @Override

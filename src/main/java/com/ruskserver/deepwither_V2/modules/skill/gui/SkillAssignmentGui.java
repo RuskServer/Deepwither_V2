@@ -7,6 +7,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.skill.provider.CharacterSkillSlotProvider;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillCooldownService;
@@ -139,6 +140,7 @@ public class SkillAssignmentGui implements Listener {
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("ID: " + skill.getId(), NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("種別: " + skill.getCategory() + " / 対象: " + skill.getTargetType(), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        addTypedTags(lore, skill);
         lore.add(Component.empty());
 
         for (String line : skill.getDescription()) {
@@ -198,6 +200,46 @@ public class SkillAssignmentGui implements Listener {
         meta.lore(lore);
         item.setItemMeta(meta);
         return item;
+    }
+
+    private void addTypedTags(List<Component> lore, Skill skill) {
+        Component roles = joinTags("分類: ", skill.getRoles());
+        if (roles != null) {
+            lore.add(roles);
+        }
+
+        List<TagView> traits = new ArrayList<>();
+        skill.getTactics().forEach(tag -> traits.add(new TagView(tag.label(), tag.color())));
+        skill.getScalings().forEach(tag -> traits.add(new TagView(tag.label(), tag.color())));
+        skill.getConstraints().forEach(tag -> traits.add(new TagView(tag.label(), tag.color())));
+        Component traitLine = joinTagViews("特性: ", traits);
+        if (traitLine != null) {
+            lore.add(traitLine);
+        }
+    }
+
+    private Component joinTags(String prefix, Iterable<SkillTag.Role> tags) {
+        List<TagView> views = new ArrayList<>();
+        tags.forEach(tag -> views.add(new TagView(tag.label(), tag.color())));
+        return joinTagViews(prefix, views);
+    }
+
+    private Component joinTagViews(String prefix, List<TagView> tags) {
+        if (tags.isEmpty()) {
+            return null;
+        }
+        Component line = Component.text(prefix, NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false);
+        for (int i = 0; i < tags.size(); i++) {
+            if (i > 0) {
+                line = line.append(Component.text(" / ", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
+            }
+            TagView tag = tags.get(i);
+            line = line.append(Component.text(tag.label(), tag.color()).decoration(TextDecoration.ITALIC, false));
+        }
+        return line;
+    }
+
+    private record TagView(String label, net.kyori.adventure.text.format.TextColor color) {
     }
 
     private ItemStack buildNavButton(String label, int page) {

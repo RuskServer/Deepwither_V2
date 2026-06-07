@@ -55,6 +55,15 @@ public class ExecutionerSkill implements Skill {
     public Set<String> getTags() { return Set.of("melee", "warrior", "technique"); }
 
     @Override
+    public Set<SkillTag.Role> getRoles() { return Set.of(SkillTag.Role.ATTACK); }
+
+    @Override
+    public Set<SkillTag.Tactic> getTactics() { return Set.of(SkillTag.Tactic.BURST, SkillTag.Tactic.ANTI_TANK); }
+
+    @Override
+    public Set<SkillTag.Scaling> getScalings() { return Set.of(SkillTag.Scaling.PHYSICAL); }
+
+    @Override
     public double getManaCost(SkillContext context) { return 35.0; }
 
     @Override

@@ -53,6 +53,12 @@ public class FrostBreathSkill implements Skill {
     public Set<String> getTags() { return Set.of("magic", "ice", "breath"); }
 
     @Override
+    public Set<SkillTag.Role> getRoles() { return Set.of(SkillTag.Role.ATTACK); }
+
+    @Override
+    public Set<SkillTag.Scaling> getScalings() { return Set.of(SkillTag.Scaling.MAGICAL); }
+
+    @Override
     public double getManaCost(SkillContext context) { return 35.0; }
 
     @Override

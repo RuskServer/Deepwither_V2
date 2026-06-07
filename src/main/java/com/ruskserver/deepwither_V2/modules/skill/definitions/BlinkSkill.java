@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.modules.skill.api.CastResult;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -62,6 +63,21 @@ public class BlinkSkill implements Skill {
     @Override
     public Set<String> getTags() {
         return Set.of("mobility", "teleport");
+    }
+
+    @Override
+    public Set<SkillTag.Role> getRoles() {
+        return Set.of(SkillTag.Role.UTILITY);
+    }
+
+    @Override
+    public Set<SkillTag.Tactic> getTactics() {
+        return Set.of(SkillTag.Tactic.MOBILITY);
+    }
+
+    @Override
+    public Set<SkillTag.Constraint> getConstraints() {
+        return Set.of(SkillTag.Constraint.CHANNELING, SkillTag.Constraint.HIGH_COST, SkillTag.Constraint.LONG_CD);
     }
 
     @Override

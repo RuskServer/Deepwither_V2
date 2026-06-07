@@ -9,6 +9,7 @@ import com.ruskserver.deepwither_V2.modules.ai.embedding.VectorStore;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillRegistry;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeDefinition;
@@ -117,6 +118,10 @@ public class KdIndexer implements Startable {
             if (!skill.getTags().isEmpty()) {
                 text.append("タグ: ").append(String.join(", ", skill.getTags())).append("\n");
             }
+            appendSkillTags(text, "役割", skill.getRoles());
+            appendSkillTags(text, "戦術", skill.getTactics());
+            appendSkillTags(text, "参照", skill.getScalings());
+            appendSkillTags(text, "制約", skill.getConstraints());
             if (!skill.getConflicts().isEmpty()) {
                 text.append("競合: ").append(String.join(", ", skill.getConflicts())).append("\n");
             }
@@ -127,6 +132,24 @@ public class KdIndexer implements Startable {
             docs.add(new KdDocument("skill_" + skill.getId(), "スキル", skill.getDisplayName(), text.toString(), vec));
         }
         return docs;
+    }
+
+    private void appendSkillTags(StringBuilder text, String label, Iterable<? extends Enum<?>> tags) {
+        List<String> values = new ArrayList<>();
+        for (Enum<?> tag : tags) {
+            values.add(skillTagLabel(tag));
+        }
+        if (!values.isEmpty()) {
+            text.append(label).append(": ").append(String.join(", ", values)).append("\n");
+        }
+    }
+
+    private String skillTagLabel(Enum<?> tag) {
+        if (tag instanceof SkillTag.Role role) return role.label();
+        if (tag instanceof SkillTag.Tactic tactic) return tactic.label();
+        if (tag instanceof SkillTag.Scaling scaling) return scaling.label();
+        if (tag instanceof SkillTag.Constraint constraint) return constraint.label();
+        return tag.name();
     }
 
     private List<KdDocument> indexMobs() {

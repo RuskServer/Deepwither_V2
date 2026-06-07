@@ -7,6 +7,7 @@ import com.ruskserver.deepwither_V2.modules.skill.api.CastResult;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -62,6 +63,16 @@ public class FirstAidSkill implements Skill {
     @Override
     public Set<String> getTags() {
         return Set.of("heal", "support");
+    }
+
+    @Override
+    public Set<SkillTag.Role> getRoles() {
+        return Set.of(SkillTag.Role.SUPPORT);
+    }
+
+    @Override
+    public Set<SkillTag.Constraint> getConstraints() {
+        return Set.of(SkillTag.Constraint.CHANNELING);
     }
 
     @Override

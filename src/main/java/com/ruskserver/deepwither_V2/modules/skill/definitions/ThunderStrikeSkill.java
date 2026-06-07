@@ -57,6 +57,18 @@ public class ThunderStrikeSkill implements Skill {
     public Set<String> getTags() { return Set.of("magic", "lightning", "area"); }
 
     @Override
+    public Set<SkillTag.Role> getRoles() { return Set.of(SkillTag.Role.ATTACK); }
+
+    @Override
+    public Set<SkillTag.Tactic> getTactics() { return Set.of(SkillTag.Tactic.BURST); }
+
+    @Override
+    public Set<SkillTag.Scaling> getScalings() { return Set.of(SkillTag.Scaling.MAGICAL); }
+
+    @Override
+    public Set<SkillTag.Constraint> getConstraints() { return Set.of(SkillTag.Constraint.CHANNELING); }
+
+    @Override
     public double getManaCost(SkillContext context) { return 40.0; }
 
     @Override

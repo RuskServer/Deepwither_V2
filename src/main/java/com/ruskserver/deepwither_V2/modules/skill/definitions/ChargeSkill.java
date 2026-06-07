@@ -6,6 +6,7 @@ import com.ruskserver.deepwither_V2.modules.skill.api.CastResult;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
 import com.ruskserver.deepwither_V2.modules.skill.service.PlayerInputSnapshot;
 import com.ruskserver.deepwither_V2.modules.skill.service.PlayerInputStateService;
@@ -65,6 +66,16 @@ public class ChargeSkill implements Skill {
     @Override
     public Set<String> getTags() {
         return Set.of("mobility", "charge");
+    }
+
+    @Override
+    public Set<SkillTag.Role> getRoles() {
+        return Set.of(SkillTag.Role.UTILITY);
+    }
+
+    @Override
+    public Set<SkillTag.Tactic> getTactics() {
+        return Set.of(SkillTag.Tactic.MOBILITY, SkillTag.Tactic.DISPLACE);
     }
 
     @Override

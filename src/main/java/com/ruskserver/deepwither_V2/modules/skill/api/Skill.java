@@ -33,6 +33,22 @@ public interface Skill {
         return Collections.emptySet();
     }
 
+    default Set<SkillTag.Role> getRoles() {
+        return Collections.emptySet();
+    }
+
+    default Set<SkillTag.Tactic> getTactics() {
+        return Collections.emptySet();
+    }
+
+    default Set<SkillTag.Scaling> getScalings() {
+        return Collections.emptySet();
+    }
+
+    default Set<SkillTag.Constraint> getConstraints() {
+        return Collections.emptySet();
+    }
+
     default Set<String> getConflicts() {
         return Collections.emptySet();
     }

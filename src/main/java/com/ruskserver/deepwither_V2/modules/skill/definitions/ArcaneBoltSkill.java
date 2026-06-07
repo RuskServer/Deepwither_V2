@@ -9,6 +9,7 @@ import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillProjectile;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillProjectileService;
 import org.bukkit.Material;
@@ -69,6 +70,21 @@ public class ArcaneBoltSkill implements Skill {
     @Override
     public Set<String> getTags() {
         return Set.of("magic", "projectile");
+    }
+
+    @Override
+    public Set<SkillTag.Role> getRoles() {
+        return Set.of(SkillTag.Role.ATTACK);
+    }
+
+    @Override
+    public Set<SkillTag.Tactic> getTactics() {
+        return Set.of(SkillTag.Tactic.BURST);
+    }
+
+    @Override
+    public Set<SkillTag.Scaling> getScalings() {
+        return Set.of(SkillTag.Scaling.MAGICAL, SkillTag.Scaling.CDR_HEAVY);
     }
 
     @Override

@@ -51,6 +51,18 @@ public class BlizzardSkill implements Skill {
     public Set<String> getTags() { return Set.of("magic", "ice", "area"); }
 
     @Override
+    public Set<SkillTag.Role> getRoles() { return Set.of(SkillTag.Role.ATTACK, SkillTag.Role.CONTROL); }
+
+    @Override
+    public Set<SkillTag.Tactic> getTactics() { return Set.of(SkillTag.Tactic.DISPLACE); }
+
+    @Override
+    public Set<SkillTag.Scaling> getScalings() { return Set.of(SkillTag.Scaling.MAGICAL); }
+
+    @Override
+    public Set<SkillTag.Constraint> getConstraints() { return Set.of(SkillTag.Constraint.HIGH_COST, SkillTag.Constraint.LONG_CD); }
+
+    @Override
     public double getManaCost(SkillContext context) { return 60.0; }
 
     @Override

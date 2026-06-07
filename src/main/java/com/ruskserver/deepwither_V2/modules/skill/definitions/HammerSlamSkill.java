@@ -51,6 +51,15 @@ public class HammerSlamSkill implements Skill {
     public Set<String> getTags() { return Set.of("melee", "warrior", "heavy"); }
 
     @Override
+    public Set<SkillTag.Role> getRoles() { return Set.of(SkillTag.Role.ATTACK, SkillTag.Role.CONTROL); }
+
+    @Override
+    public Set<SkillTag.Tactic> getTactics() { return Set.of(SkillTag.Tactic.DISPLACE); }
+
+    @Override
+    public Set<SkillTag.Scaling> getScalings() { return Set.of(SkillTag.Scaling.PHYSICAL); }
+
+    @Override
     public double getManaCost(SkillContext context) { return 25.0; }
 
     @Override
