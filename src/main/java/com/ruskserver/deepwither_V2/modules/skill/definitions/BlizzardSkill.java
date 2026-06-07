@@ -32,7 +32,10 @@ public class BlizzardSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("自身の周囲に極寒の吹雪を発生させ、敵を凍えさせつつ氷ダメージを与える。");
+        return List.of(
+                "自身の周囲に極寒の吹雪を発生させ、敵を押し返す。",
+                "周囲5mの敵に魔法ダメージ(400%)を与える。"
+        );
     }
 
     @Override
@@ -59,12 +62,11 @@ public class BlizzardSkill implements Skill {
         context.getCaster().getWorld().spawnParticle(Particle.SNOWFLAKE, context.getCaster().getLocation().add(0, 1, 0), 100, 0.5, 0.5, 0.5, 0.2);
         context.getCaster().getWorld().playSound(context.getCaster().getLocation(), Sound.ENTITY_BREEZE_SHOOT, 1.2f, 0.8f);
 
-        double damage = 80.0 + (context.getLevel() * 15.0);
         double range = 5.0;
 
         context.getCaster().getNearbyEntities(range, range, range).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+                damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 4.0, getTags());
                 living.setVelocity(living.getLocation().toVector().subtract(context.getCaster().getLocation().toVector()).normalize().multiply(1.5).setY(0.5));
             }
         });

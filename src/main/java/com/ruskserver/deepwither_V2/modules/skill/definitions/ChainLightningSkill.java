@@ -39,7 +39,10 @@ public class ChainLightningSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("雷球を放ち、命中した敵から", "周囲の敵へ連鎖する。");
+        return List.of(
+                "前方に雷球を放ち、命中した敵から近くの敵へ連鎖する。",
+                "最大4体に魔法ダメージ(125%)を与える。"
+        );
     }
 
     @Override
@@ -89,8 +92,7 @@ public class ChainLightningSkill implements Skill {
             }
 
             private void chain(LivingEntity hit, Location origin) {
-                double damage = 25.0 + (context.getLevel() * 5.0);
-                damagePipelineManager.processDamage(context.getCaster(), hit, DamageType.MAGIC, damage, getTags());
+                damagePipelineManager.processScaledDamage(context.getCaster(), hit, DamageType.MAGIC, 1.25, getTags());
 
                 origin.getWorld().spawnParticle(Particle.FLASH, hit.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0, Color.WHITE);
                 origin.getWorld().playSound(hit.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.6f, 1.5f);

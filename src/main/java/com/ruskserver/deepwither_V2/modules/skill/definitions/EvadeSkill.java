@@ -41,7 +41,10 @@ public class EvadeSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("入力している移動方向へ素早く身をかわす。", "移動入力がない場合は視線方向へ回避する。");
+        return List.of(
+                "入力している移動方向へ素早く身をかわす。",
+                "移動入力がない場合は視線方向へ回避し、ジャンプ入力中は少し高く跳ぶ。"
+        );
     }
 
     @Override

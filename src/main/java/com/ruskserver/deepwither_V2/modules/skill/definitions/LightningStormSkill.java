@@ -35,7 +35,10 @@ public class LightningStormSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("前方に複数の雷撃を放ち、", "範囲内の敵に連続ダメージを与える。");
+        return List.of(
+                "前方へ複数の雷撃を放ち、視線方向の敵を打ち抜く。",
+                "最大7m先の敵に魔法ダメージ(100%)を与える。"
+        );
     }
 
     @Override
@@ -77,7 +80,6 @@ public class LightningStormSkill implements Skill {
 
         eyeLoc.getWorld().playSound(eyeLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.6f, 1.5f);
 
-        double damage = 20.0 + (context.getLevel() * 4.0);
         double range = 7.0;
         double angleCos = Math.cos(Math.toRadians(50));
 
@@ -87,7 +89,7 @@ public class LightningStormSkill implements Skill {
                 if (toTarget.length() <= range) {
                     double dot = toTarget.normalize().dot(direction);
                     if (dot >= angleCos) {
-                        damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+                        damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 1.0, getTags());
                         living.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, living.getLocation().add(0, 1, 0), 8, 0.2, 0.2, 0.2, 0.05);
                     }
                 }

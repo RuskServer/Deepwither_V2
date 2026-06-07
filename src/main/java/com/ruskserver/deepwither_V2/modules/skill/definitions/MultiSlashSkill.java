@@ -38,7 +38,10 @@ public class MultiSlashSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("前方に3連続の斬撃を繰り出す。");
+        return List.of(
+                "前方に3連続の斬撃を繰り出し、扇状の敵を切り刻む。",
+                "各斬撃は最大4m先の敵に物理ダメージ(75%)を与える。"
+        );
     }
 
     @Override
@@ -77,7 +80,6 @@ public class MultiSlashSkill implements Skill {
                 origin.getWorld().spawnParticle(Particle.SWEEP_ATTACK, origin, 1, 0.3, 0.3, 0.3, 0);
                 origin.getWorld().playSound(origin, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 0.9f + hits * 0.1f);
 
-                double damage = 15.0 + (context.getLevel() * 3.0);
                 double range = 4.0;
                 double angleCos = Math.cos(Math.toRadians(60));
 
@@ -87,7 +89,7 @@ public class MultiSlashSkill implements Skill {
                         if (toTarget.length() <= range) {
                             double dot = toTarget.normalize().dot(dir);
                             if (dot >= angleCos) {
-                                damagePipelineManager.processDamage(player, living, DamageType.PHYSICAL, damage, getTags());
+                                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 0.75, getTags());
                             }
                         }
                     }

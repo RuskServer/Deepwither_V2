@@ -44,7 +44,10 @@ public class ThunderBlastSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("0.5秒の詠唱後、雷球を放つ。", "着弾後わずかに遅れて爆発し、", "範囲内の敵にダメージと移動速度低下を与える。");
+        return List.of(
+                "0.5秒の詠唱後に雷球を放ち、着弾後わずかに遅れて爆発する。",
+                "周囲5mの敵に魔法ダメージ(450%)と鈍足II(3秒)を与える。"
+        );
     }
 
     @Override
@@ -106,10 +109,9 @@ public class ThunderBlastSkill implements Skill {
                     location.getWorld().spawnParticle(Particle.FLASH, location, 3, 0.5, 0.5, 0.5, 0, Color.WHITE);
                     location.getWorld().playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.8f);
 
-                    double damage = 90.0 + (context.getLevel() * 18.0);
                     location.getWorld().getNearbyEntities(location, 5.0, 5.0, 5.0).forEach(entity -> {
                         if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                            damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+                            damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 4.5, getTags());
                             living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1, false, true));
                         }
                     });

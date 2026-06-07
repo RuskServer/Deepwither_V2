@@ -36,7 +36,10 @@ public class IceShardSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("氷の欠片を放ち、命中した敵とその周囲に氷ダメージを与える。");
+        return List.of(
+                "前方に氷の欠片を放ち、着弾地点で砕け散る。",
+                "周囲3mの敵に魔法ダメージ(150%)を与える。"
+        );
     }
 
     @Override
@@ -90,10 +93,9 @@ public class IceShardSkill implements Skill {
                 getCurrentLocation().getWorld().spawnParticle(Particle.SNOWFLAKE, getCurrentLocation(), 20, 0.5, 0.5, 0.5, 0.1);
                 getCurrentLocation().getWorld().playSound(getCurrentLocation(), Sound.BLOCK_GLASS_BREAK, 0.8f, 1.5f);
 
-                double damage = 30.0 + (context.getLevel() * 5.0);
                 getCurrentLocation().getWorld().getNearbyEntities(getCurrentLocation(), 3.0, 3.0, 3.0).forEach(entity -> {
                     if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                        damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+                        damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 1.5, getTags());
                     }
                 });
             }

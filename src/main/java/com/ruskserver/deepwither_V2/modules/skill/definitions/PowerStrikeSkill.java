@@ -34,7 +34,10 @@ public class PowerStrikeSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("目の前の敵1体に強力な一撃を与える。");
+        return List.of(
+                "目の前の敵へ踏み込み、強力な一撃を叩き込む。",
+                "最大6m先の敵1体に物理ダメージ(200%)を与える。"
+        );
     }
 
     @Override
@@ -67,8 +70,7 @@ public class PowerStrikeSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 15, 0.3, 0.3, 0.3, 0.2);
         loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
 
-        double damage = 40.0 + (context.getLevel() * 8.0);
-        damagePipelineManager.processDamage(player, target, DamageType.PHYSICAL, damage, getTags());
+        damagePipelineManager.processScaledDamage(player, target, DamageType.PHYSICAL, 2.0, getTags());
 
         return CastResult.success();
     }

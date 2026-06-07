@@ -45,7 +45,10 @@ public class ArcaneBoltSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("前方に魔力弾を放ち、命中した敵に魔法ダメージを与える。");
+        return List.of(
+                "前方に魔力弾を放ち、命中した敵で弾ける。",
+                "敵1体に魔法ダメージ(120%)を与える。"
+        );
     }
 
     @Override
@@ -95,7 +98,7 @@ public class ArcaneBoltSkill implements Skill {
 
             @Override
             protected void onHitEntity(LivingEntity target) {
-                damagePipelineManager.processDamage(context.getCaster(), target, DamageType.MAGIC, 24.0 + (context.getLevel() * 4.0), getTags());
+                damagePipelineManager.processScaledDamage(context.getCaster(), target, DamageType.MAGIC, 1.2, getTags());
                 target.getWorld().spawnParticle(Particle.CRIT, getCurrentLocation(), 12, 0.2, 0.2, 0.2, 0.1);
                 remove();
             }

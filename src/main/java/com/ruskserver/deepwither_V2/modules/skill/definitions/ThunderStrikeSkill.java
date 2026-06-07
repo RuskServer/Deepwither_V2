@@ -38,7 +38,10 @@ public class ThunderStrikeSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("対象地点に雷を落とし、", "範囲内の敵にダメージを与える。");
+        return List.of(
+                "指定地点に予兆を描き、0.5秒後に雷を落とす。",
+                "周囲5mの敵に魔法ダメージ(500%)を与える。"
+        );
     }
 
     @Override
@@ -72,7 +75,6 @@ public class ThunderStrikeSkill implements Skill {
         // 中心座標をブロックの真ん中に調整
         final Location strikeLoc = targetLoc.clone().add(0.5, 0.1, 0.5);
         final double radius = 5.0;
-        final int level = context.getLevel();
         final LivingEntity caster = context.getCaster();
 
         // --- 予兆フェーズ (0.5秒) ---
@@ -121,10 +123,9 @@ public class ThunderStrikeSkill implements Skill {
             strikeLoc.getWorld().playSound(strikeLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.5f);
 
             // ダメージ処理
-            double damage = 100.0 + (level * 25.0);
             strikeLoc.getWorld().getNearbyEntities(strikeLoc, radius, 4.0, radius).forEach(entity -> {
                 if (entity instanceof LivingEntity victim && !entity.equals(caster)) {
-                    damagePipelineManager.processDamage(caster, victim, DamageType.MAGIC, damage, getTags());
+                    damagePipelineManager.processScaledDamage(caster, victim, DamageType.MAGIC, 5.0, getTags());
                 }
             });
         }, 10L);

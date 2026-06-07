@@ -38,7 +38,10 @@ public class ShockwaveSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("前方に衝撃波を放ち、範囲内の敵をノックバックさせる。");
+        return List.of(
+                "前方へ衝撃波を放ち、進路上の敵を吹き飛ばす。",
+                "最大8m先の敵に物理ダメージ(100%)を与える。"
+        );
     }
 
     @Override
@@ -79,11 +82,10 @@ public class ShockwaveSkill implements Skill {
                 Location current = startLoc.clone().add(dir.clone().multiply(distance));
                 current.getWorld().spawnParticle(Particle.CRIT, current, 5, 0.5, 0.3, 0.5, 0.05);
 
-                double damage = 20.0 + (context.getLevel() * 4.0);
                 current.getWorld().getNearbyEntities(current, 2.0, 2.0, 2.0).forEach(entity -> {
                     if (entity instanceof LivingEntity living && !entity.equals(player) && !hit.contains(living)) {
                         hit.add(living);
-                        damagePipelineManager.processDamage(player, living, DamageType.PHYSICAL, damage, getTags());
+                        damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.0, getTags());
                         living.setVelocity(dir.clone().multiply(1.5).setY(0.3));
                     }
                 });

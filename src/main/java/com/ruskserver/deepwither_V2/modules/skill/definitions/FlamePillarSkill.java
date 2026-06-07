@@ -37,7 +37,10 @@ public class FlamePillarSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("標的の足元から巨大な火柱を噴出させ、範囲内の敵に大ダメージを与える。");
+        return List.of(
+                "指定地点の足元から巨大な火柱を噴出させる。",
+                "周囲2.5mの敵に魔法ダメージ(300%)を与える。"
+        );
     }
 
     @Override
@@ -95,10 +98,9 @@ public class FlamePillarSkill implements Skill {
         
         finalLoc.getWorld().playSound(finalLoc, Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 1.0f, 0.8f);
         
-        double damage = 60.0 + (context.getLevel() * 12.0);
         finalLoc.getWorld().getNearbyEntities(finalLoc, 2.5, 5.0, 2.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+                damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 3.0, getTags());
             }
         });
 

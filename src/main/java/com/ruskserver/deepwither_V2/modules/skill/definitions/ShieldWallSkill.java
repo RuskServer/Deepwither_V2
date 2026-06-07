@@ -32,7 +32,10 @@ public class ShieldWallSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("防御姿勢をとり、受けるダメージを6秒間減少させる。");
+        return List.of(
+                "防御姿勢を取り、盾の力で自身を守る。",
+                "自身に耐性II(6秒)と最大HP10%回復を付与する。"
+        );
     }
 
     @Override

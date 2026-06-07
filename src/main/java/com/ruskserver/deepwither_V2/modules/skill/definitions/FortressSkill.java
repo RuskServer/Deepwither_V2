@@ -37,7 +37,10 @@ public class FortressSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("大地を踏み鳴らし周囲の敵を引き寄せ", "自身に強力な防御バリアを張る。");
+        return List.of(
+                "大地を踏み鳴らし、周囲の敵を自身へ引き寄せる。",
+                "周囲7mの敵に魔法ダメージ(150%)を与え、自身に耐性III(3秒)と最大HP20%回復を付与する。"
+        );
     }
 
     @Override
@@ -67,10 +70,9 @@ public class FortressSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 40, 2.0, 0.5, 2.0, 0.2);
         loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_HURT, 1.0f, 0.6f);
 
-        double damage = 30.0 + (context.getLevel() * 6.0);
         player.getNearbyEntities(7.0, 7.0, 7.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processDamage(player, living, DamageType.MAGIC, damage, getTags());
+                damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.5, getTags());
                 living.setVelocity(player.getLocation().toVector().subtract(living.getLocation().toVector()).normalize().multiply(0.8).setY(0.3));
             }
         });

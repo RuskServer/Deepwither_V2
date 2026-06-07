@@ -33,7 +33,10 @@ public class BattleCrySkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("雄叫びを上げ、周囲の味方を回復し攻撃力を強化する。");
+        return List.of(
+                "雄叫びを上げ、自身と周囲の味方を鼓舞する。",
+                "自身に攻撃力上昇I(6秒)、周囲8mの味方に最大HP15%回復と攻撃力上昇I(6秒)を付与する。"
+        );
     }
 
     @Override

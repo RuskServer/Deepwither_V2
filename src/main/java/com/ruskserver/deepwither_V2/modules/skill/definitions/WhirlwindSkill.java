@@ -32,7 +32,10 @@ public class WhirlwindSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("その場で回転斬りを放ち、周囲の敵全てにダメージを与える。");
+        return List.of(
+                "その場で回転斬りを放ち、周囲の敵を斬り払う。",
+                "周囲3.5mの敵に物理ダメージ(125%)を与える。"
+        );
     }
 
     @Override
@@ -61,10 +64,9 @@ public class WhirlwindSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc, 25, 1.5, 0.3, 1.5, 0);
         loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 0.7f);
 
-        double damage = 25.0 + (context.getLevel() * 5.0);
         player.getNearbyEntities(3.5, 3.5, 3.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processDamage(player, living, DamageType.PHYSICAL, damage, getTags());
+                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.25, getTags());
             }
         });
 

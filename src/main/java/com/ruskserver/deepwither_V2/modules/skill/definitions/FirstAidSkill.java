@@ -38,7 +38,10 @@ public class FirstAidSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("短い詠唱の後、自分の仮想HPを回復する。");
+        return List.of(
+                "1.2秒の詠唱後、応急処置で自身を立て直す。",
+                "自身の最大HPを25%回復する。"
+        );
     }
 
     @Override

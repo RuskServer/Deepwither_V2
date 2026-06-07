@@ -37,7 +37,10 @@ public class ColossusSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("全身全霊の一撃を放ち、", "広範囲の敵に大ダメージとノックバックを与える。");
+        return List.of(
+                "全身全霊の一撃を放ち、広範囲の敵を吹き飛ばす。",
+                "周囲6mの敵に物理ダメージ(350%)と鈍足I(3秒)を与え、自身の最大HPを10%回復する。"
+        );
     }
 
     @Override
@@ -71,10 +74,9 @@ public class ColossusSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 30, 2.5, 0.5, 2.5, 0.2);
         loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.5f, 0.4f);
 
-        double damage = 70.0 + (context.getLevel() * 14.0);
         player.getNearbyEntities(6.0, 6.0, 6.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processDamage(player, living, DamageType.PHYSICAL, damage, getTags());
+                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 3.5, getTags());
                 living.setVelocity(living.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(2.0).setY(0.6));
                 living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 0, false, true));
             }

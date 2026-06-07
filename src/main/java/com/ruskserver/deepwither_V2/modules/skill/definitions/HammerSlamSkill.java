@@ -32,7 +32,10 @@ public class HammerSlamSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("地面を叩きつけ、周囲の敵にダメージとノックバックを与える。");
+        return List.of(
+                "地面を叩きつけ、周囲の敵を吹き飛ばす。",
+                "周囲3.5mの敵に物理ダメージ(150%)を与える。"
+        );
     }
 
     @Override
@@ -62,10 +65,9 @@ public class HammerSlamSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.CRIT, loc.add(0, 0.5, 0), 15, 1.0, 0.1, 1.0, 0.1);
         loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.7f);
 
-        double damage = 30.0 + (context.getLevel() * 6.0);
         player.getNearbyEntities(3.5, 3.5, 3.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processDamage(player, living, DamageType.PHYSICAL, damage, getTags());
+                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.5, getTags());
                 living.setVelocity(living.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(1.2).setY(0.4));
             }
         });

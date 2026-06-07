@@ -36,7 +36,10 @@ public class ExecutionerSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("敵の急所を突く一撃。", "HPが半分以下の敵に追加ダメージを与える。");
+        return List.of(
+                "目の前の敵の急所を狙い、処刑の一撃を放つ。",
+                "最大6m先の敵1体に物理ダメージ(250%)を与え、HP50%未満なら1.5倍になる。"
+        );
     }
 
     @Override
@@ -67,10 +70,10 @@ public class ExecutionerSkill implements Skill {
 
         double maxHp = healthManager.getMaxHealth(target);
         double currentHp = healthManager.getHealth(target);
-        double damage = 50.0 + (context.getLevel() * 10.0);
+        double coefficient = 2.5;
 
         if (currentHp < maxHp * 0.5) {
-            damage *= 1.5;
+            coefficient *= 1.5;
             target.getWorld().spawnParticle(Particle.CRIT, target.getLocation().add(0, 1, 0), 20, 0.4, 0.4, 0.4, 0.3);
             target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.2f, 0.6f);
         } else {
@@ -78,7 +81,7 @@ public class ExecutionerSkill implements Skill {
             target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 0.9f);
         }
 
-        damagePipelineManager.processDamage(player, target, DamageType.PHYSICAL, damage, getTags());
+        damagePipelineManager.processScaledDamage(player, target, DamageType.PHYSICAL, coefficient, getTags());
 
         return CastResult.success();
     }

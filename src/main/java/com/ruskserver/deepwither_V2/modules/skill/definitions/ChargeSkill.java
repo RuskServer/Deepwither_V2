@@ -41,7 +41,10 @@ public class ChargeSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("視線方向へ勢いよく突撃する。", "前進しながらスプリント中は少し加速する。");
+        return List.of(
+                "視線方向へ勢いよく突撃し、入力に応じて軌道を変える。",
+                "スプリント中は加速し、ジャンプ入力中は少し上方向へ飛び出す。"
+        );
     }
 
     @Override

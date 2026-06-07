@@ -34,7 +34,10 @@ public class SeismicStompSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("地面を踏み鳴らし、周囲の敵にダメージと移動速度低下を与える。");
+        return List.of(
+                "地面を踏み鳴らし、周囲の敵の足を止める。",
+                "周囲4.5mの敵に物理ダメージ(175%)と鈍足III(2秒)を与える。"
+        );
     }
 
     @Override
@@ -64,10 +67,9 @@ public class SeismicStompSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 20, 2.0, 0.1, 2.0, 0.1);
         loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_HURT, 1.0f, 0.5f);
 
-        double damage = 35.0 + (context.getLevel() * 7.0);
         player.getNearbyEntities(4.5, 4.5, 4.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processDamage(player, living, DamageType.PHYSICAL, damage, getTags());
+                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.75, getTags());
                 living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 2, false, true));
             }
         });

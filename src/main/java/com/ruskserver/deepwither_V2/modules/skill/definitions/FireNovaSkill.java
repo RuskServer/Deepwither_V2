@@ -36,7 +36,10 @@ public class FireNovaSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("自身の周囲に強力な衝撃波を発生させ、敵を吹き飛ばしつつ炎ダメージを与える。");
+        return List.of(
+                "自身の周囲に炎の衝撃波を発生させ、敵を吹き飛ばす。",
+                "周囲5mの敵に魔法ダメージ(400%)を与える。"
+        );
     }
 
     @Override
@@ -75,12 +78,11 @@ public class FireNovaSkill implements Skill {
         context.getCaster().getWorld().spawnParticle(Particle.FLAME, context.getCaster().getLocation().add(0, 1, 0), 100, 0.5, 0.5, 0.5, 0.2);
         context.getCaster().getWorld().playSound(context.getCaster().getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.8f);
         
-        double damage = 80.0 + (context.getLevel() * 15.0);
         double range = 5.0;
 
         context.getCaster().getNearbyEntities(range, range, range).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+                damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 4.0, getTags());
                 living.setVelocity(living.getLocation().toVector().subtract(context.getCaster().getLocation().toVector()).normalize().multiply(1.5).setY(0.5));
             }
         });

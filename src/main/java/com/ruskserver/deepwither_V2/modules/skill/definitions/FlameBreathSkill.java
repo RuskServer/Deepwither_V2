@@ -38,7 +38,10 @@ public class FlameBreathSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("前方広範囲に炎を吹き付け、連続的なダメージを与える。");
+        return List.of(
+                "前方へ炎を吹き付け、視線方向の敵を焼き払う。",
+                "最大6m先の敵に魔法ダメージ(125%)を与える。"
+        );
     }
 
     @Override
@@ -85,7 +88,6 @@ public class FlameBreathSkill implements Skill {
         
         eyeLoc.getWorld().playSound(eyeLoc, Sound.ENTITY_BLAZE_SHOOT, 0.5f, 0.5f);
         
-        double damage = 25.0 + (context.getLevel() * 6.0);
         double range = 6.0;
         double angleCos = Math.cos(Math.toRadians(45)); // 45度の扇形
 
@@ -95,7 +97,7 @@ public class FlameBreathSkill implements Skill {
                 if (toTarget.length() <= range) {
                     double dot = toTarget.normalize().dot(direction);
                     if (dot >= angleCos) {
-                        damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+                        damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 1.25, getTags());
                         living.getWorld().spawnParticle(Particle.FLAME, living.getLocation().add(0, 1, 0), 5, 0.2, 0.2, 0.2, 0.05);
                     }
                 }

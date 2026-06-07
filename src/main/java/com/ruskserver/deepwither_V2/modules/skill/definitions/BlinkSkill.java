@@ -38,7 +38,10 @@ public class BlinkSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("視線方向の安全な地点へ瞬間移動する。", "移動先が見つからない場合は発動しない。");
+        return List.of(
+                "0.4秒の詠唱後、視線方向の安全な地点へ瞬間移動する。",
+                "最大14m先まで移動し、安全な移動先がない場合は発動しない。"
+        );
     }
 
     @Override

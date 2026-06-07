@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.combat.damage;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.DamagePhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.ItemAbilityPhase;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
@@ -242,6 +243,21 @@ public class DamagePipelineManager implements Listener {
      */
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags) {
         processDamage(attacker, defender, type, initialDamage, tags, 1.0);
+    }
+
+    /**
+     * 攻撃力または魔法攻撃力に対する倍率でスキルダメージを流し込むためのAPI。
+     */
+    public void processScaledDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double coefficient, java.util.Set<String> tags) {
+        if (attacker == null) {
+            processDamage(null, defender, type, 0.0, tags);
+            return;
+        }
+
+        StatType statType = type == DamageType.MAGIC ? StatType.MAGIC_DAMAGE : StatType.ATTACK_DAMAGE;
+        double baseDamage = statManager.getTotalStat(attacker, statType);
+        double initialDamage = (baseDamage > 0 ? baseDamage : 1.0) * coefficient;
+        processDamage(attacker, defender, type, initialDamage, tags);
     }
 
     /**

@@ -32,7 +32,10 @@ public class TauntSkill implements Skill {
 
     @Override
     public List<String> getDescription() {
-        return List.of("周囲の敵を挑発し、ダメージを与える。");
+        return List.of(
+                "周囲の敵を挑発し、怒気で押し返す。",
+                "周囲6mの敵に魔法ダメージ(75%)を与える。"
+        );
     }
 
     @Override
@@ -59,10 +62,9 @@ public class TauntSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.ANGRY_VILLAGER, loc, 15, 1.5, 0.5, 1.5, 0.1);
         loc.getWorld().playSound(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.6f, 1.8f);
 
-        double damage = 15.0 + (context.getLevel() * 4.0);
         context.getCaster().getNearbyEntities(6.0, 6.0, 6.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                damagePipelineManager.processDamage(context.getCaster(), living, DamageType.MAGIC, damage, getTags());
+                damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 0.75, getTags());
                 living.setVelocity(living.getLocation().toVector().subtract(context.getCaster().getLocation().toVector()).normalize().multiply(0.3).setY(0.2));
             }
         });
