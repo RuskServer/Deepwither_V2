@@ -1,12 +1,12 @@
 package com.ruskserver.deepwither_V2.modules.artifact.listener;
 
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.modules.artifact.ArtifactData;
 import com.ruskserver.deepwither_V2.modules.artifact.ArtifactPDCUtil;
+import com.ruskserver.deepwither_V2.modules.artifact.ArtifactSaveData;
 import com.ruskserver.deepwither_V2.modules.artifact.ArtifactSetType;
-import com.ruskserver.deepwither_V2.modules.artifact.provider.PlayerArtifactProvider;
+import com.ruskserver.deepwither_V2.modules.artifact.service.ArtifactEquipmentService;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
@@ -61,7 +61,7 @@ public class ArtifactCombatListener implements Listener {
     // Eternal Hearts が「発動済み」かどうか（死なずにリセットされるまで）
     private final Set<UUID> eternalHeartsActive     = ConcurrentHashMap.newKeySet();
 
-    private final PlayerDataRepository repository;
+    private final ArtifactEquipmentService equipmentService;
     private final ArtifactPDCUtil pdcUtil;
     private final VirtualHealthManager healthManager;
     private final ManaManager manaManager;
@@ -69,10 +69,10 @@ public class ArtifactCombatListener implements Listener {
     private final StatManager statManager;
 
     @Inject
-    public ArtifactCombatListener(PlayerDataRepository repository, ArtifactPDCUtil pdcUtil,
+    public ArtifactCombatListener(ArtifactEquipmentService equipmentService, ArtifactPDCUtil pdcUtil,
                                   VirtualHealthManager healthManager, ManaManager manaManager,
                                   DamagePipelineManager pipelineManager, StatManager statManager) {
-        this.repository   = repository;
+        this.equipmentService = equipmentService;
         this.pdcUtil       = pdcUtil;
         this.healthManager = healthManager;
         this.manaManager   = manaManager;
@@ -337,22 +337,20 @@ public class ArtifactCombatListener implements Listener {
      */
     private Map<ArtifactSetType, Integer> getEquippedSetCount(Player player) {
         Map<ArtifactSetType, Integer> setCount = new HashMap<>();
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerArtifactProvider.ArtifactSaveData artifactData = data.get(PlayerArtifactProvider.KEY);
-            if (artifactData == null) return;
+        ArtifactSaveData artifactData = equipmentService.getEquippedArtifacts(player).orElse(null);
+        if (artifactData == null) return setCount;
 
-            for (String base64 : artifactData.getEquippedArtifacts().values()) {
-                if (base64 == null || base64.isEmpty()) continue;
-                try {
-                    byte[] bytes = Base64.getDecoder().decode(base64);
-                    ItemStack item = ItemStack.deserializeBytes(bytes);
-                    ArtifactData ad = pdcUtil.getArtifactData(item);
-                    if (ad != null) {
-                        setCount.merge(ad.getSetType(), 1, Integer::sum);
-                    }
-                } catch (Exception ignored) {}
-            }
-        });
+        for (String base64 : artifactData.getEquippedArtifacts().values()) {
+            if (base64 == null || base64.isEmpty()) continue;
+            try {
+                byte[] bytes = Base64.getDecoder().decode(base64);
+                ItemStack item = ItemStack.deserializeBytes(bytes);
+                ArtifactData ad = pdcUtil.getArtifactData(item);
+                if (ad != null) {
+                    setCount.merge(ad.getSetType(), 1, Integer::sum);
+                }
+            } catch (Exception ignored) {}
+        }
         return setCount;
     }
 

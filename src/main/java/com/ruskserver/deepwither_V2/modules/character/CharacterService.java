@@ -14,6 +14,7 @@ import com.ruskserver.deepwither_V2.modules.character.provider.CharacterInventor
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterLocationProvider;
 import com.ruskserver.deepwither_V2.modules.character.provider.CharacterLocationProvider.CharacterLocationData;
 import com.ruskserver.deepwither_V2.modules.character.provider.SharedEconomyProvider;
+import com.ruskserver.deepwither_V2.modules.item.service.MenuCompassService;
 import com.ruskserver.deepwither_V2.modules.skill.provider.CharacterSkillSlotProvider;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
@@ -42,6 +43,7 @@ public class CharacterService {
     private final CharacterRepository repository;
     private final CharacterDataRepository characterDataRepository;
     private final PlayerDataRepository playerDataRepository;
+    private final MenuCompassService menuCompassService;
     private final Deepwither_V2 plugin;
     private final Logger logger;
     private final Map<UUID, GameCharacter> activeCharacters = new ConcurrentHashMap<>();
@@ -59,10 +61,12 @@ public class CharacterService {
     public CharacterService(CharacterRepository repository,
                             CharacterDataRepository characterDataRepository,
                             PlayerDataRepository playerDataRepository,
+                            MenuCompassService menuCompassService,
                             Deepwither_V2 plugin) {
         this.repository = repository;
         this.characterDataRepository = characterDataRepository;
         this.playerDataRepository = playerDataRepository;
+        this.menuCompassService = menuCompassService;
         this.plugin = plugin;
         this.logger = Logger.getLogger("CharacterService");
         setupEconomy();
@@ -363,7 +367,7 @@ public class CharacterService {
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {
             ItemStack item = contents[i];
-            if (item != null && !item.getType().isAir()) {
+            if (item != null && !item.getType().isAir() && !menuCompassService.isMenuCompass(item)) {
                 try {
                     itemMap.put(i, Base64.getEncoder().encodeToString(item.serializeAsBytes()));
                 } catch (Exception e) {
@@ -503,13 +507,17 @@ public class CharacterService {
                 int slot = entry.getKey();
                 if (slot < 0 || slot >= contents.length) continue;
                 try {
-                    contents[slot] = ItemStack.deserializeBytes(Base64.getDecoder().decode(entry.getValue()));
+                    ItemStack item = ItemStack.deserializeBytes(Base64.getDecoder().decode(entry.getValue()));
+                    if (!menuCompassService.isMenuCompass(item)) {
+                        contents[slot] = item;
+                    }
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "インベントリスロット " + slot + " のデシリアライズに失敗しました", e);
                 }
             }
             player.getInventory().setContents(contents);
         }
+        menuCompassService.ensureMenuCompass(player);
 
         // 位置復元（データがある場合のみテレポート）
         CharacterLocationData locData = data.get(CharacterLocationProvider.KEY);
@@ -660,5 +668,3 @@ public class CharacterService {
         }
     }
 }
-
-

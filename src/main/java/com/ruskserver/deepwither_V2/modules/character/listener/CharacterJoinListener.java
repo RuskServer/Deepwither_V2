@@ -9,6 +9,7 @@ import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceExcept
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
 import com.ruskserver.deepwither_V2.modules.character.gui.CharacterSelectGui;
+import com.ruskserver.deepwither_V2.modules.artifact.service.ArtifactStatService;
 import com.ruskserver.deepwither_V2.modules.gui.GuiService;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
@@ -26,15 +27,18 @@ public class CharacterJoinListener implements Listener {
     private final CharacterService characterService;
     private final CharacterNameTagService nameTagService;
     private final GuiService guiService;
+    private final ArtifactStatService artifactStatService;
     private final Deepwither_V2 plugin;
     private final Logger logger;
 
     @Inject
     public CharacterJoinListener(CharacterService characterService, CharacterNameTagService nameTagService,
-                                 GuiService guiService, Deepwither_V2 plugin, Logger logger) {
+                                 GuiService guiService, ArtifactStatService artifactStatService,
+                                 Deepwither_V2 plugin, Logger logger) {
         this.characterService = characterService;
         this.nameTagService = nameTagService;
         this.guiService = guiService;
+        this.artifactStatService = artifactStatService;
         this.plugin = plugin;
         this.logger = logger;
     }
@@ -56,6 +60,7 @@ public class CharacterJoinListener implements Listener {
                     Player player = plugin.getServer().getPlayer(playerId);
                     if (player == null || !player.isOnline()) return;
                     nameTagService.refresh(player, character.mode());
+                    artifactStatService.applyArtifactStats(player);
                 });
             } else {
                 plugin.getServer().getScheduler().runTask(plugin, () -> {

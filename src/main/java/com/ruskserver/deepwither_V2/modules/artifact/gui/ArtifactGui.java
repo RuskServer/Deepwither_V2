@@ -1,10 +1,10 @@
 package com.ruskserver.deepwither_V2.modules.artifact.gui;
 
-import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.modules.artifact.ArtifactPDCUtil;
-import com.ruskserver.deepwither_V2.modules.artifact.provider.PlayerArtifactProvider;
+import com.ruskserver.deepwither_V2.modules.artifact.ArtifactSaveData;
+import com.ruskserver.deepwither_V2.modules.artifact.service.ArtifactEquipmentService;
 import com.ruskserver.deepwither_V2.modules.artifact.service.ArtifactStatService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -34,7 +34,7 @@ public class ArtifactGui implements Listener {
     // GUI内のアーティファクトスロットのインデックス
     private static final int[] ARTIFACT_SLOTS = {11, 13, 15};
 
-    private final PlayerDataRepository repository;
+    private final ArtifactEquipmentService equipmentService;
     private final ArtifactPDCUtil pdcUtil;
     private final ArtifactStatService statService;
 
@@ -42,8 +42,8 @@ public class ArtifactGui implements Listener {
     private final Map<UUID, Inventory> openGuis = new HashMap<>();
 
     @Inject
-    public ArtifactGui(PlayerDataRepository repository, ArtifactPDCUtil pdcUtil, ArtifactStatService statService) {
-        this.repository = repository;
+    public ArtifactGui(ArtifactEquipmentService equipmentService, ArtifactPDCUtil pdcUtil, ArtifactStatService statService) {
+        this.equipmentService = equipmentService;
         this.pdcUtil = pdcUtil;
         this.statService = statService;
     }
@@ -62,30 +62,28 @@ public class ArtifactGui implements Listener {
         }
 
         // プレイヤーの装備状況をロードして配置
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerArtifactProvider.ArtifactSaveData artifactData = data.get(PlayerArtifactProvider.KEY);
-            if (artifactData != null) {
-                for (int i = 0; i < ARTIFACT_SLOTS.length; i++) {
-                    int slotIndex = ARTIFACT_SLOTS[i];
-                    String base64 = artifactData.getEquippedArtifacts().get(i);
-                    if (base64 != null && !base64.isEmpty()) {
-                        try {
-                            byte[] bytes = Base64.getDecoder().decode(base64);
-                            ItemStack artifact = ItemStack.deserializeBytes(bytes);
-                            inv.setItem(slotIndex, artifact);
-                        } catch (Exception e) {
-                            inv.setItem(slotIndex, createEmptySlotIcon(i));
-                        }
-                    } else {
+        ArtifactSaveData artifactData = equipmentService.getEquippedArtifacts(player).orElse(null);
+        if (artifactData != null) {
+            for (int i = 0; i < ARTIFACT_SLOTS.length; i++) {
+                int slotIndex = ARTIFACT_SLOTS[i];
+                String base64 = artifactData.getEquippedArtifacts().get(i);
+                if (base64 != null && !base64.isEmpty()) {
+                    try {
+                        byte[] bytes = Base64.getDecoder().decode(base64);
+                        ItemStack artifact = ItemStack.deserializeBytes(bytes);
+                        inv.setItem(slotIndex, artifact);
+                    } catch (Exception e) {
                         inv.setItem(slotIndex, createEmptySlotIcon(i));
                     }
-                }
-            } else {
-                for (int i = 0; i < ARTIFACT_SLOTS.length; i++) {
-                    inv.setItem(ARTIFACT_SLOTS[i], createEmptySlotIcon(i));
+                } else {
+                    inv.setItem(slotIndex, createEmptySlotIcon(i));
                 }
             }
-        });
+        } else {
+            for (int i = 0; i < ARTIFACT_SLOTS.length; i++) {
+                inv.setItem(ARTIFACT_SLOTS[i], createEmptySlotIcon(i));
+            }
+        }
 
         player.openInventory(inv);
         openGuis.put(player.getUniqueId(), inv);
@@ -159,30 +157,22 @@ public class ArtifactGui implements Listener {
     }
 
     private void saveArtifacts(Player player, Inventory guiInv) {
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            PlayerArtifactProvider.ArtifactSaveData artifactData = data.get(PlayerArtifactProvider.KEY);
-            if (artifactData == null) {
-                artifactData = new PlayerArtifactProvider.ArtifactSaveData();
+        ArtifactSaveData artifactData = new ArtifactSaveData();
+
+        for (int i = 0; i < ARTIFACT_SLOTS.length; i++) {
+            ItemStack item = guiInv.getItem(ARTIFACT_SLOTS[i]);
+            if (item != null && pdcUtil.isArtifact(item)) {
+                byte[] bytes = item.serializeAsBytes();
+                String base64 = Base64.getEncoder().encodeToString(bytes);
+                artifactData.setEquippedArtifact(i, base64);
+            } else {
+                artifactData.setEquippedArtifact(i, null);
             }
+        }
 
-            for (int i = 0; i < ARTIFACT_SLOTS.length; i++) {
-                ItemStack item = guiInv.getItem(ARTIFACT_SLOTS[i]);
-                if (item != null && pdcUtil.isArtifact(item)) {
-                    byte[] bytes = item.serializeAsBytes();
-                    String base64 = Base64.getEncoder().encodeToString(bytes);
-                    artifactData.setEquippedArtifact(i, base64);
-                } else {
-                    artifactData.setEquippedArtifact(i, null);
-                }
-            }
-
-            // DB保存のマーク
-            data.markDirty(PlayerArtifactProvider.KEY);
-            repository.save(player.getUniqueId(), data);
-
-            // ステータス反映
+        if (equipmentService.saveEquippedArtifacts(player, artifactData)) {
             statService.applyArtifactStats(player);
-        });
+        }
     }
 
     private int getArtifactIndex(int slot) {
