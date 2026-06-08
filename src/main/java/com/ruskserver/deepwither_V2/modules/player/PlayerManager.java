@@ -4,6 +4,10 @@ import com.ruskserver.deepwither_V2.core.database.character.CharacterDataReposit
 import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.core.stat.AttributeType;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
@@ -18,12 +22,13 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
-public class PlayerManager implements Listener {
+public class PlayerManager implements Listener, PlayerLifecycleTask {
 
     /** Lv1〜100 の次のレベルに必要な累積経験値テーブル（インデックス0 = Lv1 -> Lv2に必要な量） */
     private static final int[] EXP_TABLE = {
@@ -292,13 +297,23 @@ public class PlayerManager implements Listener {
         });
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        if (characterService.hasCachedActiveCharacter(player.getUniqueId())) {
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.STATS;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        return context.runSync(() -> context.player().ifPresent(player -> {
+            if (!characterService.hasCachedActiveCharacter(player.getUniqueId())) return;
             recalculateStats(player);
             syncVanillaExp(player);
-        }
+        }));
     }
 
     @EventHandler

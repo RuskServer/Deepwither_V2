@@ -3,6 +3,10 @@ package com.ruskserver.deepwither_V2.modules.skilltree.service;
 import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillRegistry;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeContext;
@@ -20,12 +24,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
-public class SkillTreeService implements Listener {
+public class SkillTreeService implements Listener, PlayerLifecycleTask {
 
     public static final int SKILL_POINTS_PER_LEVEL = 2;
 
@@ -202,11 +207,28 @@ public class SkillTreeService implements Listener {
         });
     }
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        if (characterService.hasCachedActiveCharacter(event.getPlayer().getUniqueId())) {
-            recalculatePassives(event.getPlayer());
-        }
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.STATS;
+    }
+
+    @Override
+    public int order() {
+        return 10;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        return context.runSync(() -> context.player().ifPresent(player -> {
+            if (characterService.hasCachedActiveCharacter(player.getUniqueId())) {
+                recalculatePassives(player);
+            }
+        }));
     }
 
     @EventHandler

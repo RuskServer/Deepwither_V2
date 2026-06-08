@@ -3,6 +3,10 @@ package com.ruskserver.deepwither_V2.modules.trader.service;
 import com.ruskserver.deepwither_V2.core.database.player.PlayerDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.mob.event.CustomMobDeathEvent;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegion;
@@ -16,19 +20,20 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * デイリータスク（モブ討伐）の進行状況を管理するサービス。
  */
 @Service
-public class DailyTaskService implements Listener {
+public class DailyTaskService implements Listener, PlayerLifecycleTask {
 
     private final PlayerDataRepository repository;
     private final TraderReputationService reputationService;
@@ -53,9 +58,19 @@ public class DailyTaskService implements Listener {
     /** プレイヤーUUID -> (モブID -> 討伐数) の一時的な進行状況（DBに保存してもよいが、今回はメモリ管理） */
     private final Map<UUID, ActiveTask> activeTasks = new HashMap<>();
 
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        activeTasks.remove(event.getPlayer().getUniqueId());
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.QUIT);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.CLEANUP;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        return context.runSync(() -> activeTasks.remove(context.playerId()));
     }
 
     @Inject

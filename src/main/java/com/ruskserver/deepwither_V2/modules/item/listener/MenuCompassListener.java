@@ -2,14 +2,17 @@ package com.ruskserver.deepwither_V2.modules.item.listener;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.item.service.MenuCompassService;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
+
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Component
-public class MenuCompassListener implements Listener {
+public class MenuCompassListener implements PlayerLifecycleTask {
 
     private final MenuCompassService menuCompassService;
 
@@ -18,9 +21,18 @@ public class MenuCompassListener implements Listener {
         this.menuCompassService = menuCompassService;
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        menuCompassService.ensureMenuCompass(player);
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.UI_ITEMS;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        return context.runSync(() -> context.player().ifPresent(menuCompassService::ensureMenuCompass));
     }
 }
