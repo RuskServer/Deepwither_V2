@@ -2,17 +2,23 @@ package com.ruskserver.deepwither_V2.modules.item.listener;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.trader.gui.TraderInventoryHolder;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
 @Component
-public class ItemUpdateListener implements Listener {
+public class ItemUpdateListener implements Listener, PlayerLifecycleTask {
 
     private final ItemManager itemManager;
 
@@ -21,10 +27,19 @@ public class ItemUpdateListener implements Listener {
         this.itemManager = itemManager;
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        // ログイン時にプレイヤーのインベントリ内の全アイテムのLoreを最新化
-        updateInventory(event.getPlayer().getInventory());
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.INVENTORY_ITEMS;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        return context.runSync(() -> context.player().ifPresent(player -> updateInventory(player.getInventory())));
     }
 
     @EventHandler

@@ -3,6 +3,10 @@ package com.ruskserver.deepwither_V2.modules.character.listener;
 import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceException;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
@@ -13,18 +17,18 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Component
-public class HardcoreDeathListener implements Listener {
+public class HardcoreDeathListener implements Listener, PlayerLifecycleTask {
     private final CharacterService characterService;
     private final CharacterNameTagService nameTagService;
     private final CommandCharacter commandCharacter;
@@ -110,9 +114,20 @@ public class HardcoreDeathListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        clearPendingState(event.getPlayer().getUniqueId());
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.QUIT);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.CLEANUP;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        clearPendingState(context.playerId());
+        return CompletableFuture.completedFuture(null);
     }
 
     private void clearPendingState(UUID playerId) {

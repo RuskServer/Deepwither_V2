@@ -2,6 +2,10 @@ package com.ruskserver.deepwither_V2.modules.artifact.service;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.artifact.ArtifactData;
 import com.ruskserver.deepwither_V2.modules.artifact.ArtifactPDCUtil;
@@ -13,17 +17,18 @@ import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Base64;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
-public class ArtifactStatService implements Listener {
+public class ArtifactStatService implements Listener, PlayerLifecycleTask {
 
     private final ArtifactEquipmentService equipmentService;
     private final StatManager statManager;
@@ -36,9 +41,24 @@ public class ArtifactStatService implements Listener {
         this.pdcUtil = pdcUtil;
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        applyArtifactStats(event.getPlayer());
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.STATS;
+    }
+
+    @Override
+    public int order() {
+        return 20;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        return context.runSync(() -> context.player().ifPresent(this::applyArtifactStats));
     }
 
     @EventHandler

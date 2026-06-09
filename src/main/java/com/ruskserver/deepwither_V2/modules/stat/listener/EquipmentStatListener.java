@@ -3,6 +3,10 @@ package com.ruskserver.deepwither_V2.modules.stat.listener;
 import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
@@ -18,17 +22,17 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 所持装備（メインハンド武器 + 防具4部位）のステータスをStatManagerに反映させるリスナー。
  */
 @Component
-public class EquipmentStatListener implements Listener {
+public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
 
     private static final String[] ARMOR_SOURCE_BASE = {"equip_armor_head_base", "equip_armor_chest_base", "equip_armor_legs_base", "equip_armor_boots_base"};
     private static final String[] ARMOR_SOURCE_MOD  = {"equip_armor_head_mod",  "equip_armor_chest_mod",  "equip_armor_legs_mod",  "equip_armor_boots_mod"};
@@ -46,17 +50,34 @@ public class EquipmentStatListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            updateEquipmentStats(player);
-        }, 1L);
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN, PlayerLifecycleEventType.QUIT);
     }
 
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        statManager.removeProfile(event.getPlayer().getUniqueId());
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.STATS;
+    }
+
+    @Override
+    public int order() {
+        return 30;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        if (context.eventType() == PlayerLifecycleEventType.QUIT) {
+            statManager.removeProfile(context.playerId());
+            return CompletableFuture.completedFuture(null);
+        }
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            context.player().ifPresent(this::updateEquipmentStats);
+            future.complete(null);
+        }, 1L);
+        return future;
     }
 
     @EventHandler

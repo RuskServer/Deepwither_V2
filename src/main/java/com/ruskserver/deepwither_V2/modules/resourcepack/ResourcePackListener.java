@@ -2,19 +2,24 @@ package com.ruskserver.deepwither_V2.modules.resourcepack;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * プレイヤーのログイン時にリソースパックを送信し、適用状態を監視するリスナー。
  */
 @Component
-public class ResourcePackListener implements Listener {
+public class ResourcePackListener implements Listener, PlayerLifecycleTask {
 
     private final JavaPlugin plugin;
     private final ResourcePackConfig config;
@@ -25,26 +30,42 @@ public class ResourcePackListener implements Listener {
         this.config = config;
     }
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.GUI;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
         String url = config.getUrl();
         
         if (url == null || url.isEmpty() || url.equals("https://example.com/resourcepack.zip")) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         // 旧コードの挙動（1秒待機）を踏襲
+        CompletableFuture<Void> future = new CompletableFuture<>();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline()) {
-                String hash = config.getHash();
-                if (hash != null && !hash.isEmpty()) {
-                    player.setResourcePack(url, hash);
-                } else {
-                    player.setResourcePack(url);
-                }
+            try {
+                context.player().ifPresent(player -> {
+                    String hash = config.getHash();
+                    if (hash != null && !hash.isEmpty()) {
+                        player.setResourcePack(url, hash);
+                    } else {
+                        player.setResourcePack(url);
+                    }
+                });
+                future.complete(null);
+            } catch (Exception e) {
+                future.completeExceptionally(e);
             }
         }, 20L);
+        return future;
     }
 
     @EventHandler

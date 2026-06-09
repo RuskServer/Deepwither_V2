@@ -2,16 +2,21 @@ package com.ruskserver.deepwither_V2.modules.gui;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
-import org.bukkit.entity.Player;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Component
-public class GuiListener implements Listener {
+public class GuiListener implements Listener, PlayerLifecycleTask {
 
     private final GuiService guiService;
 
@@ -41,9 +46,19 @@ public class GuiListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        guiService.clear(player.getUniqueId());
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.QUIT);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.CLEANUP;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        guiService.clear(context.playerId());
+        return CompletableFuture.completedFuture(null);
     }
 }

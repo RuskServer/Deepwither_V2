@@ -5,6 +5,10 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
@@ -28,9 +32,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Pose;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -43,11 +45,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
-public class RevivalManager implements Startable, Stoppable, Listener {
+public class RevivalManager implements Startable, Stoppable, Listener, PlayerLifecycleTask {
 
     private static final int REVIVE_RANGE = 3;
     private static final double REVIVE_RANGE_SQ = REVIVE_RANGE * REVIVE_RANGE;
@@ -102,6 +105,7 @@ public class RevivalManager implements Startable, Stoppable, Listener {
             tickTask.cancel();
             tickTask = null;
         }
+        downedPlayers.values().forEach(data -> removeMannequin(data.mannequinId));
         downedPlayers.clear();
         sessions.clear();
         pendingDeathPenalty.clear();
@@ -355,26 +359,42 @@ public class RevivalManager implements Startable, Stoppable, Listener {
         }
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        // 再起動後など、ダウンデータなしでスペクテイターのまま残った場合の復旧
-        if (player.getGameMode() == GameMode.SPECTATOR && !downedPlayers.containsKey(player.getUniqueId())) {
-            player.setGameMode(GameMode.SURVIVAL);
-            player.removePotionEffect(PotionEffectType.INVISIBILITY);
-            player.removePotionEffect(PotionEffectType.WEAKNESS);
-            player.removePotionEffect(PotionEffectType.MINING_FATIGUE);
-            player.setInvisible(false);
-            player.setWalkSpeed(0.2f);
-            player.setCollidable(true);
-        }
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN, PlayerLifecycleEventType.QUIT);
     }
 
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.EARLY;
+    }
 
+    @Override
+    public int order() {
+        return 10;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        if (context.eventType() == PlayerLifecycleEventType.QUIT) {
+            return context.runSync(() -> cleanupQuit(context.playerId()));
+        }
+
+        return context.runSync(() -> context.player().ifPresent(player -> {
+            // 再起動後など、ダウンデータなしでスペクテイターのまま残った場合の復旧
+            if (player.getGameMode() == GameMode.SPECTATOR && !downedPlayers.containsKey(player.getUniqueId())) {
+                player.setGameMode(GameMode.SURVIVAL);
+                player.removePotionEffect(PotionEffectType.INVISIBILITY);
+                player.removePotionEffect(PotionEffectType.WEAKNESS);
+                player.removePotionEffect(PotionEffectType.MINING_FATIGUE);
+                player.setInvisible(false);
+                player.setWalkSpeed(0.2f);
+                player.setCollidable(true);
+            }
+        }));
+    }
+
+    private void cleanupQuit(UUID uuid) {
         if (downedPlayers.containsKey(uuid)) {
             DownedPlayerData data = downedPlayers.get(uuid);
             removeMannequin(data.mannequinId);

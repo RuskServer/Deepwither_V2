@@ -3,6 +3,10 @@ package com.ruskserver.deepwither_V2.modules.character.listener;
 import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.gui.CharacterCreateGui;
 import com.ruskserver.deepwither_V2.modules.character.gui.CharacterSelectGui;
@@ -23,15 +27,16 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class CharacterSelectionGateListener implements Listener {
+public class CharacterSelectionGateListener implements Listener, PlayerLifecycleTask {
     private static final long PROMPT_INTERVAL_MILLIS = 2_000L;
 
     private final CharacterService characterService;
@@ -126,14 +131,28 @@ public class CharacterSelectionGateListener implements Listener {
         promptSelection(event.getPlayer());
     }
 
-    @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        // アクティブキャラクターのインベントリ・位置をDBへ保存
-        characterService.saveCharacterState(player);
-        // 共有残高キャッシュをクリーンアップ
-        characterService.clearSharedBalanceCache(player.getUniqueId());
-        lastPromptAt.remove(player.getUniqueId());
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.QUIT);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.CLEANUP;
+    }
+
+    @Override
+    public int order() {
+        return -100;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        return context.runSync(() -> {
+            context.player().ifPresent(characterService::saveCharacterState);
+            characterService.clearSharedBalanceCache(context.playerId());
+            lastPromptAt.remove(context.playerId());
+        });
     }
 
     private boolean requiresCharacterSelection(Player player) {

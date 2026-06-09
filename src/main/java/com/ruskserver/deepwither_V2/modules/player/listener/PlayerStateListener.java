@@ -1,23 +1,40 @@
 package com.ruskserver.deepwither_V2.modules.player.listener;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleContext;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventType;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
+import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-@Component
-public class PlayerStateListener implements Listener {
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        forceAdventure(player);
-        setFullFood(player);
+@Component
+public class PlayerStateListener implements Listener, PlayerLifecycleTask {
+
+    @Override
+    public Set<PlayerLifecycleEventType> eventTypes() {
+        return Set.of(PlayerLifecycleEventType.JOIN);
+    }
+
+    @Override
+    public PlayerLifecyclePhase phase() {
+        return PlayerLifecyclePhase.EARLY;
+    }
+
+    @Override
+    public CompletableFuture<Void> run(PlayerLifecycleContext context) {
+        return context.runSync(() -> context.player().ifPresent(player -> {
+            forceAdventure(player);
+            setFullFood(player);
+        }));
     }
 
     @EventHandler
