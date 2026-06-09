@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 @Service
@@ -38,14 +39,23 @@ public class PlayerLifecyclePipeline {
         }
 
         chain.exceptionally(error -> {
-            logger.log(Level.SEVERE, "Player " + eventType + " pipeline failed for " + player.getUniqueId(), error);
+            LogRecord record = new LogRecord(Level.SEVERE, "Player lifecycle pipeline failed: event={0}, player={1}, name={2}");
+            record.setParameters(new Object[]{eventType, player.getUniqueId(), player.getName()});
+            record.setThrown(error);
+            logger.log(record);
             return null;
         });
     }
 
     private CompletableFuture<Void> runTask(PlayerLifecycleTask task, PlayerLifecycleContext context) {
         try {
-            return task.run(context).exceptionally(error -> {
+            CompletableFuture<Void> future = task.run(context);
+            if (future == null) {
+                logger.log(Level.SEVERE, "Player lifecycle task {0} returned null from run(): contract violation",
+                        task.getClass().getSimpleName());
+                return CompletableFuture.completedFuture(null);
+            }
+            return future.exceptionally(error -> {
                 logger.log(Level.SEVERE, "Player lifecycle task failed: " + task.getClass().getSimpleName(), error);
                 return null;
             });

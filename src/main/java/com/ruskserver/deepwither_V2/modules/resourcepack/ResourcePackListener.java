@@ -49,17 +49,23 @@ public class ResourcePackListener implements Listener, PlayerLifecycleTask {
         }
 
         // 旧コードの挙動（1秒待機）を踏襲
+        CompletableFuture<Void> future = new CompletableFuture<>();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            context.player().ifPresent(player -> {
-                String hash = config.getHash();
-                if (hash != null && !hash.isEmpty()) {
-                    player.setResourcePack(url, hash);
-                } else {
-                    player.setResourcePack(url);
-                }
-            });
+            try {
+                context.player().ifPresent(player -> {
+                    String hash = config.getHash();
+                    if (hash != null && !hash.isEmpty()) {
+                        player.setResourcePack(url, hash);
+                    } else {
+                        player.setResourcePack(url);
+                    }
+                });
+                future.complete(null);
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
         }, 20L);
-        return CompletableFuture.completedFuture(null);
+        return future;
     }
 
     @EventHandler

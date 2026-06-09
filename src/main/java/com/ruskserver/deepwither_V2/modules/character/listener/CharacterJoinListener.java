@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -83,26 +84,43 @@ public class CharacterJoinListener implements PlayerLifecycleTask {
         if (activeCharacter.isPresent()) {
             GameCharacter character = activeCharacter.get();
             AtomicReference<BukkitTask> disconnectWatch = new AtomicReference<>();
-            disconnectWatch.set(plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
-                if (future.isDone()) {
-                    disconnectWatch.get().cancel();
-                    return;
-                }
-                Player player = plugin.getServer().getPlayer(playerId);
-                if (player == null || !player.isOnline()) {
-                    future.complete(null);
-                    disconnectWatch.get().cancel();
+            final int timeoutTicks = 1200;
+            disconnectWatch.set(plugin.getServer().getScheduler().runTaskTimer(plugin, new Runnable() {
+                private int elapsedTicks = 0;
+
+                @Override
+                public void run() {
+                    if (future.isDone()) {
+                        disconnectWatch.get().cancel();
+                        return;
+                    }
+                    elapsedTicks++;
+                    if (elapsedTicks >= timeoutTicks) {
+                        future.completeExceptionally(new TimeoutException("Character loading timed out for player " + playerId));
+                        disconnectWatch.get().cancel();
+                        return;
+                    }
+                    Player player = plugin.getServer().getPlayer(playerId);
+                    if (player == null || !player.isOnline()) {
+                        future.complete(null);
+                        disconnectWatch.get().cancel();
+                    }
                 }
             }, 1L, 1L));
             characterService.loadAndApplyCharacterDataAsync(playerId, character.characterId(), () -> {
-                Player player = plugin.getServer().getPlayer(playerId);
-                if (player != null && player.isOnline()) {
-                    nameTagService.refresh(player, character.mode());
-                }
-                future.complete(null);
-                BukkitTask task = disconnectWatch.get();
-                if (task != null) {
-                    task.cancel();
+                try {
+                    Player player = plugin.getServer().getPlayer(playerId);
+                    if (player != null && player.isOnline()) {
+                        nameTagService.refresh(player, character.mode());
+                    }
+                    future.complete(null);
+                } catch (Exception e) {
+                    future.completeExceptionally(e);
+                } finally {
+                    BukkitTask task = disconnectWatch.get();
+                    if (task != null) {
+                        task.cancel();
+                    }
                 }
             });
             return future;

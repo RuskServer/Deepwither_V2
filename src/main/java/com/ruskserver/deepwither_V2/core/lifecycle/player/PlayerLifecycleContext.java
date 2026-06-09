@@ -41,6 +41,9 @@ public class PlayerLifecycleContext {
     }
 
     public Optional<Player> player() {
+        if (!Bukkit.isPrimaryThread()) {
+            throw new IllegalStateException("PlayerLifecycleContext.player() must be called from the main thread");
+        }
         if (eventPlayer != null && eventPlayer.isOnline()) {
             return Optional.of(eventPlayer);
         }
@@ -84,8 +87,11 @@ public class PlayerLifecycleContext {
     private static <T> void completeFuture(CompletableFuture<T> future, Supplier<T> supplier) {
         try {
             future.complete(supplier.get());
-        } catch (Throwable t) {
-            future.completeExceptionally(t);
+        } catch (Exception e) {
+            future.completeExceptionally(e);
+        } catch (Error e) {
+            future.completeExceptionally(e);
+            throw e;
         }
     }
 }
