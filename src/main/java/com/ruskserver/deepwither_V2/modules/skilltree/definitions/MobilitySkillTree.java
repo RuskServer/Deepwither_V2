@@ -22,7 +22,7 @@ public class MobilitySkillTree implements SkillTreeDefinition {
 
     @Override
     public Material getIcon() {
-        return Material.FEATHER;
+        return Material.ELYTRA;
     }
 
     @Override
