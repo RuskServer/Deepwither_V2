@@ -1,6 +1,5 @@
 package com.ruskserver.deepwither_V2.modules.skill.definitions;
 
-import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
@@ -91,14 +90,11 @@ public class RainOfArrowsSkill implements Skill {
         var world = center.getWorld();
         if (world == null) return CastResult.fail();
 
+        // 合図の矢: プレイヤーから上空へ
+        var playerEye = player.getEyeLocation();
         world.playSound(center, Sound.ENTITY_BLAZE_AMBIENT, 1.5f, 0.8f);
-
-        var gatherLoc = center.clone().add(0, 15, 0);
-        for (int i = 0; i < 80; i++) {
-            double angle = Math.random() * Math.PI * 2;
-            double radius = Math.random() * 6.0;
-            var p = gatherLoc.clone().add(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-            world.spawnParticle(Particle.END_ROD, p, 1, 0, 0, 0, 0);
+        for (double h = 0; h < 15; h += 0.5) {
+            world.spawnParticle(Particle.CRIT, playerEye.clone().add(0, h, 0), 1, 0.05, 0.05, 0.05, 0);
         }
 
         new BukkitRunnable() {
@@ -106,24 +102,32 @@ public class RainOfArrowsSkill implements Skill {
 
             @Override
             public void run() {
-                if (wave >= 3) {
+                if (wave >= 4) {
                     cancel();
                     return;
                 }
 
-                double offsetY = 15.0 - wave * 5.0;
-                var rainOrigin = center.clone().add(0, offsetY, 0);
+                int arrowCount = 12 + wave * 3;
 
-                for (int i = 0; i < 30; i++) {
+                for (int i = 0; i < arrowCount; i++) {
                     double angle = Math.random() * Math.PI * 2;
                     double radius = Math.random() * 6.0;
-                    var p = rainOrigin.clone().add(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-                    world.spawnParticle(Particle.CRIT, p, 3, 0.2, 0.1, 0.2, 0.05);
+                    double x = Math.cos(angle) * radius;
+                    double z = Math.sin(angle) * radius;
+                    double startY = 8.0 + Math.random() * 7.0;
+
+                    for (double h = startY; h > 0.0; h -= 0.8) {
+                        var trailPos = center.clone().add(x, h, z);
+                        world.spawnParticle(Particle.CRIT, trailPos, 1, 0.03, 0.03, 0.03, 0);
+                    }
+
+                    var impactPos = center.clone().add(x, 0.3, z);
+                    world.spawnParticle(Particle.CLOUD, impactPos, 2, 0.15, 0.05, 0.15, 0.01);
                 }
 
-                world.spawnParticle(Particle.EXPLOSION, center, 2, 1.0, 0.5, 1.0, 0);
-                world.spawnParticle(Particle.CLOUD, center, 20, 2.0, 0.5, 2.0, 0.05);
-                world.playSound(center, Sound.ENTITY_ARROW_SHOOT, 1.0f, 0.7f + wave * 0.1f);
+                world.spawnParticle(Particle.EXPLOSION, center, 1, 1.5, 0.3, 1.5, 0);
+                world.playSound(center, Sound.ENTITY_ARROW_SHOOT, 1.2f, 0.5f + wave * 0.1f);
+                world.playSound(center, Sound.BLOCK_GRAVEL_BREAK, 0.6f, 0.8f);
 
                 for (Entity entity : world.getNearbyEntities(center, 6.0, 6.0, 6.0)) {
                     if (!(entity instanceof LivingEntity living) || entity.equals(player)) continue;
@@ -132,7 +136,7 @@ public class RainOfArrowsSkill implements Skill {
 
                 wave++;
             }
-        }.runTaskTimer(JavaPlugin.getPlugin(com.ruskserver.deepwither_V2.Deepwither_V2.class), 10L, 10L);
+        }.runTaskTimer(JavaPlugin.getPlugin(com.ruskserver.deepwither_V2.Deepwither_V2.class), 10L, 8L);
 
         world.playSound(center, Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 1.2f, 0.9f);
 

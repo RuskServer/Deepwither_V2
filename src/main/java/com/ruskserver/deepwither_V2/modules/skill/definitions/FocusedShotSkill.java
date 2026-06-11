@@ -13,6 +13,7 @@ import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Color;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -21,6 +22,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -40,13 +42,13 @@ public class FocusedShotSkill implements Skill {
     public String getId() { return "focused_shot"; }
 
     @Override
-    public String getDisplayName() { return "狙い澄まし"; }
+    public String getDisplayName() { return "研ぎ澄まし"; }
 
     @Override
     public List<String> getDescription() {
         return List.of(
                 "狙いを定め、全神経を一点に集中させて放つ必中の一撃。",
-                "0.8秒の射撃後、最大30m先の敵1体に物理ダメージ(300%)を与える。"
+                "1秒間の予備動作の後、最大30m先の敵1体に射撃ダメージ(300%)を与える。"
         );
     }
 
@@ -81,14 +83,18 @@ public class FocusedShotSkill implements Skill {
     public Duration getCooldown(SkillContext context) { return Duration.ofSeconds(10); }
 
     @Override
-    public Duration getCastTime(SkillContext context) { return Duration.ofMillis(800); }
+    public Duration getCastTime(SkillContext context) { return Duration.ofMillis(1000); }
 
     @Override
     public CastResult cast(SkillContext context) {
         var player = context.getCaster();
 
+        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.6f, 1.5f);
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.4f, 0.5f);
+
         new BukkitRunnable() {
             int ticks = 0;
+            final int CHARGE_TICKS = 20;
 
             @Override
             public void run() {
@@ -97,54 +103,82 @@ public class FocusedShotSkill implements Skill {
                     return;
                 }
 
+                if (ticks >= CHARGE_TICKS) {
+                    fireBeam(player);
+                    cancel();
+                    return;
+                }
+
                 var eyeLoc = player.getEyeLocation();
                 var dir = eyeLoc.getDirection();
+                var spawnLoc = eyeLoc.clone().add(dir.clone().multiply(1.0));
 
-                float progress = (float) ticks / 16.0f;
-
-                if (ticks == 0) {
-                    player.playSound(player.getLocation(), Sound.BLOCK_BEACON_AMBIENT, 0.5f, 1.5f);
+                // 弾道予測線: 後半0.5秒のみ赤い点線
+                if (ticks >= 10) {
+                    var laser = new Particle.DustOptions(Color.fromRGB(255, 0, 0), 0.5f);
+                    for (double d = 2.0; d < 50; d += 4.0) {
+                        var p = spawnLoc.clone().add(dir.clone().multiply(d));
+                        player.getWorld().spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, laser);
+                    }
                 }
 
-                int count = 2 + (int) (progress * 10);
-                var p = eyeLoc.clone().add(dir.clone().multiply(0.5));
-                p.getWorld().spawnParticle(Particle.END_ROD, p, count, 0.03 + progress * 0.06, 0.03 + progress * 0.06, 0.03 + progress * 0.06, 0.01);
-                p.getWorld().spawnParticle(Particle.ENCHANT, p, count, 0.1 + progress * 0.15, 0.1 + progress * 0.15, 0.1 + progress * 0.15, 0.1);
+                // チャージエフェクト (成長するリング + 収束)
+                double progress = (double) ticks / CHARGE_TICKS;
+                drawChargeEffect(player, spawnLoc, progress);
 
-                if (ticks % 4 == 0 && ticks > 0) {
-                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_AMBIENT, 0.3f + progress * 0.4f, 1.5f + progress * 0.5f);
-                }
-
-                if (progress > 0.3f) {
-                    player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation().add(0, 0.1, 0), 2, 0.3 + progress * 0.2, 0.02, 0.3 + progress * 0.2, 0.005);
+                // チャージ音 (ピッチ上昇)
+                if (ticks % 4 == 0) {
+                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.4f, 0.5f + ticks * 0.08f);
                 }
 
                 ticks++;
-
-                if (ticks >= 16) {
-                    Entity raw = player.getTargetEntity(30);
-                    if (!(raw instanceof LivingEntity target)) {
-                        player.sendActionBar(net.kyori.adventure.text.Component.text("対象がいません。", NamedTextColor.RED));
-                        cancel();
-                        return;
-                    }
-
-                    var flashLoc = player.getEyeLocation().add(player.getEyeLocation().getDirection().multiply(0.5));
-                    flashLoc.getWorld().spawnParticle(Particle.FLASH, flashLoc, 1, 0, 0, 0, 0, Color.WHITE);
-                    flashLoc.getWorld().spawnParticle(Particle.CRIT, flashLoc, 25, 0.2, 0.2, 0.2, 0.4);
-                    flashLoc.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 1.2f);
-
-                    var tLoc = target.getLocation().add(0, 1, 0);
-                    tLoc.getWorld().spawnParticle(Particle.CRIT, tLoc, 30, 0.4, 0.4, 0.4, 0.5);
-                    tLoc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, tLoc, 12, 0.5, 0.3, 0.5, 0);
-                    tLoc.getWorld().playSound(tLoc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.2f, 0.6f);
-
-                    damagePipelineManager.processScaledDamage(player, target, DamageType.RANGED, 3.0, getTags());
-                    cancel();
-                }
             }
         }.runTaskTimer(JavaPlugin.getPlugin(Deepwither_V2.class), 0L, 1L);
 
         return CastResult.success();
+    }
+
+    private void drawChargeEffect(LivingEntity player, Location spawnLoc, double progress) {
+        var ringLoc = player.getLocation().add(0, 0.5, 0);
+        double r = 0.5 + progress * 2.0;
+
+        for (int i = 0; i < 8; i++) {
+            double angle = Math.toRadians(i * 45);
+            double x = Math.cos(angle) * r;
+            double z = Math.sin(angle) * r;
+            player.getWorld().spawnParticle(Particle.END_ROD, ringLoc.clone().add(x, 0.2, z), 1, 0, 0, 0, 0);
+        }
+
+        player.getWorld().spawnParticle(Particle.END_ROD, spawnLoc, 3 + (int) (progress * 8), 0.05, 0.05, 0.05, 0.01);
+        player.getWorld().spawnParticle(Particle.ENCHANT, spawnLoc, 2 + (int) (progress * 6), 0.1, 0.1, 0.1, 0.1);
+    }
+
+    private void fireBeam(LivingEntity player) {
+        var eyeLoc = player.getEyeLocation();
+        var dir = eyeLoc.getDirection();
+
+        var ray = player.getWorld().rayTrace(eyeLoc, dir, 30, FluidCollisionMode.NEVER, true, 1.0, e -> e instanceof LivingEntity && !e.equals(player));
+        var raw = ray != null ? ray.getHitEntity() : null;
+        if (!(raw instanceof LivingEntity target)) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text("対象がいません。", NamedTextColor.RED));
+            return;
+        }
+
+        var laser = new Particle.DustOptions(Color.fromRGB(255, 50, 50), 1.5f);
+        for (double d = 0; d < player.getLocation().distance(target.getLocation()); d += 0.5) {
+            var p = eyeLoc.clone().add(dir.clone().multiply(d));
+            player.getWorld().spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, laser);
+        }
+
+        player.getWorld().spawnParticle(Particle.FLASH, eyeLoc.add(dir.clone().multiply(1.5)), 1, 0, 0, 0, 0, Color.WHITE);
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 0.8f, 1.8f);
+
+        var tLoc = target.getLocation().add(0, 1, 0);
+        tLoc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, tLoc, 1, 0.5, 0.5, 0.5, 0);
+        tLoc.getWorld().spawnParticle(Particle.CRIT, tLoc, 40, 0.5, 0.5, 0.5, 0.6);
+        tLoc.getWorld().spawnParticle(Particle.FLASH, tLoc, 1, 0.3, 0.3, 0.3, 0, Color.WHITE);
+        tLoc.getWorld().playSound(tLoc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.2f, 0.6f);
+
+        damagePipelineManager.processScaledDamage(player, target, DamageType.RANGED, 3.0, getTags());
     }
 }
