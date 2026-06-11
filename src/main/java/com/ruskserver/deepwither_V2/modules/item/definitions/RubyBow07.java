@@ -16,7 +16,7 @@ public class RubyBow07 implements BowItem {
 
     public RubyBow07() {
         this.baseStats = new EnumMap<>(StatType.class);
-        this.baseStats.put(StatType.ATTACK_DAMAGE, 62.0);
+        this.baseStats.put(StatType.RANGED_DAMAGE, 62.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 10.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 155.0);
     }

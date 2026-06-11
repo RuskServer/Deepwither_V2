@@ -101,7 +101,7 @@ public class PowerShotSkill implements Skill {
         tLoc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, tLoc, 8, 0.4, 0.2, 0.4, 0);
         tLoc.getWorld().playSound(tLoc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.2f);
 
-        damagePipelineManager.processScaledDamage(player, target, DamageType.PHYSICAL, 1.8, getTags());
+        damagePipelineManager.processScaledDamage(player, target, DamageType.RANGED, 1.8, getTags());
 
         return CastResult.success();
     }

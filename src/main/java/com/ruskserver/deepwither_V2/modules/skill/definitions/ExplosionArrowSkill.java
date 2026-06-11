@@ -133,7 +133,7 @@ public class ExplosionArrowSkill implements Skill {
                     if (dist < 1.0 || dist > 5.0) continue;
                     if (living.getNoDamageTicks() > 10) continue;
 
-                    damagePipelineManager.processScaledDamage(caster, living, DamageType.PHYSICAL, 1.2, getTags());
+                    damagePipelineManager.processScaledDamage(caster, living, DamageType.RANGED, 1.2, getTags());
                     living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 1));
                     living.setNoDamageTicks(10);
                 }

@@ -127,7 +127,7 @@ public class RainOfArrowsSkill implements Skill {
 
                 for (Entity entity : world.getNearbyEntities(center, 6.0, 6.0, 6.0)) {
                     if (!(entity instanceof LivingEntity living) || entity.equals(player)) continue;
-                    damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.5, getTags());
+                    damagePipelineManager.processScaledDamage(player, living, DamageType.RANGED, 1.5, getTags());
                 }
 
                 wave++;

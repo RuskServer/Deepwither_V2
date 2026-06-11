@@ -16,7 +16,7 @@ public class FieldlineBowRebuilt implements BowItem {
 
     public FieldlineBowRebuilt() {
         this.baseStats = new EnumMap<>(StatType.class);
-        this.baseStats.put(StatType.ATTACK_DAMAGE, 26.0);
+        this.baseStats.put(StatType.RANGED_DAMAGE, 26.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 10.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 165.0);
     }

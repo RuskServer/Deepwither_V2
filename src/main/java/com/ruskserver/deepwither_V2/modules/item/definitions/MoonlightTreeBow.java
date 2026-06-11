@@ -16,7 +16,7 @@ public class MoonlightTreeBow implements BowItem {
 
     public MoonlightTreeBow() {
         this.baseStats = new EnumMap<>(StatType.class);
-        this.baseStats.put(StatType.ATTACK_DAMAGE, 50.0);
+        this.baseStats.put(StatType.RANGED_DAMAGE, 50.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 12.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 150.0);
     }

@@ -160,7 +160,7 @@ public class ModifierManager {
         return switch (stat) {
             case HEALTH -> 10.0;
             case MAX_MANA -> 20.0;
-            case ATTACK_DAMAGE, MAGIC_DAMAGE -> 8.0;
+            case ATTACK_DAMAGE, MAGIC_DAMAGE, RANGED_DAMAGE -> 8.0;
             case DEFENSE, MAGIC_DEFENSE -> 8.0;
             case CRITICAL_CHANCE -> 4.0;
             case CRITICAL_DAMAGE -> 10.0;

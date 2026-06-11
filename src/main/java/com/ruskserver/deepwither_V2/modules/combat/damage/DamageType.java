@@ -11,6 +11,11 @@ public enum DamageType {
     PHYSICAL,
 
     /**
+     * 射撃ダメージ (DEFENSE で軽減、ATTACK_DAMAGE とは独立した RANGED_DAMAGE スタットでスケール)
+     */
+    RANGED,
+
+    /**
      * 魔法ダメージ (MAGIC_DEFENSE で軽減)
      */
     MAGIC,

@@ -16,7 +16,7 @@ public class FieldlineBow implements BowItem {
 
     public FieldlineBow() {
         this.baseStats = new EnumMap<>(StatType.class);
-        this.baseStats.put(StatType.ATTACK_DAMAGE, 20.0);
+        this.baseStats.put(StatType.RANGED_DAMAGE, 20.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 150.0);
     }

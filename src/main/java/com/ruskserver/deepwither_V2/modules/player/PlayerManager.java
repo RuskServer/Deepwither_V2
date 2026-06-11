@@ -290,9 +290,10 @@ public class PlayerManager implements Listener, PlayerLifecycleTask {
                 int intVal = attrData.getAttribute(AttributeType.INT);
                 statManager.setModifier(uuid, StatType.MAX_MANA, "attr_int", intVal * 0.02, ModifierType.MULTIPLICATIVE);
 
-                // AGI: 1pt -> クリティカル率 +0.2%
+                // AGI: 1pt -> クリティカル率 +0.2%, 射撃ダメージ +1%
                 int agi = attrData.getAttribute(AttributeType.AGI);
                 statManager.setModifier(uuid, StatType.CRITICAL_CHANCE, "attr_agi", agi * 0.002, ModifierType.MULTIPLICATIVE);
+                statManager.setModifier(uuid, StatType.RANGED_DAMAGE, "attr_agi", agi * 0.01, ModifierType.MULTIPLICATIVE);
             });
         });
     }

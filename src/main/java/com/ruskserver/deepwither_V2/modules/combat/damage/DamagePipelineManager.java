@@ -111,8 +111,8 @@ public class DamagePipelineManager implements Listener {
 
         cancelDamage(event);
 
-        // ダメージタイプの判定（今回はデフォルトでPHYSICALとする。魔法アイテムならMAGICにするなどの拡張が可能）
-        DamageType type = DamageType.PHYSICAL;
+        // ダメージタイプの判定（実体の矢の場合はRANGED、それ以外はPHYSICAL）
+        DamageType type = event.getDamager() instanceof org.bukkit.entity.Arrow ? DamageType.RANGED : DamageType.PHYSICAL;
 
         // パイプラインを通すためのコンテキストを生成
         DamageContext context = new DamageContext(attacker, defender, type, 0.0);
@@ -254,7 +254,14 @@ public class DamagePipelineManager implements Listener {
             return;
         }
 
-        StatType statType = type == DamageType.MAGIC ? StatType.MAGIC_DAMAGE : StatType.ATTACK_DAMAGE;
+        StatType statType;
+        if (type == DamageType.MAGIC) {
+            statType = StatType.MAGIC_DAMAGE;
+        } else if (type == DamageType.RANGED) {
+            statType = StatType.RANGED_DAMAGE;
+        } else {
+            statType = StatType.ATTACK_DAMAGE;
+        }
         double baseDamage = statManager.getTotalStat(attacker, statType);
         double initialDamage = (baseDamage > 0 ? baseDamage : 1.0) * coefficient;
         processDamage(attacker, defender, type, initialDamage, tags);

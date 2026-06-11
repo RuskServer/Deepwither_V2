@@ -30,6 +30,9 @@ public interface DamagePhase {
             if (context.getType() == DamageType.PHYSICAL) {
                 double physicalAtk = statManager.getTotalStat(context.getAttacker(), StatType.ATTACK_DAMAGE);
                 context.setDamage(physicalAtk > 0 ? physicalAtk : 1.0);
+            } else if (context.getType() == DamageType.RANGED) {
+                double rangedAtk = statManager.getTotalStat(context.getAttacker(), StatType.RANGED_DAMAGE);
+                context.setDamage(rangedAtk > 0 ? rangedAtk : 1.0);
             } else if (context.getType() == DamageType.MAGIC) {
                 double magicAtk = statManager.getTotalStat(context.getAttacker(), StatType.MAGIC_DAMAGE);
                 context.setDamage(magicAtk > 0 ? magicAtk : 1.0);
@@ -81,7 +84,7 @@ public interface DamagePhase {
             if (context.getType() == DamageType.TRUE_DAMAGE || context.getType() == DamageType.ENVIRONMENTAL) return;
 
             double defense = 0;
-            if (context.getType() == DamageType.PHYSICAL) {
+            if (context.getType() == DamageType.PHYSICAL || context.getType() == DamageType.RANGED) {
                 defense = statManager.getTotalStat(context.getDefender(), StatType.DEFENSE);
             } else if (context.getType() == DamageType.MAGIC) {
                 defense = statManager.getTotalStat(context.getDefender(), StatType.MAGIC_DEFENSE);

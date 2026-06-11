@@ -108,7 +108,7 @@ public class BarrageSkill implements Skill {
 
             @Override
             protected void onHitEntity(LivingEntity target) {
-                damagePipelineManager.processScaledDamage(getCaster(), target, DamageType.PHYSICAL, 0.6, getTags());
+                damagePipelineManager.processScaledDamage(getCaster(), target, DamageType.RANGED, 0.6, getTags());
                 getCurrentLocation().getWorld().spawnParticle(Particle.CRIT, getCurrentLocation(), 8, 0.15, 0.15, 0.15, 0.1);
                 remove();
             }
