@@ -102,7 +102,7 @@ public class LightningStormSkill implements Skill {
                     double z = Math.sin(angle) * radius;
                     Location boltLoc = center.clone().add(x, 0.5 + Math.random() * 2.0, z);
 
-                    boltLoc.getWorld().spawnParticle(Particle.FLASH, boltLoc, 1, 0, 0, 0, 0);
+                    boltLoc.getWorld().spawnParticle(Particle.FLASH, boltLoc, 1, 0, 0, 0, 0, Color.WHITE);
                     boltLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, boltLoc, 12 + wave * 3, 0.3, 0.3, 0.3, 0.05);
                 }
 
