@@ -1,8 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.skill.definitions;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
-import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
-import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -17,13 +15,6 @@ import java.util.Set;
 @Component
 public class ShieldWallSkill implements Skill {
 
-    private final VirtualHealthManager healthManager;
-
-    @Inject
-    public ShieldWallSkill(VirtualHealthManager healthManager) {
-        this.healthManager = healthManager;
-    }
-
     @Override
     public String getId() { return "shield_wall"; }
 
@@ -34,7 +25,7 @@ public class ShieldWallSkill implements Skill {
     public List<String> getDescription() {
         return List.of(
                 "防御姿勢を取り、盾の力で自身を守る。",
-                "自身に耐性II(6秒)と最大HP10%回復を付与する。"
+                "自身に耐性II(6秒)を付与する。"
         );
     }
 
@@ -71,7 +62,6 @@ public class ShieldWallSkill implements Skill {
         loc.getWorld().playSound(loc, Sound.ITEM_SHIELD_BLOCK, 1.0f, 1.0f);
 
         player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 120, 1, false, true));
-        healthManager.heal(player, healthManager.getMaxHealth(player) * 0.1);
 
         return CastResult.success();
     }
