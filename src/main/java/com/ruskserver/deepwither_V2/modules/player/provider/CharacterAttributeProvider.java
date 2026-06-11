@@ -74,7 +74,7 @@ public class CharacterAttributeProvider implements CharacterDataProvider<Charact
      * 残りポイントと各属性のレベルを保持するデータクラス。
      */
     public static class AttributeData {
-        private int remainingPoints = 0;
+        private int remainingPoints = 2;
         private final Map<AttributeType, Integer> attributes = new EnumMap<>(AttributeType.class);
 
         public AttributeData() {

@@ -115,7 +115,7 @@ public class CharacterSkillTreeProvider implements CharacterDataProvider<Charact
         private final Map<String, CameraPosition> cameraPositions;
 
         public SkillTreeData() {
-            this(0, new HashMap<>(), new HashMap<>());
+            this(2, new HashMap<>(), new HashMap<>());
         }
 
         public SkillTreeData(int skillPoints, Map<String, Integer> unlockedNodes, Map<String, CameraPosition> cameraPositions) {
