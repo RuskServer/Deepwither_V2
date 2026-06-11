@@ -30,6 +30,7 @@ public class VirtualHealthManager implements Listener {
 
     private final Map<UUID, Double> currentHealthMap = new ConcurrentHashMap<>();
     private final Map<UUID, Double> customMaxHealthMap = new ConcurrentHashMap<>();
+    private final Map<UUID, Double> barrierMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
     private final DamageFeedbackService damageFeedbackService;
 
@@ -98,6 +99,22 @@ public class VirtualHealthManager implements Listener {
         Bukkit.getPluginManager().callEvent(new com.ruskserver.deepwither_V2.modules.combat.health.event.VirtualHealthChangeEvent(entity, current, newHealth, maxHp));
     }
 
+    public void setBarrier(LivingEntity entity, double amount) {
+        barrierMap.put(entity.getUniqueId(), Math.max(0, amount));
+    }
+
+    public double getBarrier(LivingEntity entity) {
+        return barrierMap.getOrDefault(entity.getUniqueId(), 0.0);
+    }
+
+    public boolean hasBarrier(LivingEntity entity) {
+        return getBarrier(entity) > 0;
+    }
+
+    public void removeBarrier(LivingEntity entity) {
+        barrierMap.remove(entity.getUniqueId());
+    }
+
     /**
      * エンティティに仮想ダメージを与えます。
      * HPが0になった場合は対象を死亡させます。
@@ -105,6 +122,15 @@ public class VirtualHealthManager implements Listener {
      */
     public void damage(LivingEntity entity, double amount) {
         if (entity == null || entity.isDead() || amount <= 0) return;
+
+        UUID id = entity.getUniqueId();
+        double barrier = barrierMap.getOrDefault(id, 0.0);
+        if (barrier > 0) {
+            double absorbed = Math.min(barrier, amount);
+            barrierMap.put(id, barrier - absorbed);
+            amount -= absorbed;
+            if (amount <= 0) return;
+        }
 
         double current = getHealth(entity);
         if (current <= 0) return;
@@ -141,6 +167,7 @@ public class VirtualHealthManager implements Listener {
     public void cleanup(UUID entityId) {
         currentHealthMap.remove(entityId);
         customMaxHealthMap.remove(entityId);
+        barrierMap.remove(entityId);
     }
 
     @EventHandler
