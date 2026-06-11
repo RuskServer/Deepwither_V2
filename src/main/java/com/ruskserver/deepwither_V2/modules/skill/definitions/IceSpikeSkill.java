@@ -8,17 +8,15 @@ import com.ruskserver.deepwither_V2.modules.skill.api.CastResult;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
-import com.ruskserver.deepwither_V2.modules.skill.api.SkillProjectile;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
-import com.ruskserver.deepwither_V2.modules.skill.service.SkillProjectileService;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -27,12 +25,10 @@ import java.util.Set;
 @Component
 public class IceSpikeSkill implements Skill {
 
-    private final SkillProjectileService projectileService;
     private final DamagePipelineManager damagePipelineManager;
 
     @Inject
-    public IceSpikeSkill(SkillProjectileService projectileService, DamagePipelineManager damagePipelineManager) {
-        this.projectileService = projectileService;
+    public IceSpikeSkill(DamagePipelineManager damagePipelineManager) {
         this.damagePipelineManager = damagePipelineManager;
     }
 
@@ -45,8 +41,8 @@ public class IceSpikeSkill implements Skill {
     @Override
     public List<String> getDescription() {
         return List.of(
-                "氷の棘を放ち、命中した地点で氷柱を噴出させる。",
-                "直進する棘が命中した地点を中心に周囲2.5mの敵に魔法ダメージ(300%)を与える。"
+                "前方の地面を走るように無数の氷の棘を噴出させる。",
+                "視線方向へ最大10mまで氷柱が連続して噴出し、各地点周囲2.5mの敵に魔法ダメージ(180%)を与える。"
         );
     }
 
@@ -57,7 +53,7 @@ public class IceSpikeSkill implements Skill {
     public SkillCategory getCategory() { return SkillCategory.ACTIVE; }
 
     @Override
-    public SkillTargetType getTargetType() { return SkillTargetType.PROJECTILE; }
+    public SkillTargetType getTargetType() { return SkillTargetType.SELF; }
 
     @Override
     public Set<String> getTags() { return Set.of("magic", "ice", "area"); }
@@ -80,51 +76,35 @@ public class IceSpikeSkill implements Skill {
     @Override
     public CastResult cast(SkillContext context) {
         var player = context.getCaster();
-        var spawnLoc = context.getEyeLocation().add(context.getDirection().multiply(0.8));
-        var direction = context.getDirection();
+        var origin = player.getEyeLocation();
+        var dir = context.getDirection();
 
-        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 0.8f, 1.4f);
+        dir.setY(0).normalize();
 
-        var projectile = new SkillProjectile(player, spawnLoc, direction, 1.8, 0.8, 25) {
-            @Override
-            protected void onTick() {
-                var loc = getCurrentLocation();
-                loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc, 6, 0.08, 0.08, 0.08, 0.02);
-                loc.getWorld().spawnParticle(Particle.POOF, loc, 2, 0.05, 0.05, 0.05, 0.0);
+        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_GLASS_BREAK, 0.8f, 1.2f);
+
+        for (double d = 1.0; d <= 10.0; d += 1.5) {
+            var spikeLoc = origin.clone().add(dir.clone().multiply(d));
+            spikeLoc.setY(spikeLoc.getY() - 0.5);
+
+            for (int h = 0; h < 4; h++) {
+                double height = h * 0.8;
+                spikeLoc.getWorld().spawnParticle(Particle.SNOWFLAKE, spikeLoc.clone().add(0, height, 0), 12, 0.4, 0.3, 0.4, 0.03);
+                spikeLoc.getWorld().spawnParticle(Particle.POOF, spikeLoc.clone().add(0, height, 0), 3, 0.2, 0.1, 0.2, 0.0);
             }
 
-            @Override
-            protected void onHitEntity(LivingEntity target) {
-                explode(getCurrentLocation());
-            }
+            spikeLoc.getWorld().playSound(spikeLoc, Sound.BLOCK_GLASS_BREAK, 0.6f, 1.4f + (float) d * 0.05f);
 
-            @Override
-            protected void onHitBlock(Block block) {
-                explode(getCurrentLocation());
-            }
-
-            private void explode(Location loc) {
-                var world = loc.getWorld();
-                if (world == null) return;
-
-                for (int i = 0; i < 5; i++) {
-                    double height = i * 1.0;
-                    world.spawnParticle(Particle.SNOWFLAKE, loc.clone().add(0, height, 0), 20, 0.3, 0.5, 0.3, 0.05);
-                    world.spawnParticle(Particle.POOF, loc.clone().add(0, height, 0), 5, 0.2, 0.2, 0.2, 0.0);
-                }
-                world.playSound(loc, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.8f);
-
-                for (Entity entity : world.getNearbyEntities(loc, 2.5, 5.0, 2.5)) {
-                    if (entity instanceof LivingEntity living && !entity.equals(getCaster())) {
-                        damagePipelineManager.processScaledDamage(getCaster(), living, DamageType.MAGIC, 3.0, getTags());
+            for (Entity entity : spikeLoc.getWorld().getNearbyEntities(spikeLoc, 2.5, 3.0, 2.5)) {
+                if (entity instanceof LivingEntity living && !entity.equals(player)) {
+                    if (living.getNoDamageTicks() <= 10) {
+                        damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.8, getTags());
+                        living.setNoDamageTicks(10);
                     }
                 }
-
-                remove();
             }
-        };
+        }
 
-        boolean launched = projectileService.launch(projectile);
-        return launched ? CastResult.success() : CastResult.fail();
+        return CastResult.success();
     }
 }
