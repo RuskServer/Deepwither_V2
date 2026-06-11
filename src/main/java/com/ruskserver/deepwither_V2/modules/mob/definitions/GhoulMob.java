@@ -166,6 +166,11 @@ public class GhoulMob extends CustomMob {
     }
 
     @Override
+    public double getBaseAttackDamage() {
+        return ATTACK_DAMAGE;
+    }
+
+    @Override
     public void onAttack(LivingEntity victim, org.bukkit.event.entity.EntityDamageByEntityEvent event) {
         // バニラのダメージ処理はキャンセルされているため、自分でDamagePipelineに流す
         if (victim instanceof Player player) {

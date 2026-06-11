@@ -196,4 +196,15 @@ public abstract class CustomMob {
             loc.getWorld().dropItemNaturally(loc, item);
         }
     }
+
+    /**
+     * このモブの基本近接攻撃力を返します。
+     * サブクラスでオーバーライドして固有の攻撃力を定義してください。
+     * この値は StatManager に登録され、ダメージパイプラインの基礎値として使用されます。
+     *
+     * @return 基本攻撃力（デフォルト: 0）
+     */
+    public double getBaseAttackDamage() {
+        return 0.0;
+    }
 }

@@ -133,6 +133,11 @@ public class GhoulArcherMob extends CustomMob {
         }
     }
 
+    @Override
+    public double getBaseAttackDamage() {
+        return MELEE_DAMAGE;
+    }
+
     private void shootAt(Player target) {
         Location eye = entity.getEyeLocation();
         Location targetLoc = target.getEyeLocation();

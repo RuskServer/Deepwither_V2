@@ -9,6 +9,8 @@ import com.ruskserver.deepwither_V2.modules.mob.event.CustomMobDeathEvent;
 import com.ruskserver.deepwither_V2.modules.party.Party;
 import com.ruskserver.deepwither_V2.modules.party.PartyManager;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
+import com.ruskserver.deepwither_V2.modules.stat.StatManager;
+import com.ruskserver.deepwither_V2.modules.stat.ModifierType;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
@@ -45,6 +47,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     private final VirtualHealthManager healthManager;
     private final PlayerManager playerManager;
     private final PartyManager partyManager;
+    private final StatManager statManager;
     private final Logger log;
 
     /** mob-id → (EntityType, Supplierファクトリ) のレジストリ */
@@ -77,11 +80,12 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
 
     @Inject
     public CustomMobManager(JavaPlugin plugin, VirtualHealthManager healthManager, PlayerManager playerManager,
-                            PartyManager partyManager) {
+                            PartyManager partyManager, StatManager statManager) {
         this.plugin = plugin;
         this.healthManager = healthManager;
         this.playerManager = playerManager;
         this.partyManager = partyManager;
+        this.statManager = statManager;
         this.log = plugin.getLogger();
         this.mobIdKey = new NamespacedKey(plugin, "custom_mob_id");
         loadLevelingConfig();
@@ -204,6 +208,13 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             mobLogic.setMobId(id);
             mobLogic.setLevel(level);
             mobLogic.init(entity, this);
+
+            double baseAttackDamage = mobLogic.getBaseAttackDamage();
+            if (baseAttackDamage > 0) {
+                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE,
+                        "mob_base_attack", baseAttackDamage, ModifierType.ADDITIVE);
+            }
+
             activeMobs.put(entity.getUniqueId(), mobLogic);
             return mobLogic;
         } catch (Exception e) {
@@ -226,6 +237,13 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             entity.getPersistentDataContainer().set(mobIdKey, PersistentDataType.STRING, id);
             mobLogic.setMobId(id);
             mobLogic.init(entity, this);
+
+            double baseAttackDamage = mobLogic.getBaseAttackDamage();
+            if (baseAttackDamage > 0) {
+                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE,
+                        "mob_base_attack", baseAttackDamage, ModifierType.ADDITIVE);
+            }
+
             activeMobs.put(entity.getUniqueId(), mobLogic);
         } catch (Exception e) {
             log.severe("[CustomMobManager] エンティティへのバインドに失敗しました (id=" + id + "): " + e.getMessage());
@@ -277,8 +295,10 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             var entry = iterator.next();
             CustomMob mob = entry.getValue();
             if (locationFilter.test(mob.getLocation())) {
+                UUID entityId = entry.getKey();
                 mob.entity.remove();           // エンティティをワールドから削除
-                healthManager.cleanup(entry.getKey());  // 仮想HPデータを解放
+                statManager.removeModifier(entityId, com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE, "mob_base_attack");
+                healthManager.cleanup(entityId);  // 仮想HPデータを解放
                 iterator.remove();             // activeMobsから除去
             }
         }
@@ -383,6 +403,8 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             }
             Bukkit.getPluginManager().callEvent(new CustomMobDeathEvent(mob, event.getEntity(), killer));
         }
+        // StatManagerのモブ用モディファイアを削除
+        statManager.removeModifier(entityId, com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE, "mob_base_attack");
         // VirtualHealthManagerのメモリを解放
         lastPlayerDamagers.remove(entityId);
         healthManager.cleanup(entityId);
