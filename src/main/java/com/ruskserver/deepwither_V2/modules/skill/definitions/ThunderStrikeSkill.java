@@ -39,7 +39,7 @@ public class ThunderStrikeSkill implements Skill {
     @Override
     public List<String> getDescription() {
         return List.of(
-                "指定地点に予兆を描き、0.5秒後に雷を落とす。",
+                "指定地点に予兆を描き、1秒後に雷を落とす。",
                 "周囲5mの敵に魔法ダメージ(500%)を与える。"
         );
     }
@@ -72,7 +72,7 @@ public class ThunderStrikeSkill implements Skill {
     public double getManaCost(SkillContext context) { return 40.0; }
 
     @Override
-    public Duration getCooldown(SkillContext context) { return Duration.ofSeconds(7); }
+    public Duration getCooldown(SkillContext context) { return Duration.ofSeconds(15); }
 
     @Override
     public Duration getCastTime(SkillContext context) { return Duration.ofMillis(300); }
@@ -105,7 +105,7 @@ public class ThunderStrikeSkill implements Skill {
         // 中心に集まるエネルギー
         strikeLoc.getWorld().spawnParticle(Particle.ENCHANT, strikeLoc, 50, 2.0, 0.5, 2.0, 0.1);
 
-        // 10tick (0.5秒) 後に発動
+        // 20tick (1秒) 後に発動
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             // --- 発動フェーズ ---
 
@@ -140,7 +140,7 @@ public class ThunderStrikeSkill implements Skill {
                     damagePipelineManager.processScaledDamage(caster, victim, DamageType.MAGIC, 5.0, getTags());
                 }
             });
-        }, 10L);
+        }, 20L);
 
         return CastResult.success();
     }
