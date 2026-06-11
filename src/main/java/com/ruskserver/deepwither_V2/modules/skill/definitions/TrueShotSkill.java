@@ -100,7 +100,7 @@ public class TrueShotSkill implements Skill {
             p.getWorld().spawnParticle(Particle.DUST, p, 3, 0.08, 0.08, 0.08, 0, sparkDust);
         }
 
-        player.getWorld().spawnParticle(Particle.FLASH, eyeLoc.add(dir.multiply(1.0)), 1, 0, 0, 0, 0);
+        player.getWorld().spawnParticle(Particle.FLASH, eyeLoc.add(dir.multiply(1.0)), 1, 0, 0, 0, 0, Color.WHITE);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 0.8f, 1.8f);
 
         var tLoc = target.getLocation().add(0, 1, 0);
