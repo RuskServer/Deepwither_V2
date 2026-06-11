@@ -5,7 +5,6 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,6 +12,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.time.Duration;
 import java.util.List;
@@ -89,58 +89,61 @@ public class ThunderStrikeSkill implements Skill {
         final double radius = 5.0;
         final LivingEntity caster = context.getCaster();
 
-        // --- 予兆フェーズ (0.5秒) ---
-        // 魔法陣の展開音
         strikeLoc.getWorld().playSound(strikeLoc, Sound.BLOCK_BEACON_ACTIVATE, 1.2f, 2.0f);
         strikeLoc.getWorld().playSound(strikeLoc, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 0.5f);
 
-        // 予兆パーティクル (円を描く)
-        for (int i = 0; i < 36; i++) {
-            double angle = Math.toRadians(i * 10);
-            double x = Math.cos(angle) * radius;
-            double z = Math.sin(angle) * radius;
-            Location particleLoc = strikeLoc.clone().add(x, 0.2, z);
-            strikeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLoc, 2, 0, 0.1, 0, 0.05);
-        }
-        // 中心に集まるエネルギー
-        strikeLoc.getWorld().spawnParticle(Particle.ENCHANT, strikeLoc, 50, 2.0, 0.5, 2.0, 0.1);
+        new BukkitRunnable() {
+            int tick = 0;
 
-        // 20tick (1秒) 後に発動
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            // --- 発動フェーズ ---
+            @Override
+            public void run() {
+                if (tick >= 20) {
+                    strikeLoc.getWorld().strikeLightningEffect(strikeLoc);
+                    for (int i = 0; i < 3; i++) {
+                        double ox = (Math.random() - 0.5) * 2.0;
+                        double oz = (Math.random() - 0.5) * 2.0;
+                        strikeLoc.getWorld().strikeLightningEffect(strikeLoc.clone().add(ox, 0, oz));
+                    }
 
-            // 派手な雷演出 (複数)
-            strikeLoc.getWorld().strikeLightningEffect(strikeLoc);
-            for (int i = 0; i < 3; i++) {
-                double ox = (Math.random() - 0.5) * 2.0;
-                double oz = (Math.random() - 0.5) * 2.0;
-                strikeLoc.getWorld().strikeLightningEffect(strikeLoc.clone().add(ox, 0, oz));
-            }
+                    strikeLoc.getWorld().spawnParticle(Particle.FLASH, strikeLoc, 5, 1.0, 1.0, 1.0, 0, Color.WHITE);
+                    strikeLoc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, strikeLoc, 3, 2.0, 0.5, 2.0, 0);
+                    strikeLoc.getWorld().spawnParticle(Particle.SONIC_BOOM, strikeLoc, 1, 0, 0, 0, 0);
 
-            // 大爆発パーティクル
-            strikeLoc.getWorld().spawnParticle(Particle.FLASH, strikeLoc, 5, 1.0, 1.0, 1.0, 0, Color.WHITE);
-            strikeLoc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, strikeLoc, 3, 2.0, 0.5, 2.0, 0);
-            strikeLoc.getWorld().spawnParticle(Particle.SONIC_BOOM, strikeLoc, 1, 0, 0, 0, 0);
+                    for (int i = 0; i < 50; i++) {
+                        double angle = Math.toRadians(i * (360.0 / 50.0));
+                        double x = Math.cos(angle) * radius;
+                        double z = Math.sin(angle) * radius;
+                        Location particleLoc = strikeLoc.clone().add(x, 0.5, z);
+                        strikeLoc.getWorld().spawnParticle(Particle.CLOUD, particleLoc, 1, 0, 0.1, 0, 0.1);
+                    }
 
-            // 衝撃波
-            for (int i = 0; i < 50; i++) {
-                double angle = Math.toRadians(i * (360.0 / 50.0));
-                double x = Math.cos(angle) * radius;
-                double z = Math.sin(angle) * radius;
-                Location particleLoc = strikeLoc.clone().add(x, 0.5, z);
-                strikeLoc.getWorld().spawnParticle(Particle.CLOUD, particleLoc, 1, 0, 0.1, 0, 0.1);
-            }
+                    strikeLoc.getWorld().playSound(strikeLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 0.8f);
+                    strikeLoc.getWorld().playSound(strikeLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.5f);
 
-            strikeLoc.getWorld().playSound(strikeLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 0.8f);
-            strikeLoc.getWorld().playSound(strikeLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.5f);
+                    strikeLoc.getWorld().getNearbyEntities(strikeLoc, radius, 4.0, radius).forEach(entity -> {
+                        if (entity instanceof LivingEntity victim && !entity.equals(caster)) {
+                            damagePipelineManager.processScaledDamage(caster, victim, DamageType.MAGIC, 5.0, getTags());
+                        }
+                    });
 
-            // ダメージ処理
-            strikeLoc.getWorld().getNearbyEntities(strikeLoc, radius, 4.0, radius).forEach(entity -> {
-                if (entity instanceof LivingEntity victim && !entity.equals(caster)) {
-                    damagePipelineManager.processScaledDamage(caster, victim, DamageType.MAGIC, 5.0, getTags());
+                    cancel();
+                    return;
                 }
-            });
-        }, 20L);
+
+                if (tick % 4 == 0) {
+                    for (int i = 0; i < 36; i++) {
+                        double angle = Math.toRadians(i * 10);
+                        double x = Math.cos(angle) * radius;
+                        double z = Math.sin(angle) * radius;
+                        Location particleLoc = strikeLoc.clone().add(x, 0.2, z);
+                        strikeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLoc, 2, 0, 0.1, 0, 0.05);
+                    }
+                }
+
+                strikeLoc.getWorld().spawnParticle(Particle.ENCHANT, strikeLoc, 5, 1.5, 0.3, 1.5, 0.03);
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
 
         return CastResult.success();
     }

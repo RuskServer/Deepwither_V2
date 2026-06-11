@@ -87,7 +87,7 @@ public class IceSpikeSkill implements Skill {
             var spikeLoc = origin.clone().add(dir.clone().multiply(d));
             spikeLoc.setY(spikeLoc.getY() - 0.5);
 
-            for (int h = 0; h < 4; h++) {
+            for (int h = 0; h < 2; h++) {
                 double height = h * 0.8;
                 spikeLoc.getWorld().spawnParticle(Particle.SNOWFLAKE, spikeLoc.clone().add(0, height, 0), 12, 0.4, 0.3, 0.4, 0.03);
                 spikeLoc.getWorld().spawnParticle(Particle.POOF, spikeLoc.clone().add(0, height, 0), 3, 0.2, 0.1, 0.2, 0.0);

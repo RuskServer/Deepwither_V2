@@ -87,7 +87,7 @@ public class FlamePillarSkill implements Skill {
             var pillarLoc = origin.clone().add(dir.clone().multiply(d));
             pillarLoc.setY(pillarLoc.getY() - 0.5);
 
-            for (int h = 0; h < 4; h++) {
+            for (int h = 0; h < 2; h++) {
                 double height = h * 0.8;
                 pillarLoc.getWorld().spawnParticle(Particle.FLAME, pillarLoc.clone().add(0, height, 0), 20, 0.4, 0.3, 0.4, 0.03);
                 pillarLoc.getWorld().spawnParticle(Particle.LAVA, pillarLoc.clone().add(0, height, 0), 3, 0.2, 0.1, 0.2, 0.0);
