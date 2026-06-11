@@ -12,6 +12,7 @@ import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Color;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -76,7 +77,9 @@ public class PowerShotSkill implements Skill {
     @Override
     public CastResult cast(SkillContext context) {
         var player = context.getCaster();
-        Entity raw = player.getTargetEntity(30);
+        var eye = player.getEyeLocation();
+        var ray = player.getWorld().rayTrace(eye, eye.getDirection(), 30, FluidCollisionMode.NEVER, true, 1.0, e -> !e.equals(player));
+        Entity raw = ray != null ? ray.getHitEntity() : null;
         if (!(raw instanceof LivingEntity target)) {
             return CastResult.fail(net.kyori.adventure.text.Component.text("対象がいません。", NamedTextColor.RED));
         }

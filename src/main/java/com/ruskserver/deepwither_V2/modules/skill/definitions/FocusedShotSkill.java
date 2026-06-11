@@ -12,6 +12,7 @@ import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -99,13 +100,24 @@ public class FocusedShotSkill implements Skill {
                 var eyeLoc = player.getEyeLocation();
                 var dir = eyeLoc.getDirection();
 
+                float progress = (float) ticks / 16.0f;
+
                 if (ticks == 0) {
                     player.playSound(player.getLocation(), Sound.BLOCK_BEACON_AMBIENT, 0.5f, 1.5f);
                 }
 
+                int count = 2 + (int) (progress * 10);
                 var p = eyeLoc.clone().add(dir.clone().multiply(0.5));
-                p.getWorld().spawnParticle(Particle.END_ROD, p, 4, 0.03, 0.03, 0.03, 0.01);
-                p.getWorld().spawnParticle(Particle.ENCHANT, p, 3, 0.1, 0.1, 0.1, 0.1);
+                p.getWorld().spawnParticle(Particle.END_ROD, p, count, 0.03 + progress * 0.06, 0.03 + progress * 0.06, 0.03 + progress * 0.06, 0.01);
+                p.getWorld().spawnParticle(Particle.ENCHANT, p, count, 0.1 + progress * 0.15, 0.1 + progress * 0.15, 0.1 + progress * 0.15, 0.1);
+
+                if (ticks % 4 == 0 && ticks > 0) {
+                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_AMBIENT, 0.3f + progress * 0.4f, 1.5f + progress * 0.5f);
+                }
+
+                if (progress > 0.3f) {
+                    player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation().add(0, 0.1, 0), 2, 0.3 + progress * 0.2, 0.02, 0.3 + progress * 0.2, 0.005);
+                }
 
                 ticks++;
 
@@ -118,7 +130,7 @@ public class FocusedShotSkill implements Skill {
                     }
 
                     var flashLoc = player.getEyeLocation().add(player.getEyeLocation().getDirection().multiply(0.5));
-                    flashLoc.getWorld().spawnParticle(Particle.FLASH, flashLoc, 1, 0, 0, 0, 0);
+                    flashLoc.getWorld().spawnParticle(Particle.FLASH, flashLoc, 1, 0, 0, 0, 0, Color.WHITE);
                     flashLoc.getWorld().spawnParticle(Particle.CRIT, flashLoc, 25, 0.2, 0.2, 0.2, 0.4);
                     flashLoc.getWorld().playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 1.2f);
 
