@@ -95,6 +95,14 @@ public interface DamagePhase {
                 double damageReductionMultiplier = 250.0 / (250.0 + defense);
                 context.multiplyDamage(damageReductionMultiplier);
             }
+
+            // 物理ダメージ追加軽減 (アーティファクトセット効果など)
+            if (context.getType() == DamageType.PHYSICAL || context.getType() == DamageType.RANGED) {
+                double physReduction = statManager.getTotalStat(context.getDefender(), StatType.PHYSICAL_DAMAGE_REDUCTION);
+                if (physReduction > 0) {
+                    context.multiplyDamage(1.0 - Math.min(physReduction, 0.9));
+                }
+            }
         }
     }
 

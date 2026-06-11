@@ -1,0 +1,473 @@
+[
+  {
+    "id": "abyssal_moon_jelly",
+    "display_name": "§b深淵の海月",
+    "weapon_type": "剣",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 85.0,
+      "ATTACK_SPEED": 1.4,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 120.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\AbyssalMoonJelly.java"
+  },
+  {
+    "id": "aether_edge",
+    "display_name": "§f§lAether Edge",
+    "weapon_type": "剣",
+    "rarity": "UNCOMMON",
+    "base_stats": {
+      "ATTACK_DAMAGE": 17.0,
+      "CRITICAL_CHANCE": 6.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 1.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\AetherEdge.java"
+  },
+  {
+    "id": "aether_forge_blade",
+    "display_name": "§f§lAether Forge Blade",
+    "weapon_type": "剣",
+    "rarity": "UNCOMMON",
+    "base_stats": {
+      "ATTACK_DAMAGE": 20.0,
+      "CRITICAL_CHANCE": 5.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 1.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\AetherForgeBlade.java"
+  },
+  {
+    "id": "ark_eclipse",
+    "display_name": "§c§l灰滅斧《アーク・エクリプス》",
+    "weapon_type": "斧",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 250.0,
+      "CRITICAL_CHANCE": 5.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 0.5
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\ArkEclipse.java"
+  },
+  {
+    "id": "arklight_buster",
+    "display_name": "§f§lAWS-GS07「アークライト・バスター」",
+    "weapon_type": "大剣",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 41.0,
+      "ATTACK_SPEED": 0.8,
+      "MAGIC_DAMAGE": 6.0,
+      "CRITICAL_CHANCE": 4.0,
+      "CRITICAL_DAMAGE": 160.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\ArklightBuster.java"
+  },
+  {
+    "id": "ash_tactical_dagger",
+    "display_name": "",
+    "weapon_type": "ダガー",
+    "rarity": "UNCOMMON",
+    "base_stats": {
+      "ATTACK_DAMAGE": 20.0,
+      "CRITICAL_CHANCE": 9.0,
+      "CRITICAL_DAMAGE": 180.0,
+      "ATTACK_SPEED": 1.0,
+      "SPEED": 0.02
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\AshTacticalDagger.java"
+  },
+  {
+    "id": "hc_l19_balance_needle",
+    "display_name": "§f§lHC-L19 『Balance Needle』",
+    "weapon_type": "槍",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 80.0,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 100.0,
+      "ATTACK_SPEED": 0.85
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\BalanceNeedle.java"
+  },
+  {
+    "id": "bastion_breaker",
+    "display_name": "§b§lAFS-92『バスティオン・ブレイカー』",
+    "weapon_type": "大剣",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 58.0,
+      "ATTACK_SPEED": 0.6,
+      "CRITICAL_CHANCE": 4.0,
+      "CRITICAL_DAMAGE": 130.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\BastionBreaker.java"
+  },
+  {
+    "id": "blue_crystal_mace",
+    "display_name": "§b藍晶のメイス「Blue Crystal Mace」",
+    "weapon_type": "メイス",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 65.0,
+      "ATTACK_SPEED": 1.0,
+      "MAGIC_DAMAGE": 15.0,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 100.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\BlueCrystalMace.java"
+  },
+  {
+    "id": "blue_crystal_sword",
+    "display_name": "§b藍晶の剣「Blue Crystal Sword」",
+    "weapon_type": "剣",
+    "rarity": "UNCOMMON",
+    "base_stats": {
+      "ATTACK_DAMAGE": 20.0,
+      "MAGIC_DAMAGE": 8.0,
+      "CRITICAL_CHANCE": 6.0,
+      "CRITICAL_DAMAGE": 100.0,
+      "ATTACK_SPEED": 1.2
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\BlueCrystalSword.java"
+  },
+  {
+    "id": "crystal_sword",
+    "display_name": "§d§lCrystal Sword",
+    "weapon_type": "剣",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 45.0,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 1.2,
+      "COOLDOWN_REDUCTION": 5.0,
+      "MAGIC_DAMAGE": 6.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\CrystalSword.java"
+  },
+  {
+    "id": "crystal_sword_mk2",
+    "display_name": "§d§lCrystal Sword MK2",
+    "weapon_type": "剣",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 68.0,
+      "CRITICAL_CHANCE": 12.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 1.35,
+      "COOLDOWN_REDUCTION": 7.0,
+      "MAGIC_DAMAGE": 30.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\CrystalSwordMk2.java"
+  },
+  {
+    "id": "debris_longsword",
+    "display_name": "§b§l瓦礫のロングソード",
+    "weapon_type": "剣",
+    "rarity": "COMMON",
+    "base_stats": {
+      "ATTACK_DAMAGE": 10.0,
+      "CRITICAL_CHANCE": 5.0,
+      "CRITICAL_DAMAGE": 150.0,
+      "ATTACK_SPEED": 1.2
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\DebrisLongsword.java"
+  },
+  {
+    "id": "ether_shard_halberd",
+    "display_name": "§b§l残灰の晶戟《エーテル・シャード》",
+    "weapon_type": "ハルバード",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 60.0,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 100.0,
+      "ATTACK_SPEED": 0.8
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\EtherShardHalberd.java"
+  },
+  {
+    "id": "frostgray_splitter",
+    "display_name": "§3§lKIM-GS09「フロストグレイ・スプリッター」",
+    "weapon_type": "大剣",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 62.0,
+      "ATTACK_SPEED": 0.6,
+      "MAGIC_DAMAGE": 10.0,
+      "CRITICAL_CHANCE": 5.0,
+      "CRITICAL_DAMAGE": 142.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\FrostgraySplitter.java"
+  },
+  {
+    "id": "kim_frostward_testament",
+    "display_name": "§b§lKS-LG-03 『Frostward Testament』",
+    "weapon_type": "大剣",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 92.0,
+      "MAGIC_DAMAGE": 25.0,
+      "ATTACK_SPEED": 0.75,
+      "CRITICAL_CHANCE": 6.0,
+      "CRITICAL_DAMAGE": 130.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\FrostwardTestament.java"
+  },
+  {
+    "id": "gravemelt_breaker",
+    "display_name": "§d§lKIM-AE52「グラヴメルト・ブレイカー」",
+    "weapon_type": "斧",
+    "rarity": "LEGENDARY",
+    "base_stats": {
+      "ATTACK_DAMAGE": 70.0,
+      "ATTACK_SPEED": 0.62,
+      "MAGIC_DEFENSE": 18.0,
+      "CRITICAL_CHANCE": 6.0,
+      "CRITICAL_DAMAGE": 120.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\GravemeltBreaker.java"
+  },
+  {
+    "id": "gravemelt_cleaver",
+    "display_name": "§3§lKIM-AE32「グラヴメルト・クリーバー」",
+    "weapon_type": "斧",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 45.0,
+      "MAGIC_DEFENSE": 10.0,
+      "CRITICAL_CHANCE": 4.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 0.5
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\GravemeltCleaver.java"
+  },
+  {
+    "id": "gravemind_machete",
+    "display_name": "§b§lKIM-GCM41「グレイヴマインド・マチェット」",
+    "weapon_type": "マチェット",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 60.0,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 0.65
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\GravemindMachete.java"
+  },
+  {
+    "id": "ld_hammer_mk1",
+    "display_name": "§6§l衝撃戦鎚《ブレイカー・Mk.I》",
+    "weapon_type": "ハンマー",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 75.0,
+      "ATTACK_SPEED": 0.95,
+      "CRITICAL_CHANCE": 3.0,
+      "CRITICAL_DAMAGE": 120.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\HammerMk1.java"
+  },
+  {
+    "id": "kobalt_reverb_mace",
+    "display_name": "§9§lLD-RW17「コバルト・リバーブメイス」",
+    "weapon_type": "メイス",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 60.0,
+      "ATTACK_SPEED": 1.1,
+      "MAGIC_DAMAGE": 10.0,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 130.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\KobaltReverbMace.java"
+  },
+  {
+    "id": "moonlight_reaper_scythe",
+    "display_name": "",
+    "weapon_type": "鎌",
+    "rarity": "LEGENDARY",
+    "base_stats": {
+      "ATTACK_DAMAGE": 75.0,
+      "MAGIC_DAMAGE": 42.0,
+      "CRITICAL_CHANCE": 10.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "MAX_MANA": 80.0,
+      "ATTACK_SPEED": 1.1
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\MoonlightReaperScythe.java"
+  },
+  {
+    "id": "residual_ash_halberd",
+    "display_name": "§c§l残灰のハルバード",
+    "weapon_type": "ハルバード",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 45.0,
+      "CRITICAL_CHANCE": 5.0,
+      "CRITICAL_DAMAGE": 130.0,
+      "ATTACK_SPEED": 0.8
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\ResidualAshHalberd.java"
+  },
+  {
+    "id": "rift_valtar_lance",
+    "display_name": "§e§l裂界神槍「シャード・オブ・ヴァルター」",
+    "weapon_type": "槍",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 104.0,
+      "CRITICAL_CHANCE": 6.0,
+      "CRITICAL_DAMAGE": 100.0,
+      "MAGIC_DAMAGE": 10.0,
+      "ATTACK_SPEED": 0.5,
+      "MAX_MANA": 10.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\RiftValtarLance.java"
+  },
+  {
+    "id": "rc_ruby_axe_02",
+    "display_name": "§c§l紅晶戦斧《ルビア・カルナス》",
+    "weapon_type": "斧",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 80.0,
+      "ATTACK_SPEED": 0.85,
+      "CRITICAL_CHANCE": 5.0,
+      "CRITICAL_DAMAGE": 120.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\RubyAxe02.java"
+  },
+  {
+    "id": "rc_ruby_spear_04",
+    "display_name": "§c§l紅晶槍《ルビア・シナプス》",
+    "weapon_type": "槍",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 54.0,
+      "ATTACK_SPEED": 1.0,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 100.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\RubySpear04.java"
+  },
+  {
+    "id": "rc_ruby_sword_03",
+    "display_name": "§c§l紅晶剣《ルビア・ヴェイン》",
+    "weapon_type": "剣",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 60.0,
+      "ATTACK_SPEED": 1.6,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 145.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\RubySword03.java"
+  },
+  {
+    "id": "rusted_iron_branch",
+    "display_name": "§c§l朽鉄の枝",
+    "weapon_type": "マチェット",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 42.0,
+      "CRITICAL_CHANCE": 5.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 0.6
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\RustedIronBranch.java"
+  },
+  {
+    "id": "scattered_moon",
+    "display_name": "§b§lAFS-76『Scattered Moon』",
+    "weapon_type": "大剣",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 70.0,
+      "ATTACK_SPEED": 0.8,
+      "CRITICAL_CHANCE": 4.0,
+      "CRITICAL_DAMAGE": 120.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\ScatteredMoon.java"
+  },
+  {
+    "id": "starter_sword",
+    "display_name": "§f駆け出しの剣",
+    "weapon_type": "剣",
+    "rarity": "COMMON",
+    "base_stats": {
+      "ATTACK_DAMAGE": 20.0,
+      "CRITICAL_CHANCE": 5.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\StarterSword.java"
+  },
+  {
+    "id": "tactical_dagger",
+    "display_name": "",
+    "weapon_type": "ダガー",
+    "rarity": "UNCOMMON",
+    "base_stats": {
+      "ATTACK_DAMAGE": 20.0,
+      "CRITICAL_CHANCE": 8.0,
+      "CRITICAL_DAMAGE": 180.0,
+      "ATTACK_SPEED": 1.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\TacticalDagger.java"
+  },
+  {
+    "id": "tactical_dagger_td10",
+    "display_name": "",
+    "weapon_type": "ダガー",
+    "rarity": "EPIC",
+    "base_stats": {
+      "ATTACK_DAMAGE": 48.0,
+      "CRITICAL_CHANCE": 15.0,
+      "CRITICAL_DAMAGE": 200.0,
+      "ATTACK_SPEED": 1.2,
+      "DEFENSE": 5.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\TacticalDaggerTd10.java"
+  },
+  {
+    "id": "variant_spear",
+    "display_name": "§f§lLZ-7「ヴァリアント・スピア」",
+    "weapon_type": "槍",
+    "rarity": "RARE",
+    "base_stats": {
+      "ATTACK_DAMAGE": 35.0,
+      "CRITICAL_CHANCE": 5.0,
+      "CRITICAL_DAMAGE": 100.0,
+      "ATTACK_SPEED": 0.7
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\VariantSpear.java"
+  },
+  {
+    "id": "void_star_sword",
+    "display_name": "§d§l虚星剣",
+    "weapon_type": "剣",
+    "rarity": "UNCOMMON",
+    "base_stats": {
+      "ATTACK_DAMAGE": 15.0,
+      "CRITICAL_CHANCE": 6.0,
+      "CRITICAL_DAMAGE": 120.0,
+      "ATTACK_SPEED": 1.5
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\VoidStarSword.java"
+  },
+  {
+    "id": "amu_vulcan_driver",
+    "display_name": "§6§l熱核破砕斧《ヴァルカン・ドライバー》",
+    "weapon_type": "斧",
+    "rarity": "LEGENDARY",
+    "base_stats": {
+      "ATTACK_DAMAGE": 95.0,
+      "ATTACK_SPEED": 0.8,
+      "CRITICAL_CHANCE": 12.0,
+      "CRITICAL_DAMAGE": 120.0
+    },
+    "file_path": "C:\\Users\\lunar\\IdeaProjects\\Deepwither_V2\\src\\main\\java\\com\\ruskserver\\deepwither_V2\\modules\\item\\definitions\\VulcanDriver.java"
+  }
+]

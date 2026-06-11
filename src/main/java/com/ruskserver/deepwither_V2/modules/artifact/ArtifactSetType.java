@@ -48,7 +48,8 @@ public enum ArtifactSetType {
                     Component.text("2セット: 防御力 +25, HP自動回復強化", NamedTextColor.AQUA),
                     Component.text("3セット: 物理被弾時、受けたダメージの10%をマナへ変換", NamedTextColor.LIGHT_PURPLE),
                     Component.text("         HP30%以下で60秒CDの再生IIを付与", NamedTextColor.GRAY),
-                    Component.text("         魔法防御力 +15", NamedTextColor.GRAY)
+                    Component.text("         魔法防御力 +15", NamedTextColor.GRAY),
+                    Component.text("         被物理ダメージ 15% 軽減", NamedTextColor.GRAY)
             );
             case LUNAR_SKIRMISHER -> List.of(
                     Component.text("2セット: 移動速度 +2%, クリティカルダメージ +10%", NamedTextColor.AQUA),

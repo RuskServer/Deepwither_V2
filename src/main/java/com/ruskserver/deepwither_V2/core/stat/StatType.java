@@ -18,7 +18,8 @@ public enum StatType {
     COOLDOWN_REDUCTION("クールタイム短縮"),
     FIRE_DAMAGE("火属性攻撃力"),
     ICE_DAMAGE("氷属性攻撃力"),
-    LIGHTNING_DAMAGE("雷属性攻撃力");
+    LIGHTNING_DAMAGE("雷属性攻撃力"),
+    PHYSICAL_DAMAGE_REDUCTION("物理ダメージ軽減");
 
     private final String displayName;
 

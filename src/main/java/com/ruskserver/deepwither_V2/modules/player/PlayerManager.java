@@ -272,14 +272,14 @@ public class PlayerManager implements Listener, PlayerLifecycleTask {
                     return;
                 }
 
-                // STR: 1pt -> 攻撃力 +1% (乗算)
+                // STR: 1pt -> 攻撃力 +0.7% (乗算)
                 int str = attrData.getAttribute(AttributeType.STR);
-                statManager.setModifier(uuid, StatType.ATTACK_DAMAGE, "attr_str", str * 0.01, ModifierType.MULTIPLICATIVE);
+                statManager.setModifier(uuid, StatType.ATTACK_DAMAGE, "attr_str", str * 0.007, ModifierType.MULTIPLICATIVE);
 
-                // VIT: 1pt -> 最大HP +1%, 防御力 +0.5%
+                // VIT: 1pt -> 最大HP +1%, 防御力 +0.75%
                 int vit = attrData.getAttribute(AttributeType.VIT);
                 statManager.setModifier(uuid, StatType.HEALTH, "attr_vit", vit * 0.01, ModifierType.MULTIPLICATIVE);
-                statManager.setModifier(uuid, StatType.DEFENSE, "attr_vit", vit * 0.005, ModifierType.MULTIPLICATIVE);
+                statManager.setModifier(uuid, StatType.DEFENSE, "attr_vit", vit * 0.0075, ModifierType.MULTIPLICATIVE);
 
                 // MND: 1pt -> クリティカルダメージ +1.5%, 魔法ダメージ +1.5%
                 int mnd = attrData.getAttribute(AttributeType.MND);

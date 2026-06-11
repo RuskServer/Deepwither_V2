@@ -168,6 +168,7 @@ public class ModifierManager {
             case SPEED -> 1.0;
             case COOLDOWN_REDUCTION -> 3.0;
             case FIRE_DAMAGE, ICE_DAMAGE, LIGHTNING_DAMAGE -> 4.0;
+            case PHYSICAL_DAMAGE_REDUCTION -> 0.05;
         };
     }
 

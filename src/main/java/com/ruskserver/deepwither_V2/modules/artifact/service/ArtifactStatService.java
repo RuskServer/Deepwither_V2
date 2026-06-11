@@ -128,30 +128,40 @@ public class ArtifactStatService implements Listener, PlayerLifecycleTask {
             int count = entry.getValue();
 
             if (count >= 2) {
-                String sourceId = "artifact_set_2pc_" + setType.name();
+                String sourceId2pc = "artifact_set_2pc_" + setType.name();
                 switch (setType) {
                     case ABYSS_PULSATION -> {
-                        statManager.setModifier(uuid, StatType.HEALTH, sourceId, 0.1, ModifierType.MULTIPLICATIVE);
-                        statManager.setModifier(uuid, StatType.MAGIC_DAMAGE, sourceId, 0.08, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.HEALTH, sourceId2pc, 0.1, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.MAGIC_DAMAGE, sourceId2pc, 0.08, ModifierType.MULTIPLICATIVE);
                     }
                     case CELESTIAL_RESONANCE -> {
-                        statManager.setModifier(uuid, StatType.MAX_MANA, sourceId, 60.0, ModifierType.ADDITIVE);
-                        statManager.setModifier(uuid, StatType.MAGIC_DAMAGE, sourceId, 0.15, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.MAX_MANA, sourceId2pc, 60.0, ModifierType.ADDITIVE);
+                        statManager.setModifier(uuid, StatType.MAGIC_DAMAGE, sourceId2pc, 0.15, ModifierType.MULTIPLICATIVE);
                     }
                     case FAULT_LINE -> {
-                        statManager.setModifier(uuid, StatType.ATTACK_DAMAGE, sourceId, 12.0, ModifierType.ADDITIVE);
-                        statManager.setModifier(uuid, StatType.CRITICAL_CHANCE, sourceId, 0.02, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.ATTACK_DAMAGE, sourceId2pc, 12.0, ModifierType.ADDITIVE);
+                        statManager.setModifier(uuid, StatType.CRITICAL_CHANCE, sourceId2pc, 0.02, ModifierType.MULTIPLICATIVE);
                     }
                     case ASTRAL_STEEL_GUARD -> {
-                        statManager.setModifier(uuid, StatType.DEFENSE, sourceId, 25.0, ModifierType.ADDITIVE);
+                        statManager.setModifier(uuid, StatType.DEFENSE, sourceId2pc, 25.0, ModifierType.ADDITIVE);
                     }
                     case LUNAR_SKIRMISHER -> {
-                        statManager.setModifier(uuid, StatType.SPEED, sourceId, 0.02, ModifierType.MULTIPLICATIVE);
-                        statManager.setModifier(uuid, StatType.CRITICAL_DAMAGE, sourceId, 0.10, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.SPEED, sourceId2pc, 0.02, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.CRITICAL_DAMAGE, sourceId2pc, 0.10, ModifierType.MULTIPLICATIVE);
                     }
                     case ETERNAL_HEARTS -> {
-                        statManager.setModifier(uuid, StatType.HEALTH, sourceId, 0.25, ModifierType.MULTIPLICATIVE);
-                        statManager.setModifier(uuid, StatType.DEFENSE, sourceId, 0.10, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.HEALTH, sourceId2pc, 0.25, ModifierType.MULTIPLICATIVE);
+                        statManager.setModifier(uuid, StatType.DEFENSE, sourceId2pc, 0.10, ModifierType.MULTIPLICATIVE);
+                    }
+                }
+            }
+
+            if (count >= 3) {
+                String sourceId3pc = "artifact_set_3pc_" + setType.name();
+                switch (setType) {
+                    case ASTRAL_STEEL_GUARD -> {
+                        // 物理ダメージ 15% 軽減
+                        statManager.setModifier(uuid, StatType.PHYSICAL_DAMAGE_REDUCTION, sourceId3pc, 0.15, ModifierType.ADDITIVE);
                     }
                 }
             }
