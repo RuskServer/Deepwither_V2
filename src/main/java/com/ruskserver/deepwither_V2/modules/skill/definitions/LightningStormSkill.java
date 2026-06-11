@@ -1,16 +1,25 @@
 package com.ruskserver.deepwither_V2.modules.skill.definitions;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
-import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.api.CastResult;
+import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.time.Duration;
@@ -36,8 +45,8 @@ public class LightningStormSkill implements Skill {
     @Override
     public List<String> getDescription() {
         return List.of(
-                "前方へ複数の雷撃を放ち、視線方向の敵を打ち抜く。",
-                "最大7m先の敵に魔法ダメージ(100%)を与える。"
+                "自身を中心に無数の雷撃を全方位に降り注がせる。",
+                "周囲7mの敵に魔法ダメージ(100%)を与える。"
         );
     }
 
@@ -70,37 +79,49 @@ public class LightningStormSkill implements Skill {
 
     @Override
     public CastResult cast(SkillContext context) {
-        Location eyeLoc = context.getEyeLocation();
-        Vector direction = context.getDirection();
+        var player = context.getCaster();
+        var center = player.getLocation();
 
-        for (int i = 0; i < 5; i++) {
-            Vector spread = new Vector(
-                    (Math.random() - 0.5) * 0.6,
-                    (Math.random() - 0.5) * 0.3,
-                    (Math.random() - 0.5) * 0.6
-            );
-            Vector boltDir = direction.clone().add(spread).normalize();
-            double range = 3.0 + Math.random() * 4.0;
-            Location boltLoc = eyeLoc.clone().add(boltDir.multiply(range));
+        center.getWorld().playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.8f, 1.2f);
 
-            boltLoc.getWorld().spawnParticle(Particle.FLASH, boltLoc, 1, 0, 0, 0, 0, Color.WHITE);
-            boltLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, boltLoc, 15, 0.3, 0.3, 0.3, 0.05);
-        }
+        new BukkitRunnable() {
+            int wave = 0;
 
-        eyeLoc.getWorld().playSound(eyeLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.6f, 1.5f);
+            @Override
+            public void run() {
+                if (wave >= 3 || !player.isOnline()) {
+                    cancel();
+                    return;
+                }
 
-        double range = 7.0;
-        double angleCos = Math.cos(Math.toRadians(50));
+                int bolts = 6 + wave * 2;
+                for (int i = 0; i < bolts; i++) {
+                    double angle = Math.random() * Math.PI * 2;
+                    double radius = 1.5 + Math.random() * 5.5;
+                    double x = Math.cos(angle) * radius;
+                    double z = Math.sin(angle) * radius;
+                    Location boltLoc = center.clone().add(x, 0.5 + Math.random() * 2.0, z);
 
-        eyeLoc.getWorld().getNearbyEntities(eyeLoc, range, range, range).forEach(entity -> {
-            if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                Vector toTarget = living.getLocation().toVector().subtract(eyeLoc.toVector());
-                if (toTarget.length() <= range) {
-                    double dot = toTarget.normalize().dot(direction);
-                    if (dot >= angleCos) {
-                        damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 1.0, getTags());
-                        living.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, living.getLocation().add(0, 1, 0), 8, 0.2, 0.2, 0.2, 0.05);
+                    boltLoc.getWorld().spawnParticle(Particle.FLASH, boltLoc, 1, 0, 0, 0, 0);
+                    boltLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, boltLoc, 12 + wave * 3, 0.3, 0.3, 0.3, 0.05);
+                }
+
+                center.getWorld().getNearbyEntities(center, 7.0, 5.0, 7.0).forEach(entity -> {
+                    if (entity instanceof LivingEntity living && !entity.equals(player)) {
+                        if (living.getLocation().distance(center) <= 7.0) {
+                            living.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, living.getLocation().add(0, 1, 0), 6, 0.2, 0.2, 0.2, 0.05);
+                        }
                     }
+                });
+
+                wave++;
+            }
+        }.runTaskTimer(JavaPlugin.getPlugin(Deepwither_V2.class), 0L, 6L);
+
+        center.getWorld().getNearbyEntities(center, 7.0, 5.0, 7.0).forEach(entity -> {
+            if (entity instanceof LivingEntity living && !entity.equals(player)) {
+                if (living.getLocation().distance(center) <= 7.0) {
+                    damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.0, getTags());
                 }
             }
         });
