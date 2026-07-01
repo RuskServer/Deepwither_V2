@@ -220,6 +220,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         World dungeonWorld = plugin.getServer().createWorld(creator);
         if (dungeonWorld == null) {
             log.severe("[DungeonInstanceManager] ワールド生成失敗: " + worldName);
+            deleteRecursively(worldFolder);
             return null;
         }
 
@@ -245,6 +246,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         if (layout.getPlacedRoomCount() == 0) {
             log.severe("[DungeonInstanceManager] 入口ルーム配置失敗: " + instanceId);
             plugin.getServer().unloadWorld(dungeonWorld, false);
+            deleteRecursively(worldFolder);
             return null;
         }
 
@@ -272,6 +274,11 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     // ========================================================================
 
     public boolean joinDungeon(UUID playerId, String instanceId) {
+        if (playerToInstance.containsKey(playerId)) {
+            log.warning("[DungeonInstanceManager] プレイヤー " + playerId + " は既に別のダンジョンに参加しています");
+            return false;
+        }
+
         DungeonInstance instance = activeInstances.get(instanceId);
         if (instance == null || !instance.isActive()) return false;
 
@@ -461,10 +468,16 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
         plugin.getServer().unloadWorld(world, false);
         java.io.File worldFolder = new java.io.File(plugin.getServer().getWorldContainer(), worldName);
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+
+        if (plugin.getServer().isStopping()) {
             deleteRecursively(worldFolder);
-            log.info("[DungeonInstanceManager] ワールド削除完了 (非同期): " + worldName);
-        });
+            log.info("[DungeonInstanceManager] ワールド削除完了: " + worldName);
+        } else {
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                deleteRecursively(worldFolder);
+                log.info("[DungeonInstanceManager] ワールド削除完了 (非同期): " + worldName);
+            });
+        }
     }
 
     private void deleteRecursively(java.io.File file) {

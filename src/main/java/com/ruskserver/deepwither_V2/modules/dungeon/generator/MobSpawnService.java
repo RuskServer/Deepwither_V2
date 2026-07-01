@@ -38,9 +38,12 @@ public class MobSpawnService {
             if (mob != null && mob.getEntity() != null) {
                 mob.getEntity().setRemoveWhenFarAway(false);
                 spawned.add(mob);
+                log.fine("[MobSpawnService] Spawned " + effectiveMobId + " at ("
+                        + pos.x() + ", " + pos.y() + ", " + pos.z() + ")");
+            } else {
+                log.warning("[MobSpawnService] Failed to spawn " + effectiveMobId + " at ("
+                        + pos.x() + ", " + pos.y() + ", " + pos.z() + ")");
             }
-            log.fine("[MobSpawnService] Spawned " + effectiveMobId + " at ("
-                    + pos.x() + ", " + pos.y() + ", " + pos.z() + ")");
         }
 
         log.info("[MobSpawnService] Spawned " + spawned.size() + " dungeon mobs (" + effectiveMobId + ")");

@@ -103,6 +103,13 @@ public class CommandDungeon implements BasicCommand {
             return;
         }
 
+        // 事前に参加状態をチェック
+        DungeonInstance currentInstance = instanceManager.getPlayerInstance(player.getUniqueId());
+        if (currentInstance != null) {
+            stack.getSender().sendMessage(Component.text("既にダンジョンに参加しています: " + currentInstance.getInstanceId(), NamedTextColor.RED));
+            return;
+        }
+
         stack.getSender().sendMessage(Component.text("ダンジョン生成中: " + definition.displayName() + "...", NamedTextColor.YELLOW));
 
         // void ワールドを作成
@@ -113,12 +120,6 @@ public class CommandDungeon implements BasicCommand {
         DungeonInstance instance = instanceManager.createInstance(definitionId, creator);
         if (instance == null) {
             stack.getSender().sendMessage(Component.text("ダンジョン生成に失敗しました。", NamedTextColor.RED));
-            return;
-        }
-
-        DungeonInstance currentInstance = instanceManager.getPlayerInstance(player.getUniqueId());
-        if (currentInstance != null) {
-            stack.getSender().sendMessage(Component.text("既にダンジョンに参加しています: " + currentInstance.getInstanceId(), NamedTextColor.RED));
             return;
         }
 

@@ -37,10 +37,8 @@ public record DoorConnection(
      * @return 配置座標
      */
     public BlockVector3 calculatePlacement(BlockVector3 entryDoorPosition, int rotation) {
-        // 回転後の入口ドアオフセットを計算
         BlockVector3 rotatedOffset = rotatePosition(entryDoorPosition, rotation);
-        // ワールド座標 = 既存ドア位置 - 回転後の入口ドアオフセット
-        return worldPosition.subtract(rotatedOffset);
+        return worldPosition.add(door.direction().getOffset()).subtract(rotatedOffset);
     }
 
     /**

@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -73,7 +74,10 @@ public class LootService {
         if (block.getState() instanceof Chest chest) {
             chest.getInventory().clear();
             for (ItemStack item : items) {
-                chest.getInventory().addItem(item);
+                Map<Integer, ItemStack> leftover = chest.getInventory().addItem(item);
+                if (!leftover.isEmpty()) {
+                    log.warning("[LootService] チェスト容量不足: " + leftover.size() + " 個のアイテムを格納できませんでした");
+                }
             }
             chest.update();
         }

@@ -74,7 +74,9 @@ public class SchematicGenerator {
         // 南ドア出口 (z=10)
         clipboard.setBlock(BlockVector3.at(2, 1, length - 1), gold);
 
-        save(clipboard, file);
+        if (!save(clipboard, file)) {
+            log.warning("[SchematicGenerator] corrider_straight 生成失敗");
+        }
     }
 
     /**
@@ -105,7 +107,9 @@ public class SchematicGenerator {
         // ラピス (入口テレポート地点)
         clipboard.setBlock(BlockVector3.at(3, 1, 3), lapis);
 
-        save(clipboard, file);
+        if (!save(clipboard, file)) {
+            log.warning("[SchematicGenerator] room_small 生成失敗");
+        }
     }
 
     // --- ヘルパー ---
@@ -139,7 +143,7 @@ public class SchematicGenerator {
         return new File(folder, name + ".schem");
     }
 
-    private void save(BlockArrayClipboard clipboard, File file) {
+    private boolean save(BlockArrayClipboard clipboard, File file) {
         ClipboardFormat format = ClipboardFormats.findByFile(file);
         if (format == null) {
             format = BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC;
@@ -147,9 +151,11 @@ public class SchematicGenerator {
 
         try (ClipboardWriter writer = format.getWriter(new FileOutputStream(file))) {
             writer.write(clipboard);
-            log.fine("[SchematicGenerator] 生成: " + file.getName());
+            log.info("[SchematicGenerator] 生成: " + file.getName());
+            return true;
         } catch (IOException e) {
             log.warning("[SchematicGenerator] 生成失敗: " + file.getName() + " - " + e.getMessage());
+            return false;
         }
     }
 }
