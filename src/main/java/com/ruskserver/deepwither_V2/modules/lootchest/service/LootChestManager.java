@@ -132,6 +132,14 @@ public class LootChestManager implements Startable, Stoppable {
         spawnChest(loc);
     }
 
+    public void placeOneShotChest(Location location, String lootTableId) {
+        Block block = location.getBlock();
+        block.setType(Material.CHEST);
+
+        Chest chest = (Chest) block.getState();
+        fillChest(chest, lootTableId);
+    }
+
     private void spawnChest(LootChestLocation loc) {
         loc.setSpawned(true);
         loc.setNextSpawnTime(null);

@@ -11,8 +11,11 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
 @Service
-public class PlayerLifecyclePipeline {
+public class PlayerLifecyclePipeline implements com.ruskserver.deepwither_V2.core.lifecycle.Stoppable {
     private final Deepwither_V2 plugin;
     private final Logger logger;
     private final List<PlayerLifecycleTask> tasks;
@@ -62,6 +65,18 @@ public class PlayerLifecyclePipeline {
         } catch (Throwable t) {
             logger.log(Level.SEVERE, "Player lifecycle task failed: " + task.getClass().getSimpleName(), t);
             return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    @Override
+    public void stop() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            try {
+                run(PlayerLifecycleEventType.QUIT, player);
+                logger.info("Executed QUIT lifecycle on shutdown for online player: " + player.getName());
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Failed to execute QUIT lifecycle on shutdown for online player: " + player.getName(), e);
+            }
         }
     }
 }
