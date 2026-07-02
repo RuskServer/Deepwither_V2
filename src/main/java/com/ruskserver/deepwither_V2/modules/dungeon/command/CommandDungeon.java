@@ -52,10 +52,20 @@ public class CommandDungeon implements BasicCommand {
             return;
         }
 
+        // leave は誰でも使える
+        if (args[0].equalsIgnoreCase("leave")) {
+            handleLeave(stack);
+            return;
+        }
+
+        if (!stack.getSender().isOp()) {
+            stack.getSender().sendMessage(Component.text("権限がありません。", NamedTextColor.RED));
+            return;
+        }
+
         switch (args[0].toLowerCase()) {
             case "start" -> handleStart(stack, args);
             case "join" -> handleJoin(stack, args);
-            case "leave" -> handleLeave(stack);
             case "list" -> handleList(stack);
             case "info" -> handleInfo(stack);
             default -> sendHelp(stack);

@@ -27,7 +27,7 @@ dependencies {
     compileOnly("com.sk89q.worldedit:worldedit-core:7.3.10")     { isTransitive = false }
 
     // Citizens & Vault
-    // VaultAPI は古ぁEBukkit に依存してぁE��ため、推移皁E��存を無効化して競合を回避
+    // VaultAPI は古いBukkit に依存してぁE��ため、推移依存を無効化して競合を回避
     compileOnly("net.citizensnpcs:citizens-main:2.0.36-SNAPSHOT") { isTransitive = false }
     compileOnly("com.github.MilkBowl:VaultAPI:1.7") { isTransitive = false }
     compileOnly("me.clip:placeholderapi:2.11.6") { isTransitive = false }
