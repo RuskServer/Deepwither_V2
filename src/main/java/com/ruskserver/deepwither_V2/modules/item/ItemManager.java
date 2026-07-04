@@ -31,6 +31,7 @@ import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,8 +103,17 @@ public class ItemManager implements Startable {
             item.setItemMeta(meta);
         }
 
-        // ランダムモディファイアの決定
-        ModifierRollResult rollResult = modifierManager.rollModifiers(customItem);
+        // ランダムモディファイアの決定（素材アイテム等、ベースステータスがないものはスキップ）
+        ModifierRollResult rollResult;
+        if (customItem.getBaseStats().isEmpty()) {
+            rollResult = new ModifierRollResult(
+                    new EnumMap<>(StatType.class),
+                    new EnumMap<>(StatType.class),
+                    new ArrayList<>()
+            );
+        } else {
+            rollResult = modifierManager.rollModifiers(customItem);
+        }
 
         // PDCにデータを書き込む
         pdcUtil.setItemId(item, itemId);

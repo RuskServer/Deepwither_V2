@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 @Service
 public class RevivalManager implements Startable, Stoppable, Listener, PlayerLifecycleTask {
 
-    private static final int REVIVE_RANGE = 3;
+    private static final int REVIVE_RANGE = 5;
     private static final double REVIVE_RANGE_SQ = REVIVE_RANGE * REVIVE_RANGE;
     private static final int PROGRESS_NEEDED = 50;
     private static final long TIMEOUT_MS = 120_000;
@@ -293,14 +293,26 @@ public class RevivalManager implements Startable, Stoppable, Listener, PlayerLif
                 }
             }
 
-            List<Player> nearbyRevivers = target.getNearbyEntities(REVIVE_RANGE, REVIVE_RANGE, REVIVE_RANGE)
+            Entity mannequin = Bukkit.getEntity(data.mannequinId);
+            Location corpseLocation = (mannequin != null && !mannequin.isDead())
+                    ? mannequin.getLocation()
+                    : data.location;
+
+            List<Player> nearbyPlayers = corpseLocation.getWorld().getNearbyEntities(corpseLocation, REVIVE_RANGE, REVIVE_RANGE, REVIVE_RANGE)
                     .stream()
                     .filter(e -> e instanceof Player)
                     .map(e -> (Player) e)
                     .filter(p -> !p.equals(target))
-                    .filter(Player::isSneaking)
                     .filter(p -> !isDowned(p))
-                    .filter(p -> p.getLocation().distanceSquared(target.getLocation()) <= REVIVE_RANGE_SQ)
+                    .filter(p -> p.getLocation().distanceSquared(corpseLocation) <= REVIVE_RANGE_SQ)
+                    .collect(Collectors.toList());
+
+            for (Player nearby : nearbyPlayers) {
+                nearby.sendActionBar(Component.text("§eスニークで蘇生できます"));
+            }
+
+            List<Player> nearbyRevivers = nearbyPlayers.stream()
+                    .filter(Player::isSneaking)
                     .collect(Collectors.toList());
 
             Set<UUID> reviverIds = nearbyRevivers.stream().map(Player::getUniqueId).collect(Collectors.toSet());

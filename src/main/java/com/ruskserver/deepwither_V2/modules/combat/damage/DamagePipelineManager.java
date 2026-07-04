@@ -12,6 +12,8 @@ import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
 import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
+import com.ruskserver.deepwither_V2.modules.party.Party;
+import com.ruskserver.deepwither_V2.modules.party.PartyManager;
 import com.ruskserver.deepwither_V2.modules.revival.RevivalManager;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
@@ -52,6 +54,7 @@ public class DamagePipelineManager implements Listener {
     private final MobRegionConfig regionConfig;
     private final TraderService traderService;
     private final DamageFeedbackService feedbackService;
+    private final PartyManager partyManager;
     private final NamespacedKey corpseKey;
     private final List<DamagePhase> pipeline = new ArrayList<>();
 
@@ -59,13 +62,14 @@ public class DamagePipelineManager implements Listener {
     private final Map<UUID, Long> nextDamageTimeMap = new ConcurrentHashMap<>();
 
     @Inject
-    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, MobRegionConfig regionConfig, TraderService traderService, DamageFeedbackService feedbackService, org.bukkit.plugin.java.JavaPlugin plugin) {
+    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, MobRegionConfig regionConfig, TraderService traderService, DamageFeedbackService feedbackService, PartyManager partyManager, org.bukkit.plugin.java.JavaPlugin plugin) {
         this.healthManager = healthManager;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
         this.regionConfig = regionConfig;
         this.traderService = traderService;
         this.feedbackService = feedbackService;
+        this.partyManager = partyManager;
         this.corpseKey = new NamespacedKey(plugin, RevivalManager.CORPSE_TAG);
 
         // パイプラインのフェーズを順番に登録する
@@ -97,6 +101,11 @@ public class DamagePipelineManager implements Listener {
         if (attacker == null) return;
 
         if (isBlockedPvp(attacker, defender)) {
+            cancelDamage(event);
+            return;
+        }
+
+        if (isSameParty(attacker, defender)) {
             cancelDamage(event);
             return;
         }
@@ -228,6 +237,14 @@ public class DamagePipelineManager implements Listener {
                 || regionConfig.isInPvpDisabledRegion(defender.getLocation());
     }
 
+    private boolean isSameParty(LivingEntity attacker, LivingEntity defender) {
+        if (!(attacker instanceof Player playerA) || !(defender instanceof Player playerD)) {
+            return false;
+        }
+        Party party = partyManager.getParty(playerA);
+        return party != null && party.isMember(playerD.getUniqueId());
+    }
+
     private void cancelDamage(EntityDamageEvent event) {
         event.setDamage(0);
         event.setCancelled(true);
@@ -271,7 +288,7 @@ public class DamagePipelineManager implements Listener {
      * 距離倍率指定可能な processDamage のオーバーロード。
      */
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags, double distanceMultiplier) {
-        if (isProtectedTrader(defender) || isBlockedPvp(attacker, defender)) {
+        if (isProtectedTrader(defender) || isBlockedPvp(attacker, defender) || isSameParty(attacker, defender)) {
             return;
         }
 

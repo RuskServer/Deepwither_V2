@@ -19,7 +19,9 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -38,6 +40,8 @@ public class DungeonPortalManager implements Startable {
     private final NamespacedKey dungeonIdKey;
     private final NamespacedKey portalXKey;
     private final NamespacedKey portalZKey;
+
+    private final Map<String, String> portalToInstance = new HashMap<>();
 
     @Inject
     public DungeonPortalManager(JavaPlugin plugin, PortalLocationRepository portalRepo,
@@ -88,6 +92,18 @@ public class DungeonPortalManager implements Startable {
         if (item == null || !item.hasItemMeta()) return null;
         return item.getItemMeta().getPersistentDataContainer()
                 .get(dungeonIdKey, PersistentDataType.STRING);
+    }
+
+    public String getActiveInstanceForPortal(String portalId) {
+        return portalToInstance.get(portalId);
+    }
+
+    public void registerPortalInstance(String portalId, String instanceId) {
+        portalToInstance.put(portalId, instanceId);
+    }
+
+    public void unregisterPortalInstance(String portalId) {
+        portalToInstance.remove(portalId);
     }
 
     public Location readPortalLocation(ItemStack item, World defaultWorld) {

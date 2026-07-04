@@ -179,6 +179,10 @@ public class TraderInventoryGui implements Listener {
             lore = new ArrayList<>(lore);
         }
 
+        // トレーダーGUIでは販売価格行を除去（購入価格と混同しないように）
+        var plainSerializer = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText();
+        lore.removeIf(c -> plainSerializer.serialize(c).contains("販売価格"));
+
         lore.add(Component.empty());
         lore.add(Component.text("--- 取引情報 ---", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
 
