@@ -271,10 +271,15 @@ public class RevivalManager implements Startable, Stoppable, Listener, PlayerLif
             Player target = Bukkit.getPlayer(data.playerId);
             if (target == null || !target.isOnline()) continue;
 
-            // スペクテイター: ダウン地点から5ブロック以内に制限
-            if (target.getLocation().distanceSquared(data.location) > 5 * 5) {
-                target.teleport(data.location);
-                target.sendMessage(Component.text("§c>> ダウン地点から離れすぎています！"));
+            // スペクテイター: 死体から5ブロック以内に制限
+            Entity mannequin = Bukkit.getEntity(data.mannequinId);
+            Location corpseLocation = (mannequin != null && !mannequin.isDead())
+                    ? mannequin.getLocation()
+                    : data.location;
+
+            if (target.getLocation().distanceSquared(corpseLocation) > 5 * 5) {
+                target.teleport(corpseLocation);
+                target.sendMessage(Component.text("§c>> 死体から離れすぎています！"));
             }
 
             boolean hasActiveSession = sessions.containsKey(data.playerId);
@@ -292,11 +297,6 @@ public class RevivalManager implements Startable, Stoppable, Listener, PlayerLif
                     bar.setProgress(Math.min(1.0, progress));
                 }
             }
-
-            Entity mannequin = Bukkit.getEntity(data.mannequinId);
-            Location corpseLocation = (mannequin != null && !mannequin.isDead())
-                    ? mannequin.getLocation()
-                    : data.location;
 
             List<Player> nearbyPlayers = corpseLocation.getWorld().getNearbyEntities(corpseLocation, REVIVE_RANGE, REVIVE_RANGE, REVIVE_RANGE)
                     .stream()
@@ -337,7 +337,7 @@ public class RevivalManager implements Startable, Stoppable, Listener, PlayerLif
             });
 
             if (revivalJustStarted) {
-                target.teleport(data.location);
+                target.teleport(corpseLocation);
                 target.sendMessage(Component.text("§e>> 蘇生が開始されました！"));
             }
 
