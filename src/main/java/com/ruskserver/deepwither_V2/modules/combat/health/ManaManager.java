@@ -48,8 +48,8 @@ public class ManaManager implements Startable, Stoppable, Listener {
 
                 double current = getMana(player);
                 if (current < maxMana) {
-                    // 最大マナの5%を毎秒回復 (または基礎ステータス MANA_REGEN を作るなど拡張可能)
-                    double regenAmount = maxMana * 0.05;
+                    // 最大マナの2%を毎秒回復
+                    double regenAmount = maxMana * 0.02;
                     double newMana = Math.min(current + regenAmount, maxMana);
                     currentManaMap.put(player.getUniqueId(), newMana);
                 }

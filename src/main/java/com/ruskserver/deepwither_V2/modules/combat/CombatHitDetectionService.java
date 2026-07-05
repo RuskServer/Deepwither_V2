@@ -78,6 +78,7 @@ public class CombatHitDetectionService implements Listener {
         for (Entity entity : candidates) {
             if (!(entity instanceof LivingEntity target) || entity.equals(attacker)) continue;
             if (entity instanceof org.bukkit.entity.ArmorStand || entity instanceof org.bukkit.entity.Hanging) continue;
+            if (target instanceof Player p && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) continue;
 
             if (!profile.shape().isHit(origin, direction, target, reach, rotation)) continue;
 

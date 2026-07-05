@@ -297,6 +297,11 @@ public class DamagePipelineManager implements Listener {
             return;
         }
 
+        // スペクテイターはダメージを受けない
+        if (defender instanceof Player p && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+            return;
+        }
+
         // 無敵時間（i-frame）のチェック
         long now = System.currentTimeMillis();
         UUID id = defender.getUniqueId();
