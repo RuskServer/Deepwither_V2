@@ -24,6 +24,9 @@ import java.util.List;
  * @param maxBranches       同時未接続ドア数の上限（分岐の広がりを制御）
  * @param roomSlots         使用するルームスロットのリスト
  * @param bossRoomSchematic  ボスルームのスケマティック名（空文字の場合、ボスルームなし）
+ * @param seed              乱数シード（0の場合はランダムシードを使用）
+ * @param minCorridorsBeforeRoom  部屋の間に最低限配置する通路の数
+ * @param maxCorridorsBeforeRoom  部屋の前に最大で配置できる通路の数（超えると強制部屋）
  */
 public class DungeonDefinition {
 
@@ -39,6 +42,9 @@ public class DungeonDefinition {
     private final String bossRoomSchematic;
     private final String lootTableId;
     private final String mobId;
+    private final long seed;
+    private final int minCorridorsBeforeRoom;
+    private final int maxCorridorsBeforeRoom;
 
     protected DungeonDefinition(
             String id,
@@ -64,7 +70,10 @@ public class DungeonDefinition {
                 roomSlots,
                 bossRoomSchematic,
                 "ghoul_nest",
-                "ghoul"
+                "ghoul",
+                0L,
+                1,
+                3
         );
     }
 
@@ -82,6 +91,42 @@ public class DungeonDefinition {
             String lootTableId,
             String mobId
     ) {
+        this(
+                id,
+                displayName,
+                schematicFolder,
+                maxDepth,
+                timeLimitMinutes,
+                lives,
+                branchChance,
+                maxBranches,
+                roomSlots,
+                bossRoomSchematic,
+                lootTableId,
+                mobId,
+                0L,
+                1,
+                3
+        );
+    }
+
+    protected DungeonDefinition(
+            String id,
+            String displayName,
+            String schematicFolder,
+            int maxDepth,
+            int timeLimitMinutes,
+            int lives,
+            double branchChance,
+            int maxBranches,
+            List<RoomSlot> roomSlots,
+            String bossRoomSchematic,
+            String lootTableId,
+            String mobId,
+            long seed,
+            int minCorridorsBeforeRoom,
+            int maxCorridorsBeforeRoom
+    ) {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("id は空にできません");
         if (displayName == null || displayName.isBlank()) throw new IllegalArgumentException("displayName は空にできません");
         if (schematicFolder == null || schematicFolder.isBlank()) throw new IllegalArgumentException("schematicFolder は空にできません");
@@ -91,6 +136,8 @@ public class DungeonDefinition {
         if (branchChance < 0.0 || branchChance > 1.0) throw new IllegalArgumentException("branchChance は0.0〜1.0の範囲でなければなりません");
         if (maxBranches < 0) throw new IllegalArgumentException("maxBranches は0以上でなければなりません");
         if (roomSlots == null) throw new IllegalArgumentException("roomSlots は null にできません");
+        if (minCorridorsBeforeRoom < 0) throw new IllegalArgumentException("minCorridorsBeforeRoom は0以上でなければなりません");
+        if (maxCorridorsBeforeRoom < minCorridorsBeforeRoom) throw new IllegalArgumentException("maxCorridorsBeforeRoom は minCorridorsBeforeRoom 以上でなければなりません");
 
         this.id = id;
         this.displayName = displayName;
@@ -104,6 +151,9 @@ public class DungeonDefinition {
         this.bossRoomSchematic = bossRoomSchematic != null ? bossRoomSchematic : "";
         this.lootTableId = lootTableId != null && !lootTableId.isBlank() ? lootTableId : "ghoul_nest";
         this.mobId = mobId != null && !mobId.isBlank() ? mobId : "ghoul";
+        this.seed = seed;
+        this.minCorridorsBeforeRoom = minCorridorsBeforeRoom;
+        this.maxCorridorsBeforeRoom = maxCorridorsBeforeRoom;
     }
 
     // --- Getters ---
@@ -120,6 +170,9 @@ public class DungeonDefinition {
     public String bossRoomSchematic() { return bossRoomSchematic; }
     public String lootTableId() { return lootTableId; }
     public String mobId() { return mobId; }
+    public long seed() { return seed; }
+    public int minCorridorsBeforeRoom() { return minCorridorsBeforeRoom; }
+    public int maxCorridorsBeforeRoom() { return maxCorridorsBeforeRoom; }
 
     /**
      * 分岐パスが有効か（branchChance > 0 かつ分岐ルームが1つ以上定義されている）を判定します。
@@ -158,6 +211,16 @@ public class DungeonDefinition {
                         .filter(slot -> acceptTags.stream().anyMatch(slot.tags()::contains))
                         .toList()
         );
+    }
+
+    /**
+     * 指定のルーム種別が通路系かを判定します。
+     */
+    public static boolean isCorridorType(RoomType type) {
+        return type == RoomType.CORRIDOR_STRAIGHT
+                || type == RoomType.CORRIDOR_TURN
+                || type == RoomType.CORRIDOR_T
+                || type == RoomType.CORRIDOR_CROSS;
     }
 
     @Override

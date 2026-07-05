@@ -381,7 +381,9 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
                     instance.getLayout(),
                     door,
                     instance.getCurrentDepth(),
-                    branchingEnabled
+                    branchingEnabled,
+                    instance.getRng(),
+                    instance.getConsecutiveCorridors()
             );
 
             if (result == null) {
@@ -409,9 +411,19 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             }
             lootService.placeChests(instance.getWorld(), result.placementResult().lootWorldPositions(), instance.getDefinition().lootTableId());
 
+            // ペース管理: 配置したスロットの種別に応じて連続通路カウンタを更新
+            if (result.roomSlot() != null) {
+                if (DungeonDefinition.isCorridorType(result.roomSlot().type())) {
+                    instance.incrementConsecutiveCorridors();
+                } else {
+                    instance.resetConsecutiveCorridors();
+                }
+            }
+
             log.fine("[DungeonInstanceManager] ルーム生成: " + result.placedRoom().schematic().schematicId()
                     + " depth=" + instance.getCurrentDepth()
-                    + " pending=" + instance.getPendingDoors().size());
+                    + " pending=" + instance.getPendingDoors().size()
+                    + " corridors=" + instance.getConsecutiveCorridors());
 
         } catch (Exception e) {
             log.severe("[DungeonInstanceManager] ルーム生成例外: " + e.getMessage());
