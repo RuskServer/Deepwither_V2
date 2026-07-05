@@ -9,9 +9,7 @@ import com.ruskserver.deepwither_V2.modules.character.CharacterPersistenceExcept
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterStatus;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
-import com.ruskserver.deepwither_V2.modules.character.gui.CharacterCreateGui;
-import com.ruskserver.deepwither_V2.modules.character.gui.CharacterSelectGui;
-import com.ruskserver.deepwither_V2.modules.gui.GuiService;
+import com.ruskserver.deepwither_V2.modules.character.gui.CharacterDialogService;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
@@ -35,14 +33,14 @@ public class CommandCharacter implements BasicCommand {
 
     private final CharacterService characterService;
     private final CharacterNameTagService nameTagService;
-    private final GuiService guiService;
+    private final CharacterDialogService dialogService;
     private final Deepwither_V2 plugin;
 
     @Inject
-    public CommandCharacter(CharacterService characterService, CharacterNameTagService nameTagService, GuiService guiService, Deepwither_V2 plugin) {
+    public CommandCharacter(CharacterService characterService, CharacterNameTagService nameTagService, CharacterDialogService dialogService, Deepwither_V2 plugin) {
         this.characterService = characterService;
         this.nameTagService = nameTagService;
-        this.guiService = guiService;
+        this.dialogService = dialogService;
         this.plugin = plugin;
     }
 
@@ -73,11 +71,11 @@ public class CommandCharacter implements BasicCommand {
     }
 
     public void openCharacterSelect(Player player) {
-        guiService.open(player, CharacterSelectGui.ID);
+        dialogService.openSelect(player);
     }
 
     public void openCharacterCreate(Player player) {
-        guiService.open(player, CharacterCreateGui.ID);
+        dialogService.openCreate(player);
     }
 
     public void showCharacterList(Player player) {

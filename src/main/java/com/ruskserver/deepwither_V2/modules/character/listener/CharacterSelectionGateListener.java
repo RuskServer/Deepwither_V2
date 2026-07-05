@@ -8,10 +8,7 @@ import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventTy
 import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
 import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
-import com.ruskserver.deepwither_V2.modules.character.gui.CharacterCreateGui;
-import com.ruskserver.deepwither_V2.modules.character.gui.CharacterSelectGui;
-import com.ruskserver.deepwither_V2.modules.gui.GuiInventoryHolder;
-import com.ruskserver.deepwither_V2.modules.gui.GuiService;
+import com.ruskserver.deepwither_V2.modules.character.gui.CharacterDialogService;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -40,14 +37,14 @@ public class CharacterSelectionGateListener implements Listener, PlayerLifecycle
     private static final long PROMPT_INTERVAL_MILLIS = 2_000L;
 
     private final CharacterService characterService;
-    private final GuiService guiService;
+    private final CharacterDialogService dialogService;
     private final Deepwither_V2 plugin;
     private final Map<UUID, Long> lastPromptAt = new ConcurrentHashMap<>();
 
     @Inject
-    public CharacterSelectionGateListener(CharacterService characterService, GuiService guiService, Deepwither_V2 plugin) {
+    public CharacterSelectionGateListener(CharacterService characterService, CharacterDialogService dialogService, Deepwither_V2 plugin) {
         this.characterService = characterService;
-        this.guiService = guiService;
+        this.dialogService = dialogService;
         this.plugin = plugin;
     }
 
@@ -102,9 +99,6 @@ public class CharacterSelectionGateListener implements Listener, PlayerLifecycle
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player) || !requiresCharacterSelection(player)) return;
-        if (isOpenCharacterGui(event.getView().getTopInventory().getHolder())) {
-            return;
-        }
         event.setCancelled(true);
         promptSelection(player);
     }
@@ -112,9 +106,6 @@ public class CharacterSelectionGateListener implements Listener, PlayerLifecycle
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInventoryDrag(InventoryDragEvent event) {
         if (!(event.getWhoClicked() instanceof Player player) || !requiresCharacterSelection(player)) return;
-        if (isOpenCharacterGui(event.getView().getTopInventory().getHolder())) {
-            return;
-        }
         event.setCancelled(true);
         promptSelection(player);
     }
@@ -177,14 +168,7 @@ public class CharacterSelectionGateListener implements Listener, PlayerLifecycle
         }
 
         player.sendMessage(net.kyori.adventure.text.Component.text("プレイするにはキャラクターを選択してください。", NamedTextColor.YELLOW));
-        guiService.open(player, CharacterSelectGui.ID);
-    }
-
-    private boolean isOpenCharacterGui(org.bukkit.inventory.InventoryHolder holder) {
-        if (!(holder instanceof GuiInventoryHolder guiHolder)) {
-            return false;
-        }
-        return CharacterSelectGui.ID.equals(guiHolder.getGuiId()) || CharacterCreateGui.ID.equals(guiHolder.getGuiId());
+        dialogService.openSelect(player);
     }
 
     private Player findAttackingPlayer(EntityDamageByEntityEvent event) {

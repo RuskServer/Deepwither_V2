@@ -11,8 +11,7 @@ import com.ruskserver.deepwither_V2.modules.character.CharacterMode;
 import com.ruskserver.deepwither_V2.modules.character.CharacterNameTagService;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.character.GameCharacter;
-import com.ruskserver.deepwither_V2.modules.character.gui.CharacterSelectGui;
-import com.ruskserver.deepwither_V2.modules.gui.GuiService;
+import com.ruskserver.deepwither_V2.modules.character.gui.CharacterDialogService;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
@@ -31,16 +30,16 @@ import org.bukkit.scheduler.BukkitTask;
 public class CharacterJoinListener implements PlayerLifecycleTask {
     private final CharacterService characterService;
     private final CharacterNameTagService nameTagService;
-    private final GuiService guiService;
+    private final CharacterDialogService dialogService;
     private final Deepwither_V2 plugin;
     private final Logger logger;
 
     @Inject
     public CharacterJoinListener(CharacterService characterService, CharacterNameTagService nameTagService,
-                                 GuiService guiService, Deepwither_V2 plugin, Logger logger) {
+                                 CharacterDialogService dialogService, Deepwither_V2 plugin, Logger logger) {
         this.characterService = characterService;
         this.nameTagService = nameTagService;
-        this.guiService = guiService;
+        this.dialogService = dialogService;
         this.plugin = plugin;
         this.logger = logger;
     }
@@ -127,11 +126,11 @@ public class CharacterJoinListener implements PlayerLifecycleTask {
         }
 
         context.runSync(() -> context.player().ifPresent(player -> {
-            nameTagService.refresh(player, CharacterMode.STANDARD);
+                    nameTagService.refresh(player, CharacterMode.STANDARD);
             player.sendMessage(net.kyori.adventure.text.Component.text(
                     "アクティブキャラクターがありません。キャラクターを選択または作成してください。",
                     NamedTextColor.YELLOW));
-            guiService.open(player, CharacterSelectGui.ID);
+            dialogService.openSelect(player);
         })).whenComplete((ignored, error) -> {
             if (error != null) {
                 future.completeExceptionally(error);

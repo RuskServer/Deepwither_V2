@@ -6,7 +6,7 @@ import com.ruskserver.deepwither_V2.core.stat.AttributeType;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.artifact.gui.ArtifactGui;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
-import com.ruskserver.deepwither_V2.modules.character.gui.CharacterSelectGui;
+import com.ruskserver.deepwither_V2.modules.character.gui.CharacterDialogService;
 import com.ruskserver.deepwither_V2.modules.gui.GuiClickContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiItemBuilder;
@@ -51,7 +51,7 @@ public class MainMenuGui implements GuiView {
             new MenuEntry(38, Material.CHEST, "パーティー", NamedTextColor.DARK_GREEN,
                     "仲間とのパーティー募集や管理を開く", "party"),
             new MenuEntry(42, Material.PLAYER_HEAD, "キャラクター選択", NamedTextColor.YELLOW,
-                    "別キャラクターへ切り替える", CharacterSelectGui.ID)
+                    "別キャラクターへ切り替える", "character_select_dialog")
     );
 
     private final PlayerManager playerManager;
@@ -60,6 +60,7 @@ public class MainMenuGui implements GuiView {
     private final StatManager statManager;
     private final TraderService traderService;
     private final ArtifactGui artifactGui;
+    private final CharacterDialogService characterDialogService;
 
     @Inject
     public MainMenuGui(PlayerManager playerManager,
@@ -67,13 +68,15 @@ public class MainMenuGui implements GuiView {
                        CharacterService characterService,
                        StatManager statManager,
                        TraderService traderService,
-                       ArtifactGui artifactGui) {
+                       ArtifactGui artifactGui,
+                       CharacterDialogService characterDialogService) {
         this.playerManager = playerManager;
         this.characterDataRepository = characterDataRepository;
         this.characterService = characterService;
         this.statManager = statManager;
         this.traderService = traderService;
         this.artifactGui = artifactGui;
+        this.characterDialogService = characterDialogService;
     }
 
     @Override
@@ -279,10 +282,13 @@ public class MainMenuGui implements GuiView {
             if (entry.slot() != slot) {
                 continue;
             }
-            if ("artifact".equals(entry.targetGuiId())) {
+            String target = entry.targetGuiId();
+            if ("artifact".equals(target)) {
                 artifactGui.openGui(player);
+            } else if ("character_select_dialog".equals(target)) {
+                characterDialogService.openSelect(player);
             } else {
-                context.open(entry.targetGuiId());
+                context.open(target);
             }
             return;
         }
