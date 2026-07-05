@@ -131,11 +131,20 @@ public class ThunderStrikeSkill implements Skill {
                 }
 
                 if (tick % 4 == 0) {
+                    // 地面直上のブロックリング（起伏のある地形でも可視）
                     for (int i = 0; i < 36; i++) {
                         double angle = Math.toRadians(i * 10);
                         double x = Math.cos(angle) * radius;
                         double z = Math.sin(angle) * radius;
-                        Location particleLoc = strikeLoc.clone().add(x, 0.2, z);
+                        Location groundLoc = strikeLoc.clone().add(x, -0.05, z);
+                        strikeLoc.getWorld().spawnParticle(Particle.BLOCK, groundLoc, 1, 0, 0, 0, 0, Material.GLOWSTONE.createBlockData());
+                    }
+                    // 浮遊スパークリング（視認性確保）
+                    for (int i = 0; i < 36; i++) {
+                        double angle = Math.toRadians(i * 10);
+                        double x = Math.cos(angle) * radius;
+                        double z = Math.sin(angle) * radius;
+                        Location particleLoc = strikeLoc.clone().add(x, 0.8, z);
                         strikeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLoc, 2, 0, 0.1, 0, 0.05);
                     }
                 }

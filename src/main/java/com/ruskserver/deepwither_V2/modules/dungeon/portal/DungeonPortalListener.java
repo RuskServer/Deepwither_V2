@@ -71,12 +71,32 @@ public class DungeonPortalListener implements Listener {
 
             if (dist > ENTRY_RANGE) continue;
 
-            if (!hasValidMap(player, portal)) continue;
+            if (!canEnterPortal(player, portal)) continue;
 
             entryCooldown.put(player.getUniqueId(), now);
             enterDungeon(player, portal);
             return;
         }
+    }
+
+    private boolean canEnterPortal(Player player, PortalLocation portal) {
+        if (hasValidMap(player, portal)) return true;
+
+        String instanceId = portalManager.getActiveInstanceForPortal(portal.id());
+        if (instanceId == null) return false;
+
+        DungeonInstance inst = instanceManager.getInstance(instanceId);
+        if (inst == null || !inst.isActive()) return false;
+
+        Party party = partyManager.getParty(player);
+        if (party == null) return false;
+
+        for (UUID memberId : party.getMembers()) {
+            if (inst.getParticipants().contains(memberId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean hasValidMap(Player player, PortalLocation portal) {
@@ -99,7 +119,7 @@ public class DungeonPortalListener implements Listener {
         String existingId = portalManager.getActiveInstanceForPortal(portalId);
         if (existingId != null && instanceManager.getInstance(existingId) != null) {
             if (instanceManager.joinDungeon(player.getUniqueId(), existingId)) {
-                consumeMap(player, portal);
+                if (hasValidMap(player, portal)) consumeMap(player, portal);
                 player.sendMessage(Component.text("§aパーティーのダンジョンに参加しました。"));
             } else {
                 player.sendMessage(Component.text("§cダンジョンへの参加に失敗しました。", NamedTextColor.RED));
@@ -109,7 +129,7 @@ public class DungeonPortalListener implements Listener {
 
         String instanceId = createNewDungeon(player, portal);
         if (instanceId != null) {
-            consumeMap(player, portal);
+            if (hasValidMap(player, portal)) consumeMap(player, portal);
             portalManager.registerPortalInstance(portalId, instanceId);
             notifyPartyMembers(player, portal, instanceId);
         }
