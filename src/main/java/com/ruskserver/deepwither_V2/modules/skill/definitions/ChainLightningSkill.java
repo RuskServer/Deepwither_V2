@@ -6,6 +6,8 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillProjectileService;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailHelper;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -74,10 +76,19 @@ public class ChainLightningSkill implements Skill {
 
     @Override
     public CastResult cast(SkillContext context) {
+        var player = context.getCaster();
+        var eyeLoc = context.getEyeLocation();
+        var dir = context.getDirection().clone();
+
+        // 発射エフェクト
+        TrailCircleHelper.spawnCircle(eyeLoc, 0.4, Color.fromRGB(100, 149, 237), 6, 8, dir, 0);
+        TrailCircleHelper.spawnCircle(eyeLoc, 0.6, Color.fromRGB(70, 130, 255), 5, 10, dir, 45);
+        eyeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, eyeLoc, 0, dir.getX(), dir.getY(), dir.getZ(), 0.2);
+
         SkillProjectile projectile = new SkillProjectile(
-                context.getCaster(),
-                context.getEyeLocation().add(context.getDirection().multiply(0.6)),
-                context.getDirection(),
+                player,
+                eyeLoc.add(dir.clone().multiply(0.6)),
+                dir,
                 1.4,
                 0.8,
                 60
@@ -86,12 +97,16 @@ public class ChainLightningSkill implements Skill {
 
             @Override
             protected void onTick() {
-                getCurrentLocation().getWorld().spawnParticle(Particle.ELECTRIC_SPARK, getCurrentLocation(), 2, 0.1, 0.1, 0.1, 0.02);
+                var loc = getCurrentLocation();
+                loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 2, 0.1, 0.1, 0.1, 0.02);
+                loc.getWorld().spawnParticle(Particle.GLOW, loc, 1, 0.05, 0.05, 0.05, 0);
+                loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 0, dir.getX(), dir.getY(), dir.getZ(), 0.08);
+                TrailCircleHelper.spawnCircle(loc, 0.2, Color.fromRGB(70, 130, 255), 3, 4, dir, getTicksLived() * 45);
             }
 
             @Override
             protected void onHitEntity(LivingEntity target) {
-                chain(target, getCurrentLocation());
+                chain(target, getCurrentLocation(), player);
                 remove();
             }
 
@@ -100,11 +115,15 @@ public class ChainLightningSkill implements Skill {
                 remove();
             }
 
-            private void chain(LivingEntity hit, Location origin) {
-                damagePipelineManager.processScaledDamage(context.getCaster(), hit, DamageType.MAGIC, 1.25, getTags());
+            private void chain(LivingEntity hit, Location origin, LivingEntity caster) {
+                damagePipelineManager.processScaledDamage(caster, hit, DamageType.MAGIC, 1.25, getTags());
 
-                origin.getWorld().spawnParticle(Particle.FLASH, hit.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0, Color.WHITE);
+                var hitLoc = hit.getLocation().add(0, 1, 0);
+                origin.getWorld().spawnParticle(Particle.FLASH, hitLoc, 1, 0, 0, 0, 0, Color.WHITE);
+                origin.getWorld().spawnParticle(Particle.SONIC_BOOM, hitLoc, 3, 0.5, 0.5, 0.5, 0);
                 origin.getWorld().playSound(hit.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.6f, 1.5f);
+
+                TrailCircleHelper.spawnCircle(hit.getLocation().add(0, 0.1, 0), 1.0, Color.fromRGB(70, 130, 255), 6, 12);
 
                 if (chainsRemaining <= 0) return;
                 chainsRemaining--;
@@ -112,7 +131,7 @@ public class ChainLightningSkill implements Skill {
                 LivingEntity next = null;
                 double nearest = 5.0;
                 for (LivingEntity entity : hit.getLocation().getNearbyLivingEntities(5.0)) {
-                    if (entity.equals(context.getCaster()) || entity.equals(hit)) continue;
+                    if (entity.equals(caster) || entity.equals(hit)) continue;
                     double dist = entity.getLocation().distance(hit.getLocation());
                     if (dist < nearest) {
                         nearest = dist;
@@ -121,24 +140,15 @@ public class ChainLightningSkill implements Skill {
                 }
 
                 if (next != null) {
-                    spawnChainParticles(hit.getLocation().add(0, 1, 0), next.getLocation().add(0, 1, 0));
-                    chain(next, next.getLocation());
-                }
-            }
-
-            private void spawnChainParticles(Location from, Location to) {
-                Vector direction = to.toVector().subtract(from.toVector());
-                double length = direction.length();
-                direction.normalize();
-                for (double d = 0; d < length; d += 0.5) {
-                    Location point = from.clone().add(direction.clone().multiply(d));
-                    from.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, point, 1, 0, 0, 0, 0);
+                    var nextLoc = next.getLocation().add(0, 1, 0);
+                    TrailHelper.spawnLine(hitLoc, nextLoc, Color.fromRGB(70, 130, 255), 4);
+                    chain(next, next.getLocation(), caster);
                 }
             }
         };
 
         if (projectileService.launch(projectile)) {
-            context.getCaster().playSound(context.getCaster().getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.4f, 2.0f);
+            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.4f, 2.0f);
             return CastResult.success();
         }
         return CastResult.fail();

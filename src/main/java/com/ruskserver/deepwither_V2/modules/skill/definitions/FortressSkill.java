@@ -6,12 +6,15 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -81,6 +84,10 @@ public class FortressSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, loc, 1, 0, 0, 0, 0);
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 40, 2.0, 0.5, 2.0, 0.2);
         loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_HURT, 1.0f, 0.6f);
+
+        // 7mの吸い寄せ範囲リング
+        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 7.0, Color.fromRGB(180, 100, 60), 15, 36);
+        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 6.5, Color.fromRGB(200, 120, 80), 12, 30, new Vector(0, 1, 0), 30);
 
         player.getNearbyEntities(7.0, 7.0, 7.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {

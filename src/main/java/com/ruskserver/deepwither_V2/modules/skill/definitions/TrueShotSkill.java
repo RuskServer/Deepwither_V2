@@ -245,7 +245,7 @@ public class TrueShotSkill implements Skill {
             );
             
             // ライン中心の衝撃波（最も強い）
-            TrailCircleHelper.spawnCircle(shockwaveLoc, 0.8, Color.fromRGB(30, 144, 255), 8, 16);
+            TrailCircleHelper.spawnCircle(shockwaveLoc, 0.8, Color.fromRGB(30, 144, 255), 8, 16, direction, 0);
             
             // 両側に小さな衝撃波（角度指定）
             if (i > 0 && i < shockwaveCount) {
@@ -256,12 +256,12 @@ public class TrueShotSkill implements Skill {
                 // 左側の衝撃波
                 Vector leftDir = rotateVector(direction, leftAngle);
                 Location leftLoc = shockwaveLoc.clone().add(leftDir.multiply(1.0));
-                TrailCircleHelper.spawnCircle(leftLoc, 0.4, Color.fromRGB(100, 149, 237), 5, 8);
+                TrailCircleHelper.spawnCircle(leftLoc, 0.4, Color.fromRGB(100, 149, 237), 5, 8, direction, 0);
                 
                 // 右側の衝撃波
                 Vector rightDir = rotateVector(direction, rightAngle);
                 Location rightLoc = shockwaveLoc.clone().add(rightDir.multiply(1.0));
-                TrailCircleHelper.spawnCircle(rightLoc, 0.4, Color.fromRGB(100, 149, 237), 5, 8);
+                TrailCircleHelper.spawnCircle(rightLoc, 0.4, Color.fromRGB(100, 149, 237), 5, 8, direction, 0);
             }
         }
     }
@@ -287,7 +287,7 @@ public class TrueShotSkill implements Skill {
         // 前方に伸びる衝撃波
         for (int i = 1; i <= 5; i++) {
             Location forwardLoc = location.clone().add(direction.clone().multiply(i * 1.5));
-            TrailCircleHelper.spawnCircle(forwardLoc, (6 - i) * 0.8, Color.fromRGB(30, 144, 255), 10 - i, 20 - i * 2);
+            TrailCircleHelper.spawnCircle(forwardLoc, (6 - i) * 0.8, Color.fromRGB(30, 144, 255), 10 - i, 20 - i * 2, direction, 0);
         }
         
         // サウンドエフェクト
@@ -303,14 +303,14 @@ public class TrueShotSkill implements Skill {
             Location blastLoc = center.clone().add(direction.clone().multiply(distance));
             
             // 前方への衝撃波
-            TrailCircleHelper.spawnCircle(blastLoc, 1.5 - i * 0.2, Color.fromRGB(255, 69, 0), 8, 12);
+            TrailCircleHelper.spawnCircle(blastLoc, 1.5 - i * 0.2, Color.fromRGB(255, 69, 0), 8, 12, direction, 0);
             
             // 両側の小さな衝撃波
             if (i > 0) {
                 Vector perpDir = getPerpendicularVector(direction);
                 for (int side = -1; side <= 1; side += 2) {
                     Location sideLoc = blastLoc.clone().add(perpDir.clone().multiply(side * 0.5));
-                    TrailCircleHelper.spawnCircle(sideLoc, 0.6, Color.fromRGB(255, 140, 0), 5, 8);
+                    TrailCircleHelper.spawnCircle(sideLoc, 0.6, Color.fromRGB(255, 140, 0), 5, 8, direction, 0);
                 }
             }
         }

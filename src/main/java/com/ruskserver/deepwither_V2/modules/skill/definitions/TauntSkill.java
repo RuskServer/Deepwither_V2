@@ -5,10 +5,13 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -67,9 +70,14 @@ public class TauntSkill implements Skill {
 
     @Override
     public CastResult cast(SkillContext context) {
-        var loc = context.getCaster().getLocation().add(0, 1, 0);
+        var player = context.getCaster();
+        var loc = player.getLocation().add(0, 1, 0);
         loc.getWorld().spawnParticle(Particle.ANGRY_VILLAGER, loc, 15, 1.5, 0.5, 1.5, 0.1);
         loc.getWorld().playSound(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.6f, 1.8f);
+
+        // 6mの威嚇範囲リング
+        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 6.0, Color.fromRGB(255, 80, 80), 15, 30);
+        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 5.5, Color.fromRGB(200, 60, 60), 12, 26, new Vector(0, 1, 0), 30);
 
         context.getCaster().getNearbyEntities(6.0, 6.0, 6.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {

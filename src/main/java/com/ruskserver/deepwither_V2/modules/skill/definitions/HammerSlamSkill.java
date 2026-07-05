@@ -5,10 +5,13 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -69,10 +72,19 @@ public class HammerSlamSkill implements Skill {
     public CastResult cast(SkillContext context) {
         var player = context.getCaster();
         var loc = player.getLocation();
+        var world = loc.getWorld();
 
-        loc.getWorld().spawnParticle(Particle.BLOCK, loc, 30, 1.0, 0.2, 1.0, 0.2, org.bukkit.Material.STONE.createBlockData());
-        loc.getWorld().spawnParticle(Particle.CRIT, loc.add(0, 0.5, 0), 15, 1.0, 0.1, 1.0, 0.1);
-        loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.7f);
+        world.playSound(loc, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.6f, 0.5f);
+
+        // 広がる衝撃波リング
+        TrailCircleHelper.spawnCircle(loc, 1.0, Color.fromRGB(160, 120, 80), 8, 12);
+        TrailCircleHelper.spawnCircle(loc, 2.0, Color.fromRGB(140, 100, 60), 7, 16, new Vector(0, 1, 0), 30);
+        TrailCircleHelper.spawnCircle(loc, 3.5, Color.fromRGB(120, 80, 40), 6, 20);
+
+        world.spawnParticle(Particle.BLOCK, loc, 40, 3.5, 0.2, 3.5, 0.3, Material.STONE.createBlockData());
+        world.spawnParticle(Particle.BLOCK, loc.clone().add(0, 0.5, 0), 20, 3.0, 0.5, 3.0, 0.2, Material.DIRT.createBlockData());
+        world.spawnParticle(Particle.CRIT, loc.clone().add(0, 0.3, 0), 20, 3.0, 0.3, 3.0, 0.15);
+        world.playSound(loc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.7f);
 
         player.getNearbyEntities(3.5, 3.5, 3.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {

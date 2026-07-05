@@ -7,6 +7,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillProjectileService;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -17,6 +18,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -85,18 +87,31 @@ public class ThunderBlastSkill implements Skill {
 
     @Override
     public CastResult cast(SkillContext context) {
+        var player = context.getCaster();
+        var eyeLoc = context.getEyeLocation();
+        var dir = context.getDirection().clone();
+
         SkillProjectile projectile = new SkillProjectile(
-                context.getCaster(),
-                context.getEyeLocation().add(context.getDirection().multiply(0.6)),
-                context.getDirection(),
+                player,
+                eyeLoc.add(dir.clone().multiply(0.6)),
+                dir,
                 0.8,
                 0.8,
                 100
         ) {
             @Override
             protected void onTick() {
-                getCurrentLocation().getWorld().spawnParticle(Particle.ELECTRIC_SPARK, getCurrentLocation(), 4, 0.15, 0.15, 0.15, 0.03);
-                getCurrentLocation().getWorld().spawnParticle(Particle.CRIT, getCurrentLocation(), 1, 0.05, 0.05, 0.05, 0.01);
+                var loc = getCurrentLocation();
+                var world = loc.getWorld();
+
+                // 雷球本体
+                world.spawnParticle(Particle.ELECTRIC_SPARK, loc, 4, 0.15, 0.15, 0.15, 0.03);
+                world.spawnParticle(Particle.CRIT, loc, 1, 0.05, 0.05, 0.05, 0.01);
+                world.spawnParticle(Particle.GLOW, loc, 2, 0.1, 0.1, 0.1, 0);
+
+                // 軌道に沿った電撃リング
+                TrailCircleHelper.spawnCircle(loc, 0.3, Color.fromRGB(100, 149, 237), 4, 6, dir, getTicksLived() * 30);
+                TrailCircleHelper.spawnCircle(loc, 0.5, Color.fromRGB(70, 130, 255), 4, 8, dir, getTicksLived() * 30 + 45);
             }
 
             @Override
@@ -112,18 +127,36 @@ public class ThunderBlastSkill implements Skill {
             }
 
             private void detonate(Location location) {
-                location.getWorld().spawnParticle(Particle.FLASH, location, 1, 0, 0, 0, 0, Color.WHITE);
-                location.getWorld().playSound(location, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.8f, 1.0f);
+                var world = location.getWorld();
 
+                // 着弾直撃：衝撃波リング + 閃光
+                world.spawnParticle(Particle.FLASH, location, 1, 0, 0, 0, 0, Color.WHITE);
+                world.spawnParticle(Particle.SONIC_BOOM, location, 5, 0.5, 0.5, 0.5, 0);
+                world.playSound(location, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.8f, 1.0f);
+
+                TrailCircleHelper.spawnCircle(location, 1.0, Color.fromRGB(100, 149, 237), 10, 16);
+                TrailCircleHelper.spawnCircle(location, 1.5, Color.fromRGB(70, 130, 255), 8, 20, new Vector(0, 1, 0), 45);
+
+                // 蓄電 → 爆発（6tick後）
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    location.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, location, 1, 0, 0, 0, 0);
-                    location.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, location, 40, 1.0, 1.0, 1.0, 0.15);
-                    location.getWorld().spawnParticle(Particle.FLASH, location, 3, 0.5, 0.5, 0.5, 0, Color.WHITE);
-                    location.getWorld().playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.8f);
+                    // メイン爆発
+                    world.spawnParticle(Particle.EXPLOSION_EMITTER, location, 1, 0, 0, 0, 0);
+                    world.spawnParticle(Particle.ELECTRIC_SPARK, location, 60, 2.0, 2.0, 2.0, 0.2);
+                    world.spawnParticle(Particle.FLASH, location, 5, 1.0, 1.0, 1.0, 0, Color.WHITE);
+                    world.spawnParticle(Particle.GLOW, location, 80, 3.0, 3.0, 3.0, 0.05);
+                    world.playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.8f);
 
-                    location.getWorld().getNearbyEntities(location, 5.0, 5.0, 5.0).forEach(entity -> {
-                        if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                            damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 4.5, getTags());
+                    // 拡大する複数の衝撃波リング
+                    for (int i = 0; i < 4; i++) {
+                        double radius = 1.5 + i * 1.0;
+                        TrailCircleHelper.spawnCircle(location, radius, Color.fromRGB(100, 149, 237), 12 - i, 20 + i * 4);
+                        TrailCircleHelper.spawnCircle(location, radius - 0.3, Color.fromRGB(70, 130, 255), 10 - i, 16 + i * 4, new Vector(0, 1, 0), 30);
+                    }
+
+                    // ダメージ・鈍足
+                    world.getNearbyEntities(location, 5.0, 5.0, 5.0).forEach(entity -> {
+                        if (entity instanceof LivingEntity living && !entity.equals(player)) {
+                            damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 4.5, getTags());
                             living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1, false, true));
                         }
                     });
@@ -132,7 +165,7 @@ public class ThunderBlastSkill implements Skill {
         };
 
         if (projectileService.launch(projectile)) {
-            context.getCaster().playSound(context.getCaster().getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.5f, 1.2f);
+            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.5f, 1.2f);
             return CastResult.success();
         }
         return CastResult.fail();

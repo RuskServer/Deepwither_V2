@@ -6,12 +6,15 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -79,12 +82,30 @@ public class ColossusSkill implements Skill {
     @Override
     public CastResult cast(SkillContext context) {
         var player = context.getCaster();
-        var loc = player.getLocation().add(0, 1, 0);
+        var loc = player.getLocation();
+        var world = loc.getWorld();
 
-        loc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, loc, 1, 0, 0, 0, 0);
-        loc.getWorld().spawnParticle(Particle.BLOCK, loc, 50, 2.5, 0.5, 2.5, 0.3, Material.STONE.createBlockData());
-        loc.getWorld().spawnParticle(Particle.CRIT, loc, 30, 2.5, 0.5, 2.5, 0.2);
-        loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.5f, 0.4f);
+        // 予兆：地面に範囲リング
+        TrailCircleHelper.spawnCircle(loc, 6.0, Color.fromRGB(180, 60, 30), 14, 36);
+        TrailCircleHelper.spawnCircle(loc, 5.0, Color.fromRGB(200, 80, 40), 12, 30, new Vector(0, 1, 0), 30);
+        world.playSound(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.8f, 0.5f);
+
+        // 衝撃
+        world.spawnParticle(Particle.EXPLOSION_EMITTER, loc.clone().add(0, 1, 0), 1, 0, 0, 0, 0);
+        world.spawnParticle(Particle.SONIC_BOOM, loc.clone().add(0, 1, 0), 3, 1.0, 0.5, 1.0, 0);
+
+        // 広がる衝撃波リング
+        TrailCircleHelper.spawnCircle(loc, 2.0, Color.fromRGB(200, 100, 50), 15, 20);
+        TrailCircleHelper.spawnCircle(loc, 4.0, Color.fromRGB(180, 80, 40), 12, 28, new Vector(0, 1, 0), 45);
+        TrailCircleHelper.spawnCircle(loc, 6.0, Color.fromRGB(160, 60, 30), 10, 36);
+
+        world.spawnParticle(Particle.BLOCK, loc.clone().add(0, 1, 0), 60, 6.0, 0.5, 6.0, 0.4, Material.STONE.createBlockData());
+        world.spawnParticle(Particle.BLOCK, loc.clone().add(0, 0.5, 0), 30, 5.0, 1.0, 5.0, 0.3, Material.DIRT.createBlockData());
+        world.spawnParticle(Particle.CRIT, loc.clone().add(0, 0.5, 0), 40, 5.0, 0.5, 5.0, 0.2);
+        world.spawnParticle(Particle.GLOW, loc.clone().add(0, 0.5, 0), 30, 4.0, 0.5, 4.0, 0.05);
+
+        world.playSound(loc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.5f, 0.4f);
+        world.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.3f);
 
         player.getNearbyEntities(6.0, 6.0, 6.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {

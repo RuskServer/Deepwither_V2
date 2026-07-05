@@ -10,14 +10,18 @@ import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailHelper;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Color;
 import org.bukkit.FluidCollisionMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -87,19 +91,40 @@ public class PowerShotSkill implements Skill {
         var eyeLoc = player.getEyeLocation();
         var dir = eyeLoc.getDirection();
 
-        var dust = new Particle.DustOptions(Color.fromRGB(200, 220, 255), 1.2f);
-        for (int i = 0; i < 12; i++) {
-            var p = eyeLoc.clone().add(dir.clone().multiply(i * 0.5));
-            p.getWorld().spawnParticle(Particle.DUST, p, 3, 0.05, 0.05, 0.05, 0, dust);
+        var trailColor = Color.fromRGB(180, 210, 255);
+
+        // 発射エフェクト: マズルリング + ベクトルバースト
+        TrailCircleHelper.spawnCircle(eyeLoc, 0.5, trailColor, 6, 10, dir, 0);
+        TrailCircleHelper.spawnCircle(eyeLoc, 0.7, Color.fromRGB(200, 230, 255), 5, 12, dir, 30);
+        eyeLoc.getWorld().spawnParticle(Particle.ENCHANT, eyeLoc, 15, 0.2, 0.2, 0.2, 0.5);
+        for (int i = 0; i < 6; i++) {
+            double angle = Math.toRadians(i * 60);
+            double x = Math.cos(angle) * 0.4;
+            double z = Math.sin(angle) * 0.4;
+            eyeLoc.getWorld().spawnParticle(Particle.CRIT, eyeLoc, 0, x + dir.getX() * 0.3, 0.3 + dir.getY() * 0.3, z + dir.getZ() * 0.3, 0.15);
         }
-        eyeLoc.getWorld().spawnParticle(Particle.ENCHANT, eyeLoc.add(dir.multiply(0.5)), 12, 0.1, 0.1, 0.1, 0.3);
-        eyeLoc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, eyeLoc, 5, 0.2, 0.2, 0.2, 0);
+
+        // ビーム軌跡
+        var tLoc = target.getLocation().add(0, 1, 0);
+        var beamDir = tLoc.toVector().subtract(eyeLoc.toVector());
+        double beamLen = beamDir.length();
+        beamDir.normalize();
+        TrailHelper.spawnBeam(eyeLoc, beamDir, beamLen, trailColor, 6, 0.3);
         eyeLoc.getWorld().playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1.0f, 0.8f);
 
-        var tLoc = target.getLocation().add(0, 1, 0);
-        tLoc.getWorld().spawnParticle(Particle.CRIT, tLoc, 20, 0.3, 0.3, 0.3, 0.3);
-        tLoc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, tLoc, 8, 0.4, 0.2, 0.4, 0);
+        // ヒットエフェクト
+        tLoc.getWorld().spawnParticle(Particle.CRIT, tLoc, 25, 0.5, 0.5, 0.5, 0.4);
+        tLoc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, tLoc, 10, 0.5, 0.3, 0.5, 0);
         tLoc.getWorld().playSound(tLoc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.2f);
+
+        TrailCircleHelper.spawnCircle(tLoc, 1.0, trailColor, 8, 14);
+        TrailCircleHelper.spawnCircle(tLoc, 1.5, Color.fromRGB(200, 230, 255), 6, 18, new Vector(0, 1, 0), 30);
+        for (int i = 0; i < 8; i++) {
+            double angle = Math.toRadians(i * 45);
+            double x = Math.cos(angle) * 0.6;
+            double z = Math.sin(angle) * 0.6;
+            tLoc.getWorld().spawnParticle(Particle.CRIT, tLoc, 0, x, 0.4, z, 0.2);
+        }
 
         damagePipelineManager.processScaledDamage(player, target, DamageType.RANGED, 1.8, getTags());
 

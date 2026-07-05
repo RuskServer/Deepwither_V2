@@ -2,11 +2,14 @@ package com.ruskserver.deepwither_V2.modules.skill.definitions;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -60,6 +63,10 @@ public class ShieldWallSkill implements Skill {
 
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 20, 0.5, 0.5, 0.5, 0.1);
         loc.getWorld().playSound(loc, Sound.ITEM_SHIELD_BLOCK, 1.0f, 1.0f);
+
+        // バリアリング
+        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 1.5, Color.fromRGB(200, 200, 255), 20, 16);
+        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 1.0, Color.fromRGB(255, 255, 255), 16, 12, new Vector(0, 1, 0), 45);
 
         player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 120, 1, false, true));
 

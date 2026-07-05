@@ -6,11 +6,14 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillProjectileService;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -93,18 +96,32 @@ public class FireballSkill implements Skill {
 
     @Override
     public CastResult cast(SkillContext context) {
+        var player = context.getCaster();
+        var eyeLoc = context.getEyeLocation();
+        var dir = context.getDirection().clone();
+
+        TrailCircleHelper.spawnCircle(eyeLoc, 0.5, Color.fromRGB(255, 100, 0), 6, 8, dir, 0);
+        TrailCircleHelper.spawnCircle(eyeLoc, 0.3, Color.fromRGB(255, 200, 50), 5, 6, dir, 45);
+        eyeLoc.getWorld().spawnParticle(Particle.FLAME, eyeLoc, 0, dir.getX(), dir.getY(), dir.getZ(), 0.2);
+
         SkillProjectile projectile = new SkillProjectile(
-                context.getCaster(),
-                context.getEyeLocation().add(context.getDirection().multiply(0.6)),
-                context.getDirection(),
+                player,
+                eyeLoc.add(dir.clone().multiply(0.6)),
+                dir,
                 1.2,
                 0.8,
                 80
         ) {
             @Override
             protected void onTick() {
-                getCurrentLocation().getWorld().spawnParticle(Particle.FLAME, getCurrentLocation(), 5, 0.1, 0.1, 0.1, 0.02);
-                getCurrentLocation().getWorld().spawnParticle(Particle.SMOKE, getCurrentLocation(), 2, 0.05, 0.05, 0.05, 0.01);
+                var loc = getCurrentLocation();
+                var world = loc.getWorld();
+                world.spawnParticle(Particle.FLAME, loc, 3, 0.15, 0.15, 0.15, 0.02);
+                world.spawnParticle(Particle.SMOKE, loc, 1, 0.05, 0.05, 0.05, 0.01);
+                world.spawnParticle(Particle.GLOW, loc, 2, 0.1, 0.1, 0.1, 0);
+                world.spawnParticle(Particle.FLAME, loc, 0, dir.getX(), dir.getY(), dir.getZ(), 0.05);
+                TrailCircleHelper.spawnCircle(loc, 0.4, Color.fromRGB(255, 150, 50), 4, 6, dir, getTicksLived() * 30);
+                TrailCircleHelper.spawnCircle(loc, 0.6, Color.fromRGB(255, 100, 0), 4, 8, dir, getTicksLived() * 30 + 60);
             }
 
             @Override
@@ -120,20 +137,35 @@ public class FireballSkill implements Skill {
             }
 
             private void explode() {
-                getCurrentLocation().getWorld().spawnParticle(Particle.EXPLOSION, getCurrentLocation(), 1, 0, 0, 0, 0);
-                getCurrentLocation().getWorld().spawnParticle(Particle.FLAME, getCurrentLocation(), 20, 0.5, 0.5, 0.5, 0.1);
-                getCurrentLocation().getWorld().playSound(getCurrentLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 1.2f);
-                
-                getCurrentLocation().getWorld().getNearbyEntities(getCurrentLocation(), 3.0, 3.0, 3.0).forEach(entity -> {
-                    if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                        damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 1.5, getTags());
+                var loc = getCurrentLocation();
+                var world = loc.getWorld();
+                world.spawnParticle(Particle.EXPLOSION, loc, 1, 0, 0, 0, 0);
+                world.spawnParticle(Particle.FLAME, loc, 30, 1.5, 1.5, 1.5, 0.15);
+                world.spawnParticle(Particle.GLOW, loc, 20, 1.0, 1.0, 1.0, 0.05);
+                world.spawnParticle(Particle.LAVA, loc, 5, 0.5, 0.5, 0.5, 0);
+                world.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
+
+                TrailCircleHelper.spawnCircle(loc, 1.0, Color.fromRGB(255, 150, 50), 8, 12);
+                TrailCircleHelper.spawnCircle(loc, 2.0, Color.fromRGB(255, 100, 0), 6, 16, new Vector(0, 1, 0), 30);
+                TrailCircleHelper.spawnCircle(loc, 3.0, Color.fromRGB(200, 50, 0), 5, 20);
+
+                for (int i = 0; i < 8; i++) {
+                    double angle = Math.toRadians(i * 45);
+                    double x = Math.cos(angle) * 0.8;
+                    double z = Math.sin(angle) * 0.8;
+                    world.spawnParticle(Particle.FLAME, loc, 0, x, 0.3, z, 0.15);
+                }
+
+                loc.getWorld().getNearbyEntities(loc, 3.0, 3.0, 3.0).forEach(entity -> {
+                    if (entity instanceof LivingEntity living && !entity.equals(player)) {
+                        damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.5, getTags());
                     }
                 });
             }
         };
 
         if (projectileService.launch(projectile)) {
-            context.getCaster().playSound(context.getCaster().getLocation(), Sound.ENTITY_BLAZE_SHOOT, 0.8f, 1.0f);
+            player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.0f, 1.0f);
             return CastResult.success();
         }
         return CastResult.fail();

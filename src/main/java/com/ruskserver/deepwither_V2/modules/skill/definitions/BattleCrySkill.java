@@ -4,12 +4,15 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -70,6 +73,10 @@ public class BattleCrySkill implements Skill {
 
         loc.getWorld().spawnParticle(Particle.NOTE, loc, 20, 1.5, 0.5, 1.5, 0);
         loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.8f);
+
+        // 8mの応援範囲リング
+        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 8.0, Color.fromRGB(255, 200, 50), 20, 40);
+        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 7.5, Color.fromRGB(255, 220, 100), 16, 36, new Vector(0, 1, 0), 30);
 
         player.addPotionEffect(new PotionEffect(org.bukkit.potion.PotionEffectType.STRENGTH, 120, 0, false, true));
 

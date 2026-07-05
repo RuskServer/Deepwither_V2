@@ -60,6 +60,41 @@ Deepwither_V2 / Echoes of Aether Core Engine で作業するエージェント�
 * 例: `前方に火球を放ち、着弾地点で爆発する。` / `周囲3mの敵に魔法ダメージ(120%)と炎上(4秒)を与える。`
 * カスタムモブは `CustomMobManager#registerMob()` をコンストラクタ内で呼び自己登録します。スポーン設定は `config.yml` の `mob-regions` セクションで行います。
 
+## パーティクル演出方針
+
+Paper のパーティクルシステムでは、以下の2系統を使い分けて演出を構築します。
+
+### 系統A: Particle.TRAIL（線・輪郭）
+
+* `Particle.TRAIL` は spawn位置 → target位置 へ向かって飛ぶ「追尾する線」です。
+* `extra`(speed) パラメータは効きません。代わりに `Particle.Trail(target, color, duration)` で色・持続時間を指定します。
+* **ユーティリティ:**
+  * `TrailCircleHelper` — 円・円弧を描く。衝撃波リング、チャージリングに使用。
+  * `TrailHelper` — 直線(spawnLine/spawnSegmentedLine)、ビーム(spawnBeam)、正弦波(spawnWave)、螺旋(spawnSpiral)、扇(spawnCone)を描く。
+* TIP: 衝撃波の輪っかや魔法陣など、**形が重要な静的表現**に向く。
+
+### 系統B: ベクトルパーティクル（動きのある弾）
+
+* `count=0` + offsetを方向ベクトル + `extra`を速度 にすると、パーティクルが指定方向へ飛んでいきます。
+  ```java
+  // 炎が (1, 0.5, 0) 方向へ speed=0.1 で飛ぶ
+  world.spawnParticle(Particle.FLAME, loc, 0, 1.0, 0.5, 0.0, 0.1);
+  ```
+* この挙動は `/particle` コマンドの仕様に基づきます（count=0 で offset が方向ベクトルに変わる）。
+* 速度が実際に反映されるパーティクル種別（FLAME, ELECTRIC_SPARK, CRIT, CLOUD, SONIC_BOOM, ENCHANT, GLOW 等）でのみ使用可能です。
+* `Particle.TRAIL`/`Particle.DUST`/`Particle.DUST_COLOR_TRANSITION` など速度が効かない種別では使えません。
+* TIP: 飛翔物の軌跡、爆風、火花の飛び散りなど、**動きが重要な動的表現**に向く。
+
+### 複合テクニック
+
+* TRAIL（系統A）で輪郭や形状を描き、系統Bのベクトルパーティクルを中に通すことで、立体感と動きを両立できます。
+* 例: `TrailCircleHelper.spawnCircle()` で衝撃波リングを描き、その中心からベクトルパーティクルを放射する。
+
+### 避けるべきパターン
+
+* `count > 0` かつ `extra > 0` のパーティクルはランダム拡散し、意図した形になりません。輪郭や方向制御が必要な場面では上記2系統を使ってください。
+* スカラーパーティクルのランダム散財は「空気感」として最小限に留め、主要な演出は TRAIL またはベクトルパーティクルで構築します。
+
 ## コーディング方針
 
 * 既存の設計、命名、パッケージ構成を優先してください。

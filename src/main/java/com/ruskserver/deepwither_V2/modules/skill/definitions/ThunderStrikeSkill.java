@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,6 +14,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -84,7 +86,6 @@ public class ThunderStrikeSkill implements Skill {
             targetLoc = context.getCaster().getTargetBlock(null, 20).getLocation();
         }
 
-        // 中心座標をブロックの真ん中に調整
         final Location strikeLoc = targetLoc.clone().add(0.5, 0.1, 0.5);
         final double radius = 5.0;
         final LivingEntity caster = context.getCaster();
@@ -109,6 +110,10 @@ public class ThunderStrikeSkill implements Skill {
                     strikeLoc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, strikeLoc, 3, 2.0, 0.5, 2.0, 0);
                     strikeLoc.getWorld().spawnParticle(Particle.SONIC_BOOM, strikeLoc, 1, 0, 0, 0, 0);
 
+                    // 衝撃波リング
+                    TrailCircleHelper.spawnCircle(strikeLoc, radius, Color.fromRGB(100, 149, 237), 15, 36);
+                    TrailCircleHelper.spawnCircle(strikeLoc, radius - 1.0, Color.fromRGB(70, 130, 255), 12, 30, new Vector(0, 1, 0), 30);
+
                     for (int i = 0; i < 50; i++) {
                         double angle = Math.toRadians(i * (360.0 / 50.0));
                         double x = Math.cos(angle) * radius;
@@ -130,23 +135,29 @@ public class ThunderStrikeSkill implements Skill {
                     return;
                 }
 
+                // 地面の予兆ブロックリング
                 if (tick % 4 == 0) {
-                    // 地面直上のブロックリング（起伏のある地形でも可視）
                     for (int i = 0; i < 36; i++) {
                         double angle = Math.toRadians(i * 10);
                         double x = Math.cos(angle) * radius;
                         double z = Math.sin(angle) * radius;
-                        Location groundLoc = strikeLoc.clone().add(x, -0.05, z);
-                        strikeLoc.getWorld().spawnParticle(Particle.BLOCK, groundLoc, 1, 0, 0, 0, 0, Material.GLOWSTONE.createBlockData());
+                        strikeLoc.getWorld().spawnParticle(Particle.BLOCK, strikeLoc.clone().add(x, -0.05, z), 1, 0, 0, 0, 0, Material.GLOWSTONE.createBlockData());
+                        strikeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, strikeLoc.clone().add(x, 0.8, z), 2, 0, 0.1, 0, 0.05);
                     }
-                    // 浮遊スパークリング（視認性確保）
-                    for (int i = 0; i < 36; i++) {
-                        double angle = Math.toRadians(i * 10);
-                        double x = Math.cos(angle) * radius;
-                        double z = Math.sin(angle) * radius;
-                        Location particleLoc = strikeLoc.clone().add(x, 0.8, z);
-                        strikeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLoc, 2, 0, 0.1, 0, 0.05);
-                    }
+                }
+
+                // 上から降りてくるリング（徐々に大きく・低くなる）
+                double progress = (double) tick / 20.0;
+                double height = 15.0 * (1.0 - progress);
+                double ringRadius = radius * (0.2 + 0.8 * progress);
+                TrailCircleHelper.spawnCircle(strikeLoc.clone().add(0, height, 0), ringRadius, Color.fromRGB(100, 149, 237), 8, 16 + tick);
+
+                // FLASH 蓄積（0.5秒前から）
+                if (tick >= 10) {
+                    float intensity = (float) (tick - 10) / 10.0f;
+                    strikeLoc.getWorld().spawnParticle(Particle.FLASH, strikeLoc, 1 + (int) (intensity * 3), 0, 0, 0, 0, Color.WHITE);
+                    strikeLoc.getWorld().spawnParticle(Particle.GLOW, strikeLoc, (int) (5 + intensity * 25), radius * 0.4, 0.5, radius * 0.4, 0.02);
+                    strikeLoc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, strikeLoc.clone().add(0, height + 2, 0), 6 + (int) (intensity * 10), 1.0, 0.5, 1.0, 0.05);
                 }
 
                 strikeLoc.getWorld().spawnParticle(Particle.ENCHANT, strikeLoc, 5, 1.5, 0.3, 1.5, 0.03);

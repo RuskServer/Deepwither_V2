@@ -11,6 +11,7 @@ import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.WandItem;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Color;
@@ -122,43 +123,53 @@ public class WandAttackListener implements Listener {
         // 弾の始点（目の位置から少し下）と進行方向
         Location loc = shooter.getEyeLocation().subtract(0, 0.2, 0);
         Vector direction = loc.getDirection().normalize();
+        var world = loc.getWorld();
 
-        // 魔法攻撃力を取得（基礎値。パイプラインのBaseDamagePhaseで最終計算されますが、初期ダメージとして0を渡せばBaseDamagePhaseで自動取得されます）
+        // 発射エフェクト：杖先のリング
+        TrailCircleHelper.spawnCircle(loc, 0.4, Color.fromRGB(135, 206, 235), 6, 8, direction, 45);
+        world.spawnParticle(Particle.GLOW, loc, 5, 0.1, 0.1, 0.1, 0.02);
+        world.spawnParticle(Particle.ELECTRIC_SPARK, loc, 0, direction.getX(), direction.getY(), direction.getZ(), 0.15);
+
         final double speed = wand.getProjectileSpeed();
         final double range = wand.getMaxRange();
         final Particle particleType = wand.getProjectileParticle();
+        boolean isColored = particleType.getDataType() == Color.class;
 
         new BukkitRunnable() {
             double distanceTraveled = 0;
 
             @Override
             public void run() {
-                // 移動
                 loc.add(direction.clone().multiply(speed));
                 distanceTraveled += speed;
 
-                // 射程限界またはブロック（固体）衝突判定
                 if (distanceTraveled > range || loc.getBlock().getType().isSolid()) {
-                    // 壁に当たったエフェクト
-                    loc.getWorld().spawnParticle(Particle.POOF, loc, 5, 0.1, 0.1, 0.1, 0.05);
+                    impactEffect(loc, world, particleType, isColored);
                     this.cancel();
                     return;
                 }
 
-                // 弾の軌跡エフェクト
-                spawnParticle(loc.getWorld(), particleType, loc, 1, 0, 0, 0, 0, Color.WHITE);
+                // 弾本体のパーティクル
+                if (isColored) {
+                    world.spawnParticle(particleType, loc, 1, 0, 0, 0, 0, Color.WHITE);
+                } else {
+                    world.spawnParticle(particleType, loc, 1, 0, 0, 0, 0);
+                }
+                world.spawnParticle(Particle.GLOW, loc, 1, 0.05, 0.05, 0.05, 0);
+
+                // ベクトルパーティクルの軌跡
+                world.spawnParticle(particleType, loc, 0, direction.getX(), direction.getY(), direction.getZ(), 0.08);
+
+                // TRAILリング
+                TrailCircleHelper.spawnCircle(loc, 0.2, Color.fromRGB(100, 149, 237), 3, 4, direction, distanceTraveled * 30);
 
                 // 当たり判定 (半径0.8ブロックの球体)
-                for (Entity target : loc.getWorld().getNearbyEntities(loc, 0.8, 0.8, 0.8)) {
+                for (Entity target : world.getNearbyEntities(loc, 0.8, 0.8, 0.8)) {
                     if (target instanceof LivingEntity livingTarget && target != shooter) {
-
-                        // ダメージパイプラインに魔法ダメージとして処理を委譲
-                        // (initialDamageは0で渡すことで、パイプラインのBaseDamagePhaseが攻撃者のMAGIC_DAMAGEを自動参照してくれます)
                         damagePipelineManager.processDamage(shooter, livingTarget, DamageType.MAGIC, 0.0, wand.getTags());
 
-                        // ヒット演出
                         livingTarget.getWorld().playSound(livingTarget.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 1.0f, 1.2f);
-                        spawnParticle(livingTarget.getWorld(), Particle.FLASH, livingTarget.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0, Color.WHITE);
+                        hitEffect(livingTarget.getLocation().add(0, 1, 0), world, direction);
 
                         this.cancel();
                         return;
@@ -166,6 +177,26 @@ public class WandAttackListener implements Listener {
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private void hitEffect(Location loc, World world, Vector dir) {
+        world.spawnParticle(Particle.FLASH, loc, 1, 0, 0, 0, 0, Color.WHITE);
+        world.spawnParticle(Particle.GLOW, loc, 10, 0.5, 0.5, 0.5, 0.05);
+        world.spawnParticle(Particle.ELECTRIC_SPARK, loc, 0, dir.getX(), dir.getY(), dir.getZ(), 0.2);
+        for (int i = 0; i < 6; i++) {
+            double angle = Math.toRadians(i * 60);
+            double x = Math.cos(angle) * 0.5;
+            double z = Math.sin(angle) * 0.5;
+            world.spawnParticle(Particle.ELECTRIC_SPARK, loc, 0, x, 0.2, z, 0.1);
+        }
+        TrailCircleHelper.spawnCircle(loc, 1.0, Color.fromRGB(100, 149, 237), 6, 12);
+        TrailCircleHelper.spawnCircle(loc, 0.7, Color.fromRGB(70, 130, 255), 5, 10, new Vector(0, 1, 0), 30);
+    }
+
+    private void impactEffect(Location loc, World world, Particle particleType, boolean isColored) {
+        world.spawnParticle(Particle.POOF, loc, 8, 0.1, 0.1, 0.1, 0.05);
+        world.spawnParticle(Particle.GLOW, loc, 5, 0.3, 0.3, 0.3, 0.02);
+        TrailCircleHelper.spawnCircle(loc, 0.5, Color.fromRGB(150, 150, 150), 4, 6);
     }
 
     private void spawnParticle(World world, Particle particle, Location location, int count,
