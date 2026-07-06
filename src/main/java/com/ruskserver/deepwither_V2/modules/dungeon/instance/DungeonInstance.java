@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.dungeon.instance;
 import com.ruskserver.deepwither_V2.modules.dungeon.definition.DungeonDefinition;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.DoorConnection;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.DungeonLayout;
+import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.World;
 
@@ -45,6 +46,9 @@ public class DungeonInstance {
     /** 現在の連続通路数（部屋配置時のペース制御に使用） */
     private int consecutiveCorridors;
 
+    private final DungeonModifierContext modifierContext;
+    private final long effectiveTimeLimitMillis;
+
     public DungeonInstance(
             String instanceId,
             DungeonDefinition definition,
@@ -53,7 +57,8 @@ public class DungeonInstance {
             String worldName,
             BlockVector3 origin,
             int maxLives,
-            List<DoorConnection> initialPendingDoors
+            List<DoorConnection> initialPendingDoors,
+            DungeonModifierContext modifierContext
     ) {
         this.instanceId = instanceId;
         this.definition = definition;
@@ -71,6 +76,9 @@ public class DungeonInstance {
                 ? new Random(definition.seed() ^ instanceId.hashCode())
                 : new Random();
         this.consecutiveCorridors = 0;
+        this.modifierContext = modifierContext != null ? modifierContext : DungeonModifierContext.none();
+        this.effectiveTimeLimitMillis = (long) (definition.timeLimitMinutes() * 60000L
+                * this.modifierContext.combinedTimeLimit());
     }
 
     // --- 逐次生成 ---
@@ -200,16 +208,12 @@ public class DungeonInstance {
      */
     public boolean isTimedOut() {
         long elapsed = System.currentTimeMillis() - startTimeMillis;
-        return elapsed >= definition.timeLimitMinutes() * 60L * 1000L;
+        return elapsed >= effectiveTimeLimitMillis;
     }
 
-    /**
-     * 残り時間をミリ秒で返します。
-     */
     public long getRemainingTimeMillis() {
         long elapsed = System.currentTimeMillis() - startTimeMillis;
-        long limit = definition.timeLimitMinutes() * 60L * 1000L;
-        return Math.max(0, limit - elapsed);
+        return Math.max(0, effectiveTimeLimitMillis - elapsed);
     }
 
     // --- プレイヤー管理 ---
@@ -248,6 +252,8 @@ public class DungeonInstance {
     public int getMaxLives() { return maxLives; }
     public long getStartTimeMillis() { return startTimeMillis; }
     public Set<UUID> getParticipants() { return Collections.unmodifiableSet(participants); }
+    public DungeonModifierContext getModifierContext() { return modifierContext; }
+    public long getEffectiveTimeLimitMillis() { return effectiveTimeLimitMillis; }
 
     /**
      * ダンジョンが進行中か（ACTIVE のみ）を判定します。

@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.dungeon.portal;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.dungeon.instance.DungeonInstance;
 import com.ruskserver.deepwither_V2.modules.dungeon.instance.DungeonInstanceManager;
+import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
 import com.ruskserver.deepwither_V2.modules.party.Party;
 import com.ruskserver.deepwither_V2.modules.party.PartyManager;
 import net.kyori.adventure.text.Component;
@@ -158,7 +159,8 @@ public class DungeonPortalListener implements Listener {
                 .environment(World.Environment.NORMAL)
                 .generator(new com.ruskserver.deepwither_V2.modules.dungeon.generator.VoidChunkGenerator());
 
-        DungeonInstance instance = instanceManager.createInstance(portal.dungeonId(), creator);
+        var modCtx = findModifiersOnPlayer(player, portal);
+        DungeonInstance instance = instanceManager.createInstance(portal.dungeonId(), creator, modCtx);
         if (instance == null) {
             player.sendMessage(Component.text("ダンジョンの生成に失敗しました。", NamedTextColor.RED));
             return null;
@@ -169,7 +171,25 @@ public class DungeonPortalListener implements Listener {
             return null;
         }
 
+        if (modCtx.isPresent()) {
+            var names = modCtx.modifiers().stream().map(m -> "§" + Integer.toHexString(m.color().value() & 0xF) + m.displayName()).toList();
+            player.sendMessage(Component.text("§7[§6D§7] 適用モディファイアー: " + String.join(" §7+ ", names)));
+        }
+
         return instance.getInstanceId();
+    }
+
+    private DungeonModifierContext findModifiersOnPlayer(Player player, PortalLocation portal) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null) continue;
+            String dungeonId = portalManager.readDungeonId(item);
+            if (dungeonId == null || !dungeonId.equals(portal.dungeonId())) continue;
+            Location loc = portalManager.readPortalLocation(item, player.getWorld());
+            if (loc == null || (int) loc.getX() != (int) portal.x() || (int) loc.getZ() != (int) portal.z()) continue;
+            var modCtx = portalManager.readModifiers(item);
+            if (modCtx.isPresent()) return modCtx;
+        }
+        return DungeonModifierContext.none();
     }
 
     private void notifyPartyMembers(Player player, PortalLocation portal, String instanceId) {

@@ -133,11 +133,15 @@ public class LootChestManager implements Startable, Stoppable {
     }
 
     public void placeOneShotChest(Location location, String lootTableId) {
+        placeOneShotChest(location, lootTableId, 1.0);
+    }
+
+    public void placeOneShotChest(Location location, String lootTableId, double rollMultiplier) {
         Block block = location.getBlock();
         block.setType(Material.CHEST);
 
         Chest chest = (Chest) block.getState();
-        fillChest(chest, lootTableId);
+        fillChest(chest, lootTableId, rollMultiplier);
     }
 
     private void spawnChest(LootChestLocation loc) {
@@ -157,6 +161,10 @@ public class LootChestManager implements Startable, Stoppable {
     }
 
     private void fillChest(Chest chest, String lootTableId) {
+        fillChest(chest, lootTableId, 1.0);
+    }
+
+    private void fillChest(Chest chest, String lootTableId, double rollMultiplier) {
         LootTableDefinition def = registry.getDefinition(lootTableId);
         if (def == null) return;
 
@@ -167,9 +175,10 @@ public class LootChestManager implements Startable, Stoppable {
         if (items.isEmpty()) return;
 
         int totalWeight = items.stream().mapToInt(LootItem::weight).sum();
+        int rolls = (int) Math.ceil(def.getRolls() * Math.max(rollMultiplier, 0.0));
         Random random = new Random();
 
-        for (int i = 0; i < def.getRolls(); i++) {
+        for (int i = 0; i < rolls; i++) {
             int r = random.nextInt(totalWeight);
             int current = 0;
             for (LootItem item : items) {

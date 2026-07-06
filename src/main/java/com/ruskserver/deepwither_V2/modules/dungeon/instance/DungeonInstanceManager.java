@@ -13,6 +13,7 @@ import com.ruskserver.deepwither_V2.modules.dungeon.generator.DungeonGenerator.G
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.DungeonLayout;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.LootService;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.MobSpawnService;
+import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -194,6 +195,11 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
      */
     @SuppressWarnings("deprecation")
     public DungeonInstance createInstance(String definitionId, WorldCreator creator) {
+        return createInstance(definitionId, creator, DungeonModifierContext.none());
+    }
+
+    public DungeonInstance createInstance(String definitionId, WorldCreator creator, DungeonModifierContext modifierContext) {
+        if (modifierContext == null) modifierContext = DungeonModifierContext.none();
         DungeonDefinition definition = definitionRegistry.get(definitionId);
         if (definition == null) {
             log.warning("[DungeonInstanceManager] ダンジョン定義が見つかりません: " + definitionId);
@@ -251,16 +257,20 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         }
 
         // 入口ルームのモブ・宝をスポーン
-        mobSpawnService.spawnMobs(dungeonWorld, layout.getAllMobSpawnPositions(), definition.mobId());
+        mobSpawnService.spawnMobs(dungeonWorld, layout.getAllMobSpawnPositions(), definition.mobId(), modifierContext);
         for (var bossPos : layout.getBossSpawnPositions()) {
             bossSpawnService.spawnBoss(dungeonWorld, bossPos);
         }
-        lootService.placeChests(dungeonWorld, layout.getLootPositions(), definition.lootTableId());
+        lootService.placeChests(dungeonWorld, layout.getLootPositions(), definition.lootTableId(), modifierContext);
+
+        // モディファイアーによるライフ補正
+        int effectiveLives = definition.lives() + modifierContext.combinedExtraLives();
+        if (effectiveLives < 1) effectiveLives = 1;
 
         // インスタンス生成（逐次生成用の未接続ドアを持たせる）
         DungeonInstance instance = new DungeonInstance(
-                instanceId, definition, layout, dungeonWorld, worldName, origin, definition.lives(),
-                entryResult.pendingDoors()
+                instanceId, definition, layout, dungeonWorld, worldName, origin, effectiveLives,
+                entryResult.pendingDoors(), modifierContext
         );
         activeInstances.put(instanceId, instance);
 
@@ -405,11 +415,11 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             instance.addPendingDoors(result.newPendingDoors());
 
             // モブ・宝をスポーン
-            mobSpawnService.spawnMobs(instance.getWorld(), result.placementResult().mobSpawnWorldPositions(), instance.getDefinition().mobId());
+            mobSpawnService.spawnMobs(instance.getWorld(), result.placementResult().mobSpawnWorldPositions(), instance.getDefinition().mobId(), instance.getModifierContext());
             if (result.placementResult().bossSpawnWorldPos() != null) {
                 bossSpawnService.spawnBoss(instance.getWorld(), result.placementResult().bossSpawnWorldPos());
             }
-            lootService.placeChests(instance.getWorld(), result.placementResult().lootWorldPositions(), instance.getDefinition().lootTableId());
+            lootService.placeChests(instance.getWorld(), result.placementResult().lootWorldPositions(), instance.getDefinition().lootTableId(), instance.getModifierContext());
 
             // ペース管理: 配置したスロットの種別に応じて連続通路カウンタを更新
             if (result.roomSlot() != null) {

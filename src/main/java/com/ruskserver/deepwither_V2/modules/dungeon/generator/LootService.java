@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.dungeon.generator;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
 import com.ruskserver.deepwither_V2.modules.lootchest.service.LootChestManager;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Location;
@@ -13,6 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.logging.Logger;
 
 /**
@@ -43,23 +45,44 @@ public class LootService {
      * @return 設置したチェストの数
      */
     public int placeChests(World world, List<BlockVector3> lootPositions, String lootTableId) {
+        return placeChests(world, lootPositions, lootTableId, DungeonModifierContext.none());
+    }
+
+    public int placeChests(World world, List<BlockVector3> lootPositions) {
+        return placeChests(world, lootPositions, null, DungeonModifierContext.none());
+    }
+
+    public int placeChests(World world, List<BlockVector3> lootPositions, String lootTableId, DungeonModifierContext ctx) {
         String effectiveLootTable = (lootTableId != null && !lootTableId.isBlank()) ? lootTableId : DEFAULT_DUNGEON_LOOT_TABLE;
         int placed = 0;
+        Random rng = new Random();
+
         for (BlockVector3 pos : lootPositions) {
-            lootChestManager.placeOneShotChest(new Location(world, pos.x(), pos.y(), pos.z()), effectiveLootTable);
+            // 数量倍率 < 1.0 の場合、確率でスキップ
+            double qty = ctx.combinedLootQty();
+            if (qty < 1.0 && rng.nextDouble() >= qty) continue;
+
+            double qual = ctx.combinedLootQual();
+            lootChestManager.placeOneShotChest(new Location(world, pos.x(), pos.y(), pos.z()), effectiveLootTable, qual);
             placed++;
             log.fine("[LootService] チェスト設置: (" + pos.x() + ", " + pos.y() + ", " + pos.z() + ")");
+
+            // 数量倍率が1より大きい場合、追加チェスト
+            if (qty > 1.0) {
+                int extra = (int) Math.ceil(qty - 1.0);
+                for (int i = 0; i < extra; i++) {
+                    Location extraLoc = new Location(world,
+                            pos.x() + (rng.nextDouble() - 0.5) * 3.0,
+                            pos.y(),
+                            pos.z() + (rng.nextDouble() - 0.5) * 3.0);
+                    lootChestManager.placeOneShotChest(extraLoc, effectiveLootTable, qual);
+                    placed++;
+                }
+            }
         }
 
         log.info("[LootService] " + placed + " 個のチェストを設置しました (lootTable=" + effectiveLootTable + ")");
         return placed;
-    }
-
-    /**
-     * デフォルトのルートテーブルでチェストを設置します。
-     */
-    public int placeChests(World world, List<BlockVector3> lootPositions) {
-        return placeChests(world, lootPositions, null);
     }
 
     /**

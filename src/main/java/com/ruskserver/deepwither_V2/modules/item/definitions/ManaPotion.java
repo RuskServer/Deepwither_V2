@@ -3,7 +3,7 @@ package com.ruskserver.deepwither_V2.modules.item.definitions;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
-import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.ItemRarity;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillCooldownService;
@@ -17,27 +17,24 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * Lunaris Atelier製の回復ポーション。
- * 使用すると即座に体力を回復します。
- */
 @Component
-public class HealingPotion implements CustomItem {
+public class ManaPotion implements CustomItem {
 
-    private static final Duration COOLDOWN = Duration.ofSeconds(5);
+    private static final double MANA_RESTORE_PERCENT = 0.30;
+    private static final Duration COOLDOWN = Duration.ofSeconds(30);
 
-    private final VirtualHealthManager healthManager;
+    private final ManaManager manaManager;
     private final SkillCooldownService cooldownService;
 
     @Inject
-    public HealingPotion(VirtualHealthManager healthManager, SkillCooldownService cooldownService) {
-        this.healthManager = healthManager;
+    public ManaPotion(ManaManager manaManager, SkillCooldownService cooldownService) {
+        this.manaManager = manaManager;
         this.cooldownService = cooldownService;
     }
 
     @Override
     public String getId() {
-        return "healing_potion";
+        return "mana_potion";
     }
 
     @Override
@@ -47,7 +44,7 @@ public class HealingPotion implements CustomItem {
 
     @Override
     public String getDisplayName() {
-        return "§a回復ポーション";
+        return "§bマナポーション";
     }
 
     @Override
@@ -57,17 +54,17 @@ public class HealingPotion implements CustomItem {
 
     @Override
     public ItemRarity getRarity() {
-        return ItemRarity.COMMON;
+        return ItemRarity.UNCOMMON;
     }
 
     @Override
     public String getFlavorText() {
-        return "Lunaris Atelier製の標準的な回復薬。月光樹の雫とエーテル結晶を調合して作られており、飲用することで傷を癒やす。";
+        return "Lunaris Atelier製のマナ回復薬。エーテル結晶を高濃度で溶解しており、飲用することで内部の魔力を高速回復する。";
     }
 
     @Override
     public double getSellPrice() {
-        return 250.0;
+        return 500.0;
     }
 
     @Override
@@ -82,28 +79,26 @@ public class HealingPotion implements CustomItem {
 
             if (cooldownService.isOnCooldown(player.getUniqueId(), getId())) {
                 double secs = cooldownService.getRemaining(player.getUniqueId(), getId()).toMillis() / 1000.0;
-                player.sendMessage("§c回復ポーションはあと" + String.format("%.1f", secs) + "秒使用できません。");
+                player.sendMessage("§cマナポーションはあと" + String.format("%.1f", secs) + "秒使用できません。");
                 return;
             }
 
-            double currentHealth = healthManager.getHealth(player);
-            double maxHealth = healthManager.getMaxHealth(player);
+            double currentMana = manaManager.getMana(player);
+            double maxMana = manaManager.getMaxMana(player);
 
-            if (currentHealth >= maxHealth) {
-                player.sendMessage("§c体力が満タンです。");
+            if (currentMana >= maxMana) {
+                player.sendMessage("§cマナが満タンです。");
                 return;
             }
 
-            double amount = maxHealth * 0.25;
-            healthManager.heal(player, amount);
+            double amount = maxMana * MANA_RESTORE_PERCENT;
+            manaManager.restore(player, amount);
             cooldownService.applyCooldown(player.getUniqueId(), getId(), COOLDOWN);
-            
-            // アイテムを消費
+
             item.setAmount(item.getAmount() - 1);
-            
-            // 効果音とメッセージ
+
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 2.0f);
-            player.sendMessage("§a回復ポーションを使用して最大体力の25%を回復しました。");
+            player.sendMessage("§bマナポーションを使用して最大マナの30%を回復しました。");
         }
     }
 }

@@ -6,6 +6,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
+import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -27,15 +28,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ManaManager implements Startable, Stoppable, Listener {
 
     private static final double DEFAULT_MAX_MANA = 100.0;
+    private static final double REGEN_RATE = 0.02;
+    private static final double SAFE_ZONE_REGEN_RATE = 0.05;
 
     private final Map<UUID, Double> currentManaMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
+    private final MobRegionConfig regionConfig;
     private final Deepwither_V2 plugin;
     private BukkitTask regenTask;
 
     @Inject
-    public ManaManager(StatManager statManager, Deepwither_V2 plugin) {
+    public ManaManager(StatManager statManager, MobRegionConfig regionConfig, Deepwither_V2 plugin) {
         this.statManager = statManager;
+        this.regionConfig = regionConfig;
         this.plugin = plugin;
     }
 
@@ -48,8 +53,8 @@ public class ManaManager implements Startable, Stoppable, Listener {
 
                 double current = getMana(player);
                 if (current < maxMana) {
-                    // 最大マナの2%を毎秒回復
-                    double regenAmount = maxMana * 0.02;
+                    double rate = regionConfig.isInSafeZone(player.getLocation()) ? SAFE_ZONE_REGEN_RATE : REGEN_RATE;
+                    double regenAmount = maxMana * rate;
                     double newMana = Math.min(current + regenAmount, maxMana);
                     currentManaMap.put(player.getUniqueId(), newMana);
                 }

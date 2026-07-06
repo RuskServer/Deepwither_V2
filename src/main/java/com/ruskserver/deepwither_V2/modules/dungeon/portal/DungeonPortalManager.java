@@ -4,6 +4,8 @@ import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
+import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifier;
+import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.party.PartyManager;
 import net.kyori.adventure.text.Component;
@@ -19,9 +21,12 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -40,6 +45,7 @@ public class DungeonPortalManager implements Startable {
     private final NamespacedKey dungeonIdKey;
     private final NamespacedKey portalXKey;
     private final NamespacedKey portalZKey;
+    private final NamespacedKey dungeonModifiersKey;
 
     private final Map<String, String> portalToInstance = new HashMap<>();
 
@@ -54,6 +60,7 @@ public class DungeonPortalManager implements Startable {
         this.dungeonIdKey = new NamespacedKey(plugin, "dungeon_map_dungeon_id");
         this.portalXKey = new NamespacedKey(plugin, "dungeon_map_portal_x");
         this.portalZKey = new NamespacedKey(plugin, "dungeon_map_portal_z");
+        this.dungeonModifiersKey = new NamespacedKey(plugin, "dungeon_map_modifiers");
     }
 
     @Override
@@ -66,6 +73,17 @@ public class DungeonPortalManager implements Startable {
         ItemStack item = itemManager.generate("dungeon_map");
         if (item == null) return null;
 
+        DungeonModifierContext modCtx = rollModifiers();
+        return applyModifiersToItem(item, dungeonId, portal, modCtx);
+    }
+
+    public ItemStack createMapItem(String dungeonId, PortalLocation portal, DungeonModifierContext modCtx) {
+        ItemStack item = itemManager.generate("dungeon_map");
+        if (item == null) return null;
+        return applyModifiersToItem(item, dungeonId, portal, modCtx);
+    }
+
+    private ItemStack applyModifiersToItem(ItemStack item, String dungeonId, PortalLocation portal, DungeonModifierContext modCtx) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
 
@@ -73,6 +91,9 @@ public class DungeonPortalManager implements Startable {
         pdc.set(dungeonIdKey, PersistentDataType.STRING, dungeonId);
         pdc.set(portalXKey, PersistentDataType.DOUBLE, portal.x());
         pdc.set(portalZKey, PersistentDataType.DOUBLE, portal.z());
+        if (modCtx.isPresent()) {
+            pdc.set(dungeonModifiersKey, PersistentDataType.STRING, modCtx.toIdString());
+        }
 
         List<Component> lore = meta.lore();
         if (lore == null) lore = new ArrayList<>();
@@ -83,15 +104,41 @@ public class DungeonPortalManager implements Startable {
         lore.add(Component.text("§7座標: §eX=" + (int) portal.x() + " §eZ=" + (int) portal.z())
                 .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
 
+        for (DungeonModifier mod : modCtx.modifiers()) {
+            lore.add(Component.empty());
+            lore.add(Component.text("§7モディファイアー: ")
+                    .append(Component.text(mod.displayName(), mod.color())
+                            .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)));
+            lore.add(Component.text("  " + mod.description(), NamedTextColor.GRAY)
+                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
+        }
+
         meta.lore(lore);
         item.setItemMeta(meta);
         return item;
+    }
+
+    private DungeonModifierContext rollModifiers() {
+        List<DungeonModifier> all = List.of(DungeonModifier.values());
+        List<DungeonModifier> shuffled = new ArrayList<>(all);
+        Collections.shuffle(shuffled);
+        Set<DungeonModifier> selected = new HashSet<>();
+        selected.add(shuffled.get(0));
+        selected.add(shuffled.get(1));
+        return new DungeonModifierContext(selected);
     }
 
     public String readDungeonId(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
         return item.getItemMeta().getPersistentDataContainer()
                 .get(dungeonIdKey, PersistentDataType.STRING);
+    }
+
+    public DungeonModifierContext readModifiers(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return DungeonModifierContext.none();
+        String s = item.getItemMeta().getPersistentDataContainer()
+                .get(dungeonModifiersKey, PersistentDataType.STRING);
+        return DungeonModifierContext.fromIdString(s);
     }
 
     public String getActiveInstanceForPortal(String portalId) {
