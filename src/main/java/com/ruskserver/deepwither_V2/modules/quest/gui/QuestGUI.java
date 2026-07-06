@@ -43,15 +43,16 @@ public class QuestGUI implements Listener {
     }
 
     public void openQuestGui(Player player) {
-        if (questService.isTurnedInToday(player.getUniqueId())) {
-            player.sendMessage(Component.text("今日はもうクエストをクリアしました。また明日来てください。", NamedTextColor.GRAY));
+        int remaining = questService.getRemainingDailyCompletions(player.getUniqueId());
+        if (remaining <= 0) {
+            player.sendMessage(Component.text("今日のクエスト受注可能回数（5回）に達しました。また明日来てください。", NamedTextColor.GRAY));
             return;
         }
 
         QuestProgress progress = questService.getProgress(player.getUniqueId());
 
         if (progress.isEmpty() || progress.state() == QuestState.TURNED_IN) {
-            openAcceptGui(player);
+            openAcceptGui(player, remaining);
         } else if (progress.state() == QuestState.ACCEPTED) {
             if (questService.checkCompletion(player)) {
                 openCompleteGui(player);
@@ -61,7 +62,7 @@ public class QuestGUI implements Listener {
         }
     }
 
-    private void openAcceptGui(Player player) {
+    private void openAcceptGui(Player player, int remaining) {
         Quest quest = questService.getQuest("daily_collection");
         if (quest == null) return;
 
@@ -71,6 +72,7 @@ public class QuestGUI implements Listener {
 
         gui.setItem(11, createInfoDisplay(quest));
         gui.setItem(15, createAcceptButton());
+        gui.setItem(22, createRemainingDisplay(remaining));
         gui.setItem(26, createCloseButton());
 
         player.openInventory(gui);
@@ -150,6 +152,19 @@ public class QuestGUI implements Listener {
             btn.setItemMeta(meta);
         }
         return btn;
+    }
+
+    private ItemStack createRemainingDisplay(int remaining) {
+        ItemStack display = new ItemStack(Material.CLOCK);
+        ItemMeta meta = display.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text("§7今日の残り受注回数: §e" + remaining + "§7/§e5"));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("§71日に" + remaining + "回までクエストを遂行できます。"));
+            meta.lore(lore);
+            display.setItemMeta(meta);
+        }
+        return display;
     }
 
     private ItemStack createCloseButton() {

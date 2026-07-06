@@ -28,12 +28,13 @@ public class QuestProgressProvider implements PlayerDataProvider<QuestProgressPr
                         "quest_id VARCHAR(64), " +
                         "state VARCHAR(20), " +
                         "accepted_at BIGINT DEFAULT 0, " +
-                        "last_reset_date VARCHAR(10))")) {
+                        "last_reset_date VARCHAR(10), " +
+                        "daily_completions INT DEFAULT 0)")) {
             stmt.execute();
         }
 
         try (PreparedStatement stmt = conn.prepareStatement(
-                "SELECT quest_id, state, accepted_at, last_reset_date FROM quest_progress WHERE uuid = ?")) {
+                "SELECT quest_id, state, accepted_at, last_reset_date, daily_completions FROM quest_progress WHERE uuid = ?")) {
             stmt.setString(1, uuid.toString());
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -41,29 +42,31 @@ public class QuestProgressProvider implements PlayerDataProvider<QuestProgressPr
                             rs.getString("quest_id"),
                             QuestState.valueOf(rs.getString("state")),
                             rs.getLong("accepted_at"),
-                            rs.getString("last_reset_date")
+                            rs.getString("last_reset_date"),
+                            rs.getInt("daily_completions")
                     );
                 }
             }
         }
-        return new QuestProgress(null, null, 0, "");
+        return new QuestProgress(null, null, 0, "", 0);
     }
 
     @Override
     public void saveToDb(UUID uuid, QuestProgress data, Connection conn) throws Exception {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "MERGE INTO quest_progress (uuid, quest_id, state, accepted_at, last_reset_date) " +
-                        "KEY(uuid) VALUES (?, ?, ?, ?, ?)")) {
+                "MERGE INTO quest_progress (uuid, quest_id, state, accepted_at, last_reset_date, daily_completions) " +
+                        "KEY(uuid) VALUES (?, ?, ?, ?, ?, ?)")) {
             stmt.setString(1, uuid.toString());
             stmt.setString(2, data.questId());
             stmt.setString(3, data.state() != null ? data.state().name() : null);
             stmt.setLong(4, data.acceptedAt());
             stmt.setString(5, data.lastResetDate());
+            stmt.setInt(6, data.dailyCompletions());
             stmt.executeUpdate();
         }
     }
 
-    public record QuestProgress(String questId, QuestState state, long acceptedAt, String lastResetDate) {
+    public record QuestProgress(String questId, QuestState state, long acceptedAt, String lastResetDate, int dailyCompletions) {
         public boolean isEmpty() { return questId == null; }
     }
 }

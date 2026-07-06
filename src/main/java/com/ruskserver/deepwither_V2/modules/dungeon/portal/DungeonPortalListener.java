@@ -120,7 +120,6 @@ public class DungeonPortalListener implements Listener {
         String existingId = portalManager.getActiveInstanceForPortal(portalId);
         if (existingId != null && instanceManager.getInstance(existingId) != null) {
             if (instanceManager.joinDungeon(player.getUniqueId(), existingId)) {
-                if (hasValidMap(player, portal)) consumeMap(player, portal);
                 player.sendMessage(Component.text("§aパーティーのダンジョンに参加しました。"));
             } else {
                 player.sendMessage(Component.text("§cダンジョンへの参加に失敗しました。", NamedTextColor.RED));

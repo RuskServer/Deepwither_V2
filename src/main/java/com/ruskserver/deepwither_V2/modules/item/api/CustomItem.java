@@ -96,6 +96,13 @@ public interface CustomItem {
     }
 
     /**
+     * @return このアイテムの最大スタック数。デフォルトは1（スタック不可）。
+     */
+    default int getMaxStackSize() {
+        return 1;
+    }
+
+    /**
      * 手に持って右クリック・左クリック等をした際に呼ばれるフックメソッド。
      */
     default void onInteract(org.bukkit.event.player.PlayerInteractEvent event) {}

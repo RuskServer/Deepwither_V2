@@ -95,6 +95,10 @@ public class ItemManager implements Startable {
         }
 
         ItemStack item = new ItemStack(customItem.getMaterial());
+        int maxStack = customItem.getMaxStackSize();
+        if (maxStack > 1) {
+            item.setData(io.papermc.paper.datacomponent.DataComponentTypes.MAX_STACK_SIZE, maxStack);
+        }
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             if (customItem.getCustomModelData() != 0) {

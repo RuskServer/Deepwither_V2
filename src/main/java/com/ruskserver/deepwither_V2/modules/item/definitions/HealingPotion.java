@@ -66,6 +66,11 @@ public class HealingPotion implements CustomItem {
     }
 
     @Override
+    public int getMaxStackSize() {
+        return 6;
+    }
+
+    @Override
     public double getSellPrice() {
         return 250.0;
     }

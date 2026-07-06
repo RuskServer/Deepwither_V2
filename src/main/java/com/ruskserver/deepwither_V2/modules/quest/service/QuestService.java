@@ -43,6 +43,8 @@ public class QuestService implements Startable {
     private final PortalLocationRepository portalLocationRepo;
     private final ItemPDCUtil pdcUtil;
 
+    private static final int MAX_DAILY_COMPLETIONS = 5;
+
     private final Map<String, Quest> registry = new HashMap<>();
 
     @Inject
@@ -82,7 +84,7 @@ public class QuestService implements Startable {
 
     public QuestProgress getProgress(UUID playerId) {
         PlayerData data = playerDataRepo.get(playerId).orElse(null);
-        if (data == null) return new QuestProgress(null, null, 0, "");
+        if (data == null) return new QuestProgress(null, null, 0, "", 0);
         return data.get(QuestProgressProvider.KEY);
     }
 
@@ -91,21 +93,24 @@ public class QuestService implements Startable {
         return !progress.isEmpty() && progress.state() == QuestState.ACCEPTED;
     }
 
-    public boolean isTurnedInToday(UUID playerId) {
+    public int getRemainingDailyCompletions(UUID playerId) {
         QuestProgress progress = getProgress(playerId);
-        if (progress.isEmpty()) return false;
+        if (progress.isEmpty()) return MAX_DAILY_COMPLETIONS;
         String today = LocalDate.now().toString();
-        return today.equals(progress.lastResetDate()) && progress.state() == QuestState.TURNED_IN;
+        if (!today.equals(progress.lastResetDate())) return MAX_DAILY_COMPLETIONS;
+        return Math.max(0, MAX_DAILY_COMPLETIONS - progress.dailyCompletions());
     }
 
     public boolean acceptQuest(Player player, String questId) {
         UUID uuid = player.getUniqueId();
-        if (isTurnedInToday(uuid)) {
-            player.sendMessage(Component.text("今日はもうクエストを完了しています。また明日挑戦してください。", NamedTextColor.RED));
-            return false;
-        }
         if (isAccepted(uuid)) {
             player.sendMessage(Component.text("既にクエストを受注しています。", NamedTextColor.RED));
+            return false;
+        }
+
+        int remaining = getRemainingDailyCompletions(uuid);
+        if (remaining <= 0) {
+            player.sendMessage(Component.text("今日のクエスト受注可能回数（" + MAX_DAILY_COMPLETIONS + "回）に達しました。", NamedTextColor.RED));
             return false;
         }
 
@@ -116,13 +121,16 @@ public class QuestService implements Startable {
         }
 
         String today = LocalDate.now().toString();
-        QuestProgress progress = new QuestProgress(questId, QuestState.ACCEPTED, System.currentTimeMillis(), today);
+        QuestProgress currentProgress = getProgress(uuid);
+        int previousCompletions = today.equals(currentProgress.lastResetDate()) ? currentProgress.dailyCompletions() : 0;
+        QuestProgress progress = new QuestProgress(questId, QuestState.ACCEPTED, System.currentTimeMillis(), today, previousCompletions);
         PlayerData data = playerDataRepo.get(uuid).orElse(null);
         if (data == null) return false;
         data.set(QuestProgressProvider.KEY, progress);
         playerDataRepo.save(uuid, data);
 
         player.sendMessage(Component.text("§aクエスト「" + questId + "」を受注しました！"));
+        player.sendMessage(Component.text("§7残り受注可能回数: " + (remaining - 1) + "/" + MAX_DAILY_COMPLETIONS));
         return true;
     }
 
@@ -166,14 +174,21 @@ public class QuestService implements Startable {
         }
 
         String today = LocalDate.now().toString();
+        int newCount = today.equals(progress.lastResetDate()) ? progress.dailyCompletions() + 1 : 1;
         QuestProgress newProgress = new QuestProgress(progress.questId(), QuestState.TURNED_IN,
-                progress.acceptedAt(), today);
+                progress.acceptedAt(), today, newCount);
         PlayerData data = playerDataRepo.get(uuid).orElse(null);
         if (data == null) return false;
         data.set(QuestProgressProvider.KEY, newProgress);
         playerDataRepo.save(uuid, data);
 
+        int remaining = MAX_DAILY_COMPLETIONS - newCount;
         player.sendMessage(Component.text("§aクエストを完了しました！ ダンジョン地図を入手しました。"));
+        if (remaining > 0) {
+            player.sendMessage(Component.text("§7今日あと" + remaining + "回受注できます。"));
+        } else {
+            player.sendMessage(Component.text("§e今日の受注可能回数を使い切りました。"));
+        }
         return true;
     }
 

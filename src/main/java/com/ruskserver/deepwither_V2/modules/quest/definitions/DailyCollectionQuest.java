@@ -34,9 +34,9 @@ public class DailyCollectionQuest implements Quest {
     @Override
     public List<? extends QuestObjective> getObjectives() {
         return List.of(
-                new CollectItemObjective("ghoul_viscera", 10),
-                new CollectItemObjective("ghoul_remnant", 5),
-                new CollectItemObjective("moonlight_residue", 8)
+                new CollectItemObjective("ghoul_viscera", 20),
+                new CollectItemObjective("ghoul_remnant", 10),
+                new CollectItemObjective("moonlight_residue", 15)
         );
     }
 
