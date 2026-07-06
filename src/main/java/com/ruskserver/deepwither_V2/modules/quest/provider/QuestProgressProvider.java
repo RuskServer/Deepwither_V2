@@ -28,8 +28,11 @@ public class QuestProgressProvider implements PlayerDataProvider<QuestProgressPr
                         "quest_id VARCHAR(64), " +
                         "state VARCHAR(20), " +
                         "accepted_at BIGINT DEFAULT 0, " +
-                        "last_reset_date VARCHAR(10), " +
-                        "daily_completions INT DEFAULT 0)")) {
+                        "last_reset_date VARCHAR(10))")) {
+            stmt.execute();
+        }
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "ALTER TABLE quest_progress ADD COLUMN IF NOT EXISTS daily_completions INT DEFAULT 0")) {
             stmt.execute();
         }
 
