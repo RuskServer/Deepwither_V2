@@ -187,6 +187,7 @@ public class SkillTreeGui implements Listener {
         for (String line : node.getDescription()) {
             lore.add(Component.text(line, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         }
+        // ノード説明とは別に、実際に解放されるスキルの効果説明も表示する。
         if (linkedSkill != null && !linkedSkill.getDescription().isEmpty()) {
             lore.add(Component.empty());
             lore.add(Component.text("スキル説明:", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
