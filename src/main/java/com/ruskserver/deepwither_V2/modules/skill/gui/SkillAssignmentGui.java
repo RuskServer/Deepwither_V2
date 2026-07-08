@@ -193,6 +193,14 @@ public class SkillAssignmentGui implements Listener {
 
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("割り当て: " + (skill == null ? skillId : skill.getDisplayName()), NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+
+        if (skill != null && !skill.getDescription().isEmpty()) {
+            lore.add(Component.empty());
+            for (String line : skill.getDescription()) {
+                lore.add(Component.text(line, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            }
+        }
+
         lore.add(Component.empty());
         lore.add(Component.text("左クリック: 選択中スキルを割り当て", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("右クリック: スロットをクリア", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
