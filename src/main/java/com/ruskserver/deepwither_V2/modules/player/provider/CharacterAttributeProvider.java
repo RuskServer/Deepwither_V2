@@ -39,14 +39,26 @@ public class CharacterAttributeProvider implements CharacterDataProvider<Charact
         try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM character_attributes WHERE character_id = ?")) {
             stmt.setString(1, characterId.toString());
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
+                 if (rs.next()) {
                     AttributeData data = new AttributeData();
                     data.setRemainingPoints(rs.getInt("points"));
-                    data.setAttribute(AttributeType.STR, rs.getInt("str"));
-                    data.setAttribute(AttributeType.VIT, rs.getInt("vit"));
-                    data.setAttribute(AttributeType.MND, rs.getInt("mnd"));
-                    data.setAttribute(AttributeType.INT, rs.getInt("int_val"));
-                    data.setAttribute(AttributeType.AGI, rs.getInt("agi"));
+                    int str = rs.getInt("str");
+                    int vit = rs.getInt("vit");
+                    int mnd = rs.getInt("mnd");
+                    int intVal = rs.getInt("int_val");
+                    int agi = rs.getInt("agi");
+
+                    int clamped = 0;
+                    clamped += clampAndSet(data, AttributeType.STR, str);
+                    clamped += clampAndSet(data, AttributeType.VIT, vit);
+                    clamped += clampAndSet(data, AttributeType.MND, mnd);
+                    clamped += clampAndSet(data, AttributeType.INT, intVal);
+                    clamped += clampAndSet(data, AttributeType.AGI, agi);
+
+                    // 旧上限(100)で割り振られていた分を所持ポイントへ返還
+                    if (clamped > 0) {
+                        data.addRemainingPoints(clamped);
+                    }
                     return data;
                 }
             }
@@ -68,6 +80,17 @@ public class CharacterAttributeProvider implements CharacterDataProvider<Charact
             stmt.setInt(7, data.getAttribute(AttributeType.AGI));
             stmt.executeUpdate();
         }
+    }
+
+    private static final int MAX_ATTR_LEVEL = 50;
+
+    private static int clampAndSet(AttributeData data, AttributeType type, int value) {
+        if (value > MAX_ATTR_LEVEL) {
+            data.setAttribute(type, MAX_ATTR_LEVEL);
+            return value - MAX_ATTR_LEVEL;
+        }
+        data.setAttribute(type, value);
+        return 0;
     }
 
     /**

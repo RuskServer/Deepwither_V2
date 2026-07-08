@@ -111,17 +111,27 @@ public class AttributeGui implements GuiView {
 
         int currentLevel = attrData.getAttribute(type);
         int remainingPoints = attrData.getRemainingPoints();
+        int effectiveMax = playerManager.getEffectiveMax(type, attrData);
 
         List<net.kyori.adventure.text.Component> lore = new ArrayList<>();
         lore.add(net.kyori.adventure.text.Component.empty());
         lore.add(net.kyori.adventure.text.Component.text("現在の " + type.getDisplayName() + " レベル: ", NamedTextColor.GRAY)
                 .append(net.kyori.adventure.text.Component.text(currentLevel, NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(net.kyori.adventure.text.Component.text(" / 上限 " + effectiveMax, NamedTextColor.RED))
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(net.kyori.adventure.text.Component.empty());
         lore.add(net.kyori.adventure.text.Component.text("効果:", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
 
         for (String buff : getBuffDescription(type, currentLevel)) {
             lore.add(net.kyori.adventure.text.Component.text("  ✤ ", NamedTextColor.GRAY).append(net.kyori.adventure.text.Component.text(buff, NamedTextColor.BLUE))
+                    .decoration(TextDecoration.ITALIC, false));
+        }
+
+        AttributeType counterpart = type.getCounterpart();
+        if (counterpart != null) {
+            lore.add(net.kyori.adventure.text.Component.empty());
+            lore.add(net.kyori.adventure.text.Component.text("⚔ ", NamedTextColor.RED)
+                    .append(net.kyori.adventure.text.Component.text(type.getDisplayName() + " を上げると " + counterpart.getDisplayName() + " の上限が下がります", NamedTextColor.RED))
                     .decoration(TextDecoration.ITALIC, false));
         }
 

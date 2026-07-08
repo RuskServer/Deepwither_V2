@@ -57,6 +57,9 @@ public class PlayerManager implements Listener, PlayerLifecycleTask {
     /** レベルアップ時に付与する属性ポイント数 */
     private static final int POINTS_PER_LEVEL = 2;
 
+    /** 各属性の基本最大レベル */
+    private static final int MAX_ATTR_LEVEL = 50;
+
     /** 最大レベル */
     private static final int MAX_LEVEL = 100;
 
@@ -239,8 +242,8 @@ public class PlayerManager implements Listener, PlayerLifecycleTask {
             return false;
         }
 
-        // 上限チェック (例えば最大100レベルまで)
-        if (attrData.getAttribute(type) >= 100) {
+        // 上限チェック (対抗属性との相殺を考慮した有効上限)
+        if (attrData.getAttribute(type) >= getEffectiveMax(type, attrData)) {
             return false;
         }
 
@@ -252,6 +255,19 @@ public class PlayerManager implements Listener, PlayerLifecycleTask {
         // 割り振った瞬間、ステータスを再計算して反映させる
         recalculateStats(player);
         return true;
+    }
+
+    /**
+     * 指定属性の、相殺を考慮した実効最大レベルを返します。
+     * 対抗属性がある場合は 「基本最大(50) − 対抗属性の現在値」。
+     * 対抗属性がない場合(MND等)は基本最大(50)を返します。
+     */
+    public int getEffectiveMax(AttributeType type, CharacterAttributeProvider.AttributeData attrData) {
+        AttributeType counterpart = type.getCounterpart();
+        if (counterpart == null) {
+            return MAX_ATTR_LEVEL;
+        }
+        return Math.max(0, MAX_ATTR_LEVEL - attrData.getAttribute(counterpart));
     }
 
     /**

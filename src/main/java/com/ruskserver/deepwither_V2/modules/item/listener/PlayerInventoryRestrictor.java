@@ -180,6 +180,11 @@ public class PlayerInventoryRestrictor implements Listener {
 
         ItemStack source = event.getItem().getItemStack().clone();
         int amount = source.getAmount();
+
+        Component itemName = Optional.ofNullable(source.getItemMeta())
+            .map(ItemMeta::displayName)
+            .orElse(Component.translatable(source));
+
         PlayerInventory inventory = player.getInventory();
 
         boolean isWeapon = isWeapon(source);
@@ -189,9 +194,7 @@ public class PlayerInventoryRestrictor implements Listener {
         if (placed > 0) {
             player.sendMessage(Component.text()
                 .append(Component.text("+ ", NamedTextColor.GRAY))
-                .append(Optional.ofNullable(source.getItemMeta())
-                    .map(ItemMeta::displayName)
-                    .orElse(Component.translatable(source)))
+                .append(itemName)
                 .append(Component.text(" x" + placed, NamedTextColor.WHITE)));
             player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.2f, 1.0f);
 
