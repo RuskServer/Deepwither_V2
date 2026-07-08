@@ -4,6 +4,7 @@ import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
+import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillRegistry;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeDefinition;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeNode;
@@ -158,9 +159,10 @@ public class SkillTreeGui implements Listener {
         boolean requirementsMet = areRequirementsMet(treeData, node);
         boolean conflicted = isConflicted(treeData, node);
         boolean available = !maxed && requirementsMet && !conflicted;
+        Skill linkedSkill = node.getSkillId() == null ? null : skillRegistry.get(node.getSkillId());
 
         Material material = node.getIcon();
-        if (node.getType() == SkillTreeNodeType.SKILL && skillRegistry.get(node.getSkillId()) == null) {
+        if (node.getType() == SkillTreeNodeType.SKILL && linkedSkill == null) {
             material = Material.BARRIER;
             available = false;
         } else if (!learned && !available) {
@@ -178,11 +180,20 @@ public class SkillTreeGui implements Listener {
         lore.add(Component.text("ID: " + node.getId(), NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("種別: " + node.getType(), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         if (node.getSkillId() != null) {
-            lore.add(Component.text("スキル: " + node.getSkillId(), NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            String skillLabel = linkedSkill == null ? node.getSkillId() : linkedSkill.getDisplayName() + " (" + linkedSkill.getId() + ")";
+            lore.add(Component.text("スキル: " + skillLabel, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         }
         lore.add(Component.empty());
         for (String line : node.getDescription()) {
             lore.add(Component.text(line, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        }
+        // ノード説明とは別に、実際に解放されるスキルの効果説明も表示する。
+        if (linkedSkill != null && !linkedSkill.getDescription().isEmpty()) {
+            lore.add(Component.empty());
+            lore.add(Component.text("スキル説明:", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
+            for (String line : linkedSkill.getDescription()) {
+                lore.add(Component.text(line, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            }
         }
         lore.add(Component.empty());
         lore.add(Component.text("Lv: " + level + "/" + node.getMaxLevel(), NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
