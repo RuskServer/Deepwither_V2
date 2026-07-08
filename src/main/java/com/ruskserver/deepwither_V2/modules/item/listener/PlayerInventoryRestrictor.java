@@ -187,7 +187,7 @@ public class PlayerInventoryRestrictor implements Listener {
 
         int placed = amount - source.getAmount();
         if (placed > 0) {
-            player.sendActionBar(Component.text()
+            player.sendMessage(Component.text()
                 .append(Component.text("+ ", NamedTextColor.GRAY))
                 .append(Optional.ofNullable(source.getItemMeta())
                     .map(ItemMeta::displayName)

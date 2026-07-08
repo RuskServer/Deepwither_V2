@@ -53,9 +53,11 @@ class SkillData:
 
 def extract_string_value(content: str, method_name: str) -> str:
     """メソッドの戻り値から文字列を抽出"""
-    pattern = rf'@Override\s+public\s+String\s+{method_name}\(\)\s*\{{\s*return\s+"([^"]+)";'
+    pattern = rf'@Override\s+public\s+String\s+{method_name}\(\)\s*\{{\s*return\s+"((?:[^"\\]|\\.)*)";'
     match = re.search(pattern, content)
-    return match.group(1) if match else ""
+    if not match:
+        return ""
+    return match.group(1).replace('\\"', '"')
 
 
 def extract_list_of_strings(content: str, method_name: str) -> list:

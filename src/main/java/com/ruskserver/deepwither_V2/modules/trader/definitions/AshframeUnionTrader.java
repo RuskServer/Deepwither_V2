@@ -28,8 +28,7 @@ public class AshframeUnionTrader implements TraderDefinition {
                 new TraderProduct("residual_ash_halberd", 16000.0, 0),
                 new TraderProduct("rusted_iron_branch", 16000.0, 0),
                 new TraderProduct("fieldline_bow_rebuilt", 7200.0, 250),
-                new TraderProduct("requiem_burst_staff", 62000.0, 650),
-                new TraderProduct("ether_shard_halberd", 82000.0, 1000)
+                new TraderProduct("requiem_burst_staff", 62000.0, 650)
         );
     }
 }

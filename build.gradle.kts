@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
-    compileOnly("com.github.retrooper:packetevents-spigot:2.12.0")
+    compileOnly("com.github.retrooper:packetevents-spigot:2.12.1")
 
     // WorldGuard / WorldEdit
     // isTransitive = false で推移皁E��存を全て無効化し、strictly制紁E�E競合を回避する、E    // コンパイルに忁E��なBukkitアダプターとコアAPIので4JARのみを個別持E��する、E    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.14") { isTransitive = false }
@@ -31,6 +31,9 @@ dependencies {
     compileOnly("net.citizensnpcs:citizens-main:2.0.36-SNAPSHOT") { isTransitive = false }
     compileOnly("com.github.MilkBowl:VaultAPI:1.7") { isTransitive = false }
     compileOnly("me.clip:placeholderapi:2.11.6") { isTransitive = false }
+
+    // Plan
+    implementation("com.github.plan-player-analytics:Plan:5.7.3558")
 
     // Database & Cache
     implementation("com.h2database:h2:2.2.224")

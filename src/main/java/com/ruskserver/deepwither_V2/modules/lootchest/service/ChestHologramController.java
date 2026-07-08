@@ -7,7 +7,7 @@ import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnLivingEntity;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
@@ -170,24 +170,23 @@ public class ChestHologramController implements Startable, Stoppable {
 
     private void spawnHologram(Player player, ChestState chest, String text, Map<UUID, Integer> playerEntities) {
         int entityId = nextEntityId--;
-        Location loc = chest.location.clone().add(0.5, 0.9, 0.5);
+        Location loc = chest.location.clone().add(0.5, 0.85, 0.5);
 
-        WrapperPlayServerSpawnEntity spawnPacket = new WrapperPlayServerSpawnEntity(
+        WrapperPlayServerSpawnLivingEntity spawnPacket = new WrapperPlayServerSpawnLivingEntity(
                 entityId,
-                Optional.of(UUID.randomUUID()),
-                EntityTypes.TEXT_DISPLAY,
+                UUID.randomUUID(),
+                EntityTypes.ARMOR_STAND,
                 new Vector3d(loc.getX(), loc.getY(), loc.getZ()),
                 0f, 0f, 0f,
-                0,
-                Optional.empty()
+                new Vector3d(0, 0, 0),
+                List.of()
         );
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, spawnPacket);
 
         List<EntityData<?>> metadata = new ArrayList<>();
-        metadata.add(new EntityData<>(5, EntityDataTypes.BOOLEAN, true));
-        metadata.add(new EntityData<>(14, EntityDataTypes.BYTE, (byte) 2));
-        metadata.add(new EntityData<>(22, EntityDataTypes.ADV_COMPONENT, Component.text(text)));
-        metadata.add(new EntityData<>(26, EntityDataTypes.BOOLEAN, true));
+        metadata.add(new EntityData<>(2, EntityDataTypes.OPTIONAL_ADV_COMPONENT, Optional.of(Component.text(text))));
+        metadata.add(new EntityData<>(3, EntityDataTypes.BOOLEAN, true));
+        metadata.add(new EntityData<>(14, EntityDataTypes.BYTE, (byte) 0x08));
 
         WrapperPlayServerEntityMetadata metaPacket = new WrapperPlayServerEntityMetadata(entityId, metadata);
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, metaPacket);
@@ -197,7 +196,7 @@ public class ChestHologramController implements Startable, Stoppable {
 
     private void updateHologram(Player player, int entityId, String text) {
         List<EntityData<?>> metadata = new ArrayList<>();
-        metadata.add(new EntityData<>(22, EntityDataTypes.ADV_COMPONENT, Component.text(text)));
+        metadata.add(new EntityData<>(2, EntityDataTypes.OPTIONAL_ADV_COMPONENT, Optional.of(Component.text(text))));
 
         WrapperPlayServerEntityMetadata metaPacket = new WrapperPlayServerEntityMetadata(entityId, metadata);
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, metaPacket);
