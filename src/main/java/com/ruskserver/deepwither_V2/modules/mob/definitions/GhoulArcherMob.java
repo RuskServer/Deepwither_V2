@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
+import com.ruskserver.deepwither_V2.modules.skill.util.TrailHelper;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -37,12 +38,17 @@ public class GhoulArcherMob extends CustomMob {
 
     private static final double SHOOT_RANGE = 14.0;
     private static final double KEEP_AWAY_RANGE = 4.0;
-    private static final double ARROW_SPEED = 1.75;
-    private static final int SHOOT_COOLDOWN = 70;
+    private static final double ARROW_SPEED = 1.5;
+    private static final int SHOOT_COOLDOWN = 100;       // 5秒
+    private static final int SHOOT_COOLDOWN_RANDOM = 30; // 最大1.5秒
+    private static final int SHOOT_WINDUP = 12;          // 0.6秒の構え
     private static final int BACKSTEP_COOLDOWN = 90;
 
     private int shootCooldown = 40;
     private int backstepCooldown = 20;
+    private boolean aiming = false;        // 構え（予兆）中フラグ
+    private int shootWindup = 0;           // 構え残りtick
+    private Player aimTarget = null;       // 構え中の照準対象
 
     private final DamagePipelineManager damageManager;
     private final ItemManager itemManager;
@@ -92,6 +98,11 @@ public class GhoulArcherMob extends CustomMob {
 
     @Override
     public void onTick() {
+        if (aiming) {
+            tickAim();
+            return;
+        }
+
         if (shootCooldown > 0) shootCooldown--;
         if (backstepCooldown > 0) backstepCooldown--;
         if (ticksLived % 5 != 0) return;
@@ -108,8 +119,7 @@ public class GhoulArcherMob extends CustomMob {
         }
 
         if (shootCooldown == 0 && hasLineOfSight(target)) {
-            shootAt(target);
-            shootCooldown = SHOOT_COOLDOWN + RANDOM.nextInt(21);
+            startAim(target);
         }
     }
 
@@ -136,6 +146,40 @@ public class GhoulArcherMob extends CustomMob {
     @Override
     public double getBaseAttackDamage() {
         return MELEE_DAMAGE;
+    }
+
+    /**
+     * 射撃の予兆開始。矢を放つ直前に照準先への予告エフェクトを出し、構え時間後に発射する。
+     */
+    private void startAim(Player target) {
+        aimTarget = target;
+        aiming = true;
+        shootWindup = SHOOT_WINDUP;
+
+        // 予兆エフェクト：照準先へ向けた細い線と構え音
+        Location from = entity.getEyeLocation();
+        Location to = target.getEyeLocation();
+        TrailHelper.spawnLine(from, to, Color.fromRGB(0x8FD17A), 12);
+        from.getWorld().playSound(from, Sound.UI_BUTTON_CLICK, 0.6f, 1.0f);
+    }
+
+    /**
+     * 構えを1tick進める。終了時に実際の矢を放つ。
+     */
+    private void tickAim() {
+        if (shootWindup > 0) {
+            shootWindup--;
+            return;
+        }
+
+        Player target = aimTarget;
+        aiming = false;
+        aimTarget = null;
+
+        if (target != null && target.isOnline() && !target.isDead() && hasLineOfSight(target)) {
+            shootAt(target);
+        }
+        shootCooldown = SHOOT_COOLDOWN + RANDOM.nextInt(SHOOT_COOLDOWN_RANDOM + 1);
     }
 
     private void shootAt(Player target) {
