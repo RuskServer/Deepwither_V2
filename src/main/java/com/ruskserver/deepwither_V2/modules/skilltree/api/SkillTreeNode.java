@@ -19,6 +19,7 @@ public final class SkillTreeNode {
     private final int maxLevel;
     private final int costPerLevel;
     private final List<String> requirements;
+    private final List<String> requiresAny;
     private final List<String> conflicts;
     private final SkillTreePassiveEffect passiveEffect;
 
@@ -34,6 +35,7 @@ public final class SkillTreeNode {
         this.maxLevel = builder.maxLevel;
         this.costPerLevel = builder.costPerLevel;
         this.requirements = List.copyOf(builder.requirements);
+        this.requiresAny = List.copyOf(builder.requiresAny);
         this.conflicts = List.copyOf(builder.conflicts);
         this.passiveEffect = builder.passiveEffect;
     }
@@ -90,6 +92,10 @@ public final class SkillTreeNode {
         return requirements;
     }
 
+    public List<String> getRequiresAny() {
+        return requiresAny;
+    }
+
     public List<String> getConflicts() {
         return conflicts;
     }
@@ -110,6 +116,7 @@ public final class SkillTreeNode {
         private int maxLevel = 1;
         private int costPerLevel = 1;
         private List<String> requirements = new ArrayList<>();
+        private List<String> requiresAny = new ArrayList<>();
         private List<String> conflicts = new ArrayList<>();
         private SkillTreePassiveEffect passiveEffect = SkillTreePassiveEffect.NONE;
 
@@ -156,12 +163,17 @@ public final class SkillTreeNode {
         }
 
         public Builder costPerLevel(int costPerLevel) {
-            this.costPerLevel = Math.max(1, costPerLevel);
+            this.costPerLevel = Math.max(0, costPerLevel);
             return this;
         }
 
         public Builder requires(String... requirements) {
             Collections.addAll(this.requirements, requirements);
+            return this;
+        }
+
+        public Builder requiresAny(String... requirements) {
+            Collections.addAll(this.requiresAny, requirements);
             return this;
         }
 

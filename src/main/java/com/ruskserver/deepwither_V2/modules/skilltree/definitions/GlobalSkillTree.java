@@ -43,6 +43,34 @@ public class GlobalSkillTree implements SkillTreeDefinition {
         nodes.addAll(GlobalMageNodes.getNodes(statManager));
         nodes.addAll(GlobalArcherNodes.getNodes(statManager));
         nodes.addAll(GlobalHolyNodes.getNodes(statManager));
+
+        // ========== コネクトノード (遠征ブリッジ) ==========
+        nodes.add(SkillTreeNode.passive("connect_holy_warrior")
+                .name("信仰の盾")
+                .description("【接続】神聖ツリーと戦士ツリーを繋ぐ。")
+                .icon(Material.CHAIN)
+                .position(4, -1)
+                .requiresAny("divine_shield_node", "shield_wall_node")
+                .maxLevel(1).costPerLevel(1)
+                .build());
+
+        nodes.add(SkillTreeNode.passive("connect_warrior_archer")
+                .name("狩人の歩法")
+                .description("【接続】戦士ツリーと弓使いツリーを繋ぐ。")
+                .icon(Material.CHAIN)
+                .position(4, 5)
+                .requiresAny("multi_slash_node", "arrow_rain_node")
+                .maxLevel(1).costPerLevel(1)
+                .build());
+
+        nodes.add(SkillTreeNode.passive("connect_archer_mage")
+                .name("魔力矢")
+                .description("【接続】弓使いツリーと魔術師ツリーを繋ぐ。")
+                .icon(Material.CHAIN)
+                .position(4, 9)
+                .requiresAny("heavy_draw_node", "chain_lightning_node")
+                .maxLevel(1).costPerLevel(1)
+                .build());
         
         return nodes;
     }

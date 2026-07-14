@@ -130,6 +130,20 @@ public class SkillTreeService implements Listener, PlayerLifecycleTask {
             }
         }
 
+        if (!node.getRequiresAny().isEmpty()) {
+            boolean anyMet = false;
+            for (String requirement : node.getRequiresAny()) {
+                SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
+                if (requiredNode != null && treeData.getNodeLevel(requirement) >= requiredNode.getMaxLevel()) {
+                    anyMet = true;
+                    break;
+                }
+            }
+            if (!anyMet) {
+                return UnlockResult.fail(Component.text("いずれかの前提ノードが必要です。", NamedTextColor.RED));
+            }
+        }
+
         for (String conflict : node.getConflicts()) {
             if (treeData.hasNode(conflict)) {
                 return UnlockResult.fail(Component.text("競合するノードを習得済みです。", NamedTextColor.RED));

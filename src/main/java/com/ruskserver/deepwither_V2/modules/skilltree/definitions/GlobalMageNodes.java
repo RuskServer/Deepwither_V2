@@ -20,12 +20,12 @@ public class GlobalMageNodes {
                         .name("魔術師の道")
                         .description("魔術師のクラスを選択する。最大マナが10%増加する。")
                         .icon(Material.BLAZE_ROD)
-                        .position(1, 0)
+                        .position(0, 12)
                         .maxLevel(1).costPerLevel(0)
                         .conflicts("warrior_start", "archer_start", "holy_start")
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAX_MANA, "st_class_mage", 0.1, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAX_MANA, "st_class_mage"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MANA, "st_class_mage", 0.1, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MANA, "st_class_mage"); }
                         }).build(),
 
                 // ========== MOBILITY ==========
@@ -33,248 +33,248 @@ public class GlobalMageNodes {
                         .name("瞬間移動")
                         .description("視線方向の安全な地点へ瞬間移動する。")
                         .icon(Material.ENDER_PEARL)
-                        .position(2, 0)
+                        .position(1, 12)
                         .requires("mage_start")
                         .maxLevel(1)
-                        .costPerLevel(4)
+                        .costPerLevel(2)
                         .build(),
 
-                // ========== ICE ==========
-                SkillTreeNode.skill("ice_shard_node", "ice_shard")
-                        .name("アイスシャード")
-                        .description("氷の欠片を放ち、爆発ダメージを与える。")
-                        .icon(Material.ICE)
-                        .position(3, 0)
+                // ========== LIGHTNING (Y = 10) ==========
+                SkillTreeNode.skill("lightning_strike_node", "lightning_strike")
+                        .name("ライトニングストライク")
+                        .description("対象に雷を落としダメージを与える。")
+                        .icon(Material.LIGHTNING_ROD)
+                        .position(2, 10)
                         .requires("mobility_blink_node_mage")
                         .maxLevel(1)
                         .costPerLevel(1)
                         .build(),
 
-                SkillTreeNode.passive("ice_power_1")
-                        .name("氷の心得 I")
-                        .description("氷属性ダメージをレベルごとに5%上昇させる。")
-                        .icon(Material.SNOWBALL)
-                        .position(4, 0)
-                        .requires("ice_shard_node")
+                SkillTreeNode.passive("mage_cdr_1")
+                        .name("高速詠唱 I")
+                        .description("クールタイム短縮をレベルごとに5%上昇させる。")
+                        .icon(Material.FEATHER)
+                        .position(3, 10)
+                        .requires("lightning_strike_node")
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.ICE_DAMAGE, "st_ice_power_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ICE_DAMAGE, "st_ice_power_1"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("ice_spike_node", "ice_spike")
-                        .name("アイススパイク")
-                        .description("標的の足元から氷の棘を噴出させる。")
-                        .icon(Material.PACKED_ICE)
-                        .position(5, 0)
-                        .requires("ice_power_1")
+                SkillTreeNode.skill("chain_lightning_node", "chain_lightning")
+                        .name("チェインライトニング")
+                        .description("敵から敵へと連鎖する雷を放つ。")
+                        .icon(Material.END_ROD)
+                        .position(4, 10)
+                        .requires("mage_cdr_1")
                         .maxLevel(1)
                         .costPerLevel(2)
                         .build(),
 
-                SkillTreeNode.passive("frost_armor")
-                        .name("氷の鎧")
-                        .description("防御力をレベルごとに5%上昇させる。")
-                        .icon(Material.BLUE_ICE)
-                        .position(6, 0)
-                        .requires("ice_spike_node")
+                SkillTreeNode.passive("overload")
+                        .name("オーバーロード")
+                        .description("魔法攻撃力をレベルごとに5%上昇させる。")
+                        .icon(Material.REDSTONE)
+                        .position(5, 10)
+                        .requiresAny("chain_lightning_node", "connect_archer_mage")
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.DEFENSE, "st_frost_armor", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.DEFENSE, "st_frost_armor"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_overload", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_overload"); }
                         }).build(),
 
-                SkillTreeNode.skill("frost_breath_node", "frost_breath")
-                        .name("フロストブレス")
-                        .description("前方広範囲に氷の息を吹き付ける。")
-                        .icon(Material.SNOW_BLOCK)
-                        .position(7, 0)
-                        .requires("frost_armor")
+                SkillTreeNode.skill("thunderstorm_node", "thunderstorm")
+                        .name("サンダーストーム")
+                        .description("指定範囲に激しい雷雨を呼び起こす。")
+                        .icon(Material.DIAMOND_SWORD)
+                        .position(6, 10)
+                        .requires("overload")
                         .maxLevel(1)
                         .costPerLevel(3)
                         .build(),
 
-                SkillTreeNode.passive("ice_power_2")
-                        .name("氷の心得 II")
-                        .description("氷属性ダメージをレベルごとに8%上昇させる。")
-                        .icon(Material.DIAMOND)
-                        .position(8, 0)
-                        .requires("frost_breath_node")
+                SkillTreeNode.passive("mage_cdr_2")
+                        .name("高速詠唱 II")
+                        .description("クールタイム短縮をレベルごとに8%上昇させる。")
+                        .icon(Material.SUGAR)
+                        .position(7, 10)
+                        .requires("thunderstorm_node")
                         .maxLevel(3)
                         .costPerLevel(2)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.ICE_DAMAGE, "st_ice_power_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ICE_DAMAGE, "st_ice_power_2"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("blizzard_node", "blizzard")
-                        .name("ブリザード")
-                        .description("周囲に極寒の吹雪を発生させる。")
-                        .icon(Material.NETHER_STAR)
-                        .position(9, 0)
-                        .requires("ice_power_2")
+                SkillTreeNode.skill("emp_node", "emp")
+                        .name("EMP")
+                        .description("強力な電磁波で周囲の敵を沈黙させる。")
+                        .icon(Material.BEACON)
+                        .position(8, 10)
+                        .requires("mage_cdr_2")
                         .maxLevel(1)
                         .costPerLevel(5)
                         .build(),
 
-                // ========== FIRE ==========
+                // ========== FIRE (Y = 12) ==========
                 SkillTreeNode.skill("fireball_node", "fireball")
                         .name("ファイアボール")
-                        .description("火球を放ち、爆発ダメージを与える。")
+                        .description("着弾時に爆発する火球を放つ。")
                         .icon(Material.FIRE_CHARGE)
-                        .position(10, 0)
-                        .requires("blizzard_node")
+                        .position(2, 12)
+                        .requires("mobility_blink_node_mage")
                         .maxLevel(1)
                         .costPerLevel(1)
                         .build(),
 
-                SkillTreeNode.passive("fire_power_1")
-                        .name("火の心得 I")
-                        .description("火属性ダメージをレベルごとに5%上昇させる。")
-                        .icon(Material.BLAZE_POWDER)
-                        .position(11, 0)
+                SkillTreeNode.passive("fire_mastery_1")
+                        .name("火炎魔法 I")
+                        .description("魔法攻撃力をレベルごとに5%上昇させる。")
+                        .icon(Material.MAGMA_CREAM)
+                        .position(3, 12)
                         .requires("fireball_node")
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.FIRE_DAMAGE, "st_fire_power_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.FIRE_DAMAGE, "st_fire_power_1"); }
-                        }).build(),
-
-                SkillTreeNode.skill("flame_pillar_node", "flame_pillar")
-                        .name("フレイムピラー")
-                        .description("足元から火柱を噴出させる。")
-                        .icon(Material.BLAZE_ROD)
-                        .position(12, 0)
-                        .requires("fire_power_1")
-                        .maxLevel(1)
-                        .costPerLevel(2)
-                        .build(),
-
-                SkillTreeNode.passive("mana_flow")
-                        .name("魔力の流れ")
-                        .description("最大マナをレベルごとに10%上昇させる。")
-                        .icon(Material.LAPIS_LAZULI)
-                        .position(13, 0)
-                        .requires("flame_pillar_node")
-                        .maxLevel(3)
-                        .costPerLevel(1)
-                        .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAX_MANA, "st_mana_flow", level * 0.10, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAX_MANA, "st_mana_flow"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_fire_mastery_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_fire_mastery_1"); }
                         }).build(),
 
                 SkillTreeNode.skill("flame_breath_node", "flame_breath")
                         .name("フレイムブレス")
-                        .description("前方広範囲に炎を吹き付ける。")
-                        .icon(Material.MAGMA_CREAM)
-                        .position(14, 0)
-                        .requires("mana_flow")
+                        .description("前方に継続的な炎を放射する。")
+                        .icon(Material.BLAZE_POWDER)
+                        .position(4, 12)
+                        .requires("fire_mastery_1")
+                        .maxLevel(1)
+                        .costPerLevel(2)
+                        .build(),
+
+                SkillTreeNode.passive("mana_boost")
+                        .name("マナの泉")
+                        .description("最大マナをレベルごとに8%上昇させる。")
+                        .icon(Material.LAPIS_LAZULI)
+                        .position(5, 12)
+                        .requires("flame_breath_node")
+                        .maxLevel(3)
+                        .costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MANA, "st_mana_boost", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MANA, "st_mana_boost"); }
+                        }).build(),
+
+                SkillTreeNode.skill("meteor_node", "meteor")
+                        .name("メテオ")
+                        .description("巨大な隕石を落下させ大爆発を起こす。")
+                        .icon(Material.NETHERRACK)
+                        .position(6, 12)
+                        .requires("mana_boost")
                         .maxLevel(1)
                         .costPerLevel(3)
                         .build(),
 
-                SkillTreeNode.passive("fire_power_2")
-                        .name("火の心得 II")
-                        .description("火属性ダメージをレベルごとに8%上昇させる。")
-                        .icon(Material.FIREWORK_STAR)
-                        .position(15, 0)
-                        .requires("flame_breath_node")
+                SkillTreeNode.passive("fire_mastery_2")
+                        .name("火炎魔法 II")
+                        .description("魔法攻撃力をレベルごとに8%上昇させる。")
+                        .icon(Material.BLAZE_ROD)
+                        .position(7, 12)
+                        .requires("meteor_node")
                         .maxLevel(3)
                         .costPerLevel(2)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.FIRE_DAMAGE, "st_fire_power_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.FIRE_DAMAGE, "st_fire_power_2"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_fire_mastery_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_fire_mastery_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("fire_nova_node", "fire_nova")
-                        .name("ファイアノヴァ")
-                        .description("周囲を焼き尽くす衝撃波。")
-                        .icon(Material.NETHER_STAR)
-                        .position(16, 0)
-                        .requires("fire_power_2")
+                SkillTreeNode.skill("inferno_node", "inferno")
+                        .name("インフェルノ")
+                        .description("周囲一帯を業火で包み込む。")
+                        .icon(Material.LAVA_BUCKET)
+                        .position(8, 12)
+                        .requires("fire_mastery_2")
                         .maxLevel(1)
                         .costPerLevel(5)
                         .build(),
 
-                // ========== LIGHTNING ==========
-                SkillTreeNode.skill("chain_lightning_node", "chain_lightning")
-                        .name("チェインライトニング")
-                        .description("雷球を放ち、命中した敵から周囲の敵へ連鎖する。")
-                        .icon(Material.FIREWORK_STAR)
-                        .position(17, 0)
-                        .requires("fire_nova_node")
+                // ========== ICE (Y = 14) ==========
+                SkillTreeNode.skill("ice_spike_node", "ice_spike")
+                        .name("アイススパイク")
+                        .description("地面から氷の棘を突き出させる。")
+                        .icon(Material.ICE)
+                        .position(2, 14)
+                        .requires("mobility_blink_node_mage")
                         .maxLevel(1)
                         .costPerLevel(1)
                         .build(),
 
-                SkillTreeNode.passive("lightning_power_1")
-                        .name("雷の心得 I")
-                        .description("雷属性ダメージをレベルごとに5%上昇させる。")
-                        .icon(Material.GUNPOWDER)
-                        .position(18, 0)
-                        .requires("chain_lightning_node")
+                SkillTreeNode.passive("frost_mastery_1")
+                        .name("氷結魔法 I")
+                        .description("魔法防御力をレベルごとに5%上昇させる。")
+                        .icon(Material.SNOWBALL)
+                        .position(3, 14)
+                        .requires("ice_spike_node")
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.LIGHTNING_DAMAGE, "st_lightning_power_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.LIGHTNING_DAMAGE, "st_lightning_power_1"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_frost_mastery_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_frost_mastery_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("thunder_strike_node", "thunder_strike")
-                        .name("サンダーストライク")
-                        .description("対象地点に雷を落とし、範囲ダメージを与える。")
-                        .icon(Material.NETHER_STAR)
-                        .position(19, 0)
-                        .requires("lightning_power_1")
+                SkillTreeNode.skill("blizzard_node", "blizzard")
+                        .name("ブリザード")
+                        .description("指定範囲に吹雪を起こし敵を遅くする。")
+                        .icon(Material.PACKED_ICE)
+                        .position(4, 14)
+                        .requires("frost_mastery_1")
                         .maxLevel(1)
                         .costPerLevel(2)
                         .build(),
 
-                SkillTreeNode.passive("static_field")
-                        .name("静電界")
-                        .description("クールタイム短縮をレベルごとに5%上昇させる。")
-                        .icon(Material.REDSTONE)
-                        .position(20, 0)
-                        .requires("thunder_strike_node")
+                SkillTreeNode.passive("ice_barrier")
+                        .name("アイスバリア")
+                        .description("防御力をレベルごとに5%上昇させる。")
+                        .icon(Material.BLUE_ICE)
+                        .position(5, 14)
+                        .requires("blizzard_node")
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_static_field", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_static_field"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.DEFENSE, "st_ice_barrier", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.DEFENSE, "st_ice_barrier"); }
                         }).build(),
 
-                SkillTreeNode.skill("lightning_storm_node", "lightning_storm")
-                        .name("ライトニングストーム")
-                        .description("前方に複数の雷撃を放つ。")
-                        .icon(Material.FIREWORK_ROCKET)
-                        .position(21, 0)
-                        .requires("static_field")
+                SkillTreeNode.skill("frost_nova_node", "frost_nova")
+                        .name("フロストノヴァ")
+                        .description("自身の周囲に氷の輪を放ち敵を凍結させる。")
+                        .icon(Material.GHAST_TEAR)
+                        .position(6, 14)
+                        .requires("ice_barrier")
                         .maxLevel(1)
                         .costPerLevel(3)
                         .build(),
 
-                SkillTreeNode.passive("lightning_power_2")
-                        .name("雷の心得 II")
-                        .description("雷属性ダメージをレベルごとに8%上昇させる。")
-                        .icon(Material.GLOWSTONE_DUST)
-                        .position(22, 0)
-                        .requires("lightning_storm_node")
+                SkillTreeNode.passive("frost_mastery_2")
+                        .name("氷結魔法 II")
+                        .description("魔法防御力をレベルごとに8%上昇させる。")
+                        .icon(Material.PRISMARINE_CRYSTALS)
+                        .position(7, 14)
+                        .requires("frost_nova_node")
                         .maxLevel(3)
                         .costPerLevel(2)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.LIGHTNING_DAMAGE, "st_lightning_power_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.LIGHTNING_DAMAGE, "st_lightning_power_2"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_frost_mastery_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_frost_mastery_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("thunder_blast_node", "thunder_blast")
-                        .name("サンダーブラスト")
-                        .description("詠唱後、着弾時に爆発する雷球を放つ。")
-                        .icon(Material.NETHER_STAR)
-                        .position(23, 0)
-                        .requires("lightning_power_2")
+                SkillTreeNode.skill("absolute_zero_node", "absolute_zero")
+                        .name("アブソリュートゼロ")
+                        .description("周囲を絶対零度にし、全てを凍り付かせる。")
+                        .icon(Material.HEART_OF_THE_SEA)
+                        .position(8, 14)
+                        .requires("frost_mastery_2")
                         .maxLevel(1)
                         .costPerLevel(5)
                         .build()

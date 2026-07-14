@@ -18,183 +18,163 @@ public class GlobalArcherNodes {
                 // ========== ARCHER START ==========
                 SkillTreeNode.passive("archer_start")
                         .name("弓使いの道")
-                        .description("弓使いのクラスを選択する。クリティカル率が5%増加する。")
+                        .description("弓使いのクラスを選択する。移動速度が10%増加する。")
                         .icon(Material.BOW)
-                        .position(0, 1)
+                        .position(0, 7)
                         .maxLevel(1).costPerLevel(0)
                         .conflicts("warrior_start", "mage_start", "holy_start")
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.CRITICAL_CHANCE, "st_class_archer", 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.CRITICAL_CHANCE, "st_class_archer"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MOVEMENT_SPEED, "st_class_archer", 0.1, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MOVEMENT_SPEED, "st_class_archer"); }
                         }).build(),
 
                 // ========== MOBILITY ==========
                 SkillTreeNode.skill("mobility_evade_node", "evade")
                         .name("回避")
-                        .description("入力している移動方向へ素早く身をかわす。")
+                        .description("移動方向へ素早くステップし攻撃を避ける。")
                         .icon(Material.FEATHER)
-                        .position(0, 2)
+                        .position(1, 7)
                         .requires("archer_start")
                         .maxLevel(1)
-                        .costPerLevel(1)
+                        .costPerLevel(2)
                         .build(),
 
-                // ========== SNIPER ==========
-                SkillTreeNode.skill("archer_power_shot_node", "power_shot")
-                        .name("パワーショット")
-                        .description("弓を引き絞り、強力な一矢を放つ。最大30m先の敵1体に物理ダメージ(180%)を与える。")
-                        .icon(Material.ARROW)
-                        .position(0, 3)
+                // ========== RAPID FIRE (Y = 6) ==========
+                SkillTreeNode.skill("multi_shot_node", "multi_shot")
+                        .name("マルチショット")
+                        .description("前方に扇状に矢を放つ。")
+                        .icon(Material.CROSSBOW)
+                        .position(2, 6)
                         .requires("mobility_evade_node")
                         .maxLevel(1)
                         .costPerLevel(1)
                         .build(),
 
-                SkillTreeNode.passive("archer_marksman_1")
-                        .name("狙撃訓練 I")
-                        .description("攻撃力をレベルごとに5%上昇させる。")
-                        .icon(Material.SPECTRAL_ARROW)
-                        .position(0, 4)
-                        .requires("archer_power_shot_node")
-                        .maxLevel(3)
-                        .costPerLevel(1)
-                        .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_archer_marksman_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_archer_marksman_1"); }
-                        }).build(),
-
-                SkillTreeNode.skill("archer_explosion_arrow_node", "explosion_arrow")
-                        .name("爆発矢")
-                        .description("青い光を纏った矢を放ち、着弾地点で爆発を引き起こす。半径5mの範囲へ物理ダメージ(120%)と鈍足(5秒)を与える。")
-                        .icon(Material.FIREWORK_ROCKET)
-                        .position(0, 5)
-                        .requires("archer_marksman_1")
-                        .maxLevel(1)
-                        .costPerLevel(2)
-                        .build(),
-
-                SkillTreeNode.passive("archer_precision")
-                        .name("精密射撃")
-                        .description("クリティカル率をレベルごとに5%上昇させる。")
-                        .icon(Material.TARGET)
-                        .position(0, 6)
-                        .requires("archer_explosion_arrow_node")
-                        .maxLevel(3)
-                        .costPerLevel(1)
-                        .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.CRITICAL_CHANCE, "st_archer_precision", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.CRITICAL_CHANCE, "st_archer_precision"); }
-                        }).build(),
-
-                SkillTreeNode.skill("archer_focused_shot_node", "focused_shot")
-                        .name("狙い澄まし")
-                        .description("狙いを定め、全神経を一点に集中させて放つ必中の一撃。0.8秒の射撃後、敵1体に物理ダメージ(300%)を与える。")
-                        .icon(Material.CROSSBOW)
-                        .position(0, 7)
-                        .requires("archer_precision")
-                        .maxLevel(1)
-                        .costPerLevel(3)
-                        .build(),
-
-                SkillTreeNode.passive("archer_marksman_2")
-                        .name("狙撃訓練 II")
-                        .description("攻撃力をレベルごとに8%上昇させる。")
-                        .icon(Material.ARROW)
-                        .position(0, 8)
-                        .requires("archer_focused_shot_node")
-                        .maxLevel(3)
-                        .costPerLevel(2)
-                        .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_archer_marksman_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_archer_marksman_2"); }
-                        }).build(),
-
-                SkillTreeNode.skill("archer_true_shot_node", "true_shot")
-                        .name("トゥルーショット")
-                        .description("全身全霊を込めた一射は、すべての防御を貫く。敵1体に確定ダメージ(攻撃力×4.0)を与え、防御力を完全に無視する。")
-                        .icon(Material.NETHER_STAR)
-                        .position(0, 9)
-                        .requires("archer_marksman_2")
-                        .maxLevel(1)
-                        .costPerLevel(5)
-                        .build(),
-
-                // ========== RAPID FIRE ==========
-                SkillTreeNode.skill("archer_triple_shot_node", "triple_shot")
-                        .name("三連射")
-                        .description("息を整え、三本の矢を素早く放つ。3本の矢が前方へ扇状に飛翔し、命中した敵1体につき物理ダメージ(70%)を与える。")
-                        .icon(Material.BOW)
-                        .position(0, 10)
-                        .requires("archer_true_shot_node")
-                        .maxLevel(1)
-                        .costPerLevel(1)
-                        .build(),
-
-                SkillTreeNode.passive("archer_rapid_fire_1")
-                        .name("速射訓練 I")
+                SkillTreeNode.passive("rapid_fire_1")
+                        .name("速射 I")
                         .description("クールタイム短縮をレベルごとに5%上昇させる。")
                         .icon(Material.SUGAR)
-                        .position(0, 11)
-                        .requires("archer_triple_shot_node")
+                        .position(3, 6)
+                        .requires("multi_shot_node")
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_archer_rapid_fire_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_archer_rapid_fire_1"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("archer_barrage_node", "barrage")
-                        .name("乱れ撃ち")
-                        .description("前方に向かって無数の矢をばらまき、広範囲を制圧する。扇状に5本の矢を放ち、命中した敵1体につき物理ダメージ(60%)を与える。")
-                        .icon(Material.FIREWORK_STAR)
-                        .position(0, 12)
-                        .requires("archer_rapid_fire_1")
+                SkillTreeNode.skill("arrow_rain_node", "arrow_rain")
+                        .name("アローレイン")
+                        .description("指定範囲に矢の雨を降らせる。")
+                        .icon(Material.ARROW)
+                        .position(4, 6)
+                        .requires("rapid_fire_1")
                         .maxLevel(1)
                         .costPerLevel(2)
                         .build(),
 
-                SkillTreeNode.passive("archer_keen_eye")
-                        .name("慧眼")
-                        .description("クリティカルダメージをレベルごとに8%上昇させる。")
-                        .icon(Material.SPYGLASS)
-                        .position(0, 13)
-                        .requires("archer_barrage_node")
+                SkillTreeNode.passive("nimble")
+                        .name("身軽")
+                        .description("移動速度をレベルごとに5%上昇させる。")
+                        .icon(Material.RABBIT_FOOT)
+                        .position(5, 6)
+                        .requiresAny("arrow_rain_node", "connect_warrior_archer")
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.CRITICAL_DAMAGE, "st_archer_keen_eye", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.CRITICAL_DAMAGE, "st_archer_keen_eye"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MOVEMENT_SPEED, "st_nimble", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MOVEMENT_SPEED, "st_nimble"); }
                         }).build(),
 
-                SkillTreeNode.skill("archer_endless_volley_node", "endless_volley")
-                        .name("連射")
-                        .description("矢をつがえながら次々と放ち、高速連射を叩き込む。0.6秒間で5本の矢を連続して放ち、命中した敵1体につき物理ダメージ(50%)を与える。")
-                        .icon(Material.ARROW)
-                        .position(0, 14)
-                        .requires("archer_keen_eye")
-                        .maxLevel(1)
-                        .costPerLevel(3)
-                        .build(),
-
-                SkillTreeNode.passive("archer_rapid_fire_2")
-                        .name("速射訓練 II")
+                SkillTreeNode.passive("rapid_fire_2")
+                        .name("速射 II")
                         .description("クールタイム短縮をレベルごとに8%上昇させる。")
                         .icon(Material.FEATHER)
-                        .position(0, 15)
-                        .requires("archer_endless_volley_node")
+                        .position(6, 6)
+                        .requires("nimble")
                         .maxLevel(3)
                         .costPerLevel(2)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_archer_rapid_fire_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_archer_rapid_fire_2"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("archer_rain_of_arrows_node", "rain_of_arrows")
-                        .name("レインオブアロー")
-                        .description("空高く放たれた合図の矢を皮切りに、無数の矢が降り注ぐ。標的の地点を中心に半径6mの範囲へ物理ダメージ(150%)を3回降らせる。")
+                SkillTreeNode.skill("barrage_node", "barrage")
+                        .name("バラージ")
+                        .description("怒涛の勢いで連続射撃を行う。")
                         .icon(Material.FIREWORK_ROCKET)
-                        .position(0, 16)
-                        .requires("archer_rapid_fire_2")
+                        .position(7, 6)
+                        .requires("rapid_fire_2")
+                        .maxLevel(1)
+                        .costPerLevel(4)
+                        .build(),
+
+                // ========== SNIPER (Y = 8) ==========
+                SkillTreeNode.skill("piercing_shot_node", "piercing_shot")
+                        .name("ピアシングショット")
+                        .description("敵を貫通する強力な矢を放つ。")
+                        .icon(Material.SPECTRAL_ARROW)
+                        .position(2, 8)
+                        .requires("mobility_evade_node")
+                        .maxLevel(1)
+                        .costPerLevel(1)
+                        .build(),
+
+                SkillTreeNode.passive("sniper_1")
+                        .name("狙撃 I")
+                        .description("物理攻撃力をレベルごとに5%上昇させる。")
+                        .icon(Material.FLINT)
+                        .position(3, 8)
+                        .requires("piercing_shot_node")
+                        .maxLevel(3)
+                        .costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_sniper_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_sniper_1"); }
+                        }).build(),
+
+                SkillTreeNode.skill("heavy_draw_node", "heavy_draw")
+                        .name("ヘビードロー")
+                        .description("極めて重い一撃を放ち、敵を後退させる。")
+                        .icon(Material.TIPPED_ARROW)
+                        .position(4, 8)
+                        .requires("sniper_1")
+                        .maxLevel(1)
+                        .costPerLevel(2)
+                        .build(),
+
+                SkillTreeNode.passive("eagle_eye")
+                        .name("鷹の目")
+                        .description("クリティカルダメージをレベルごとに5%上昇させる。")
+                        .icon(Material.SPYGLASS)
+                        .position(5, 8)
+                        .requiresAny("heavy_draw_node", "connect_archer_mage")
+                        .maxLevel(3)
+                        .costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.CRITICAL_DAMAGE, "st_eagle_eye", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.CRITICAL_DAMAGE, "st_eagle_eye"); }
+                        }).build(),
+
+                SkillTreeNode.passive("sniper_2")
+                        .name("狙撃 II")
+                        .description("物理攻撃力をレベルごとに8%上昇させる。")
+                        .icon(Material.IRON_NUGGET)
+                        .position(6, 8)
+                        .requires("eagle_eye")
+                        .maxLevel(3)
+                        .costPerLevel(2)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_sniper_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_sniper_2"); }
+                        }).build(),
+
+                SkillTreeNode.skill("headshot_node", "headshot")
+                        .name("ヘッドショット")
+                        .description("精神を集中させ致命的な一撃を放つ。")
+                        .icon(Material.TARGET)
+                        .position(7, 8)
+                        .requires("sniper_2")
                         .maxLevel(1)
                         .costPerLevel(5)
                         .build()

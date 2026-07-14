@@ -208,6 +208,15 @@ public class SkillTreeGui implements Listener {
                 lore.add(Component.text("- " + requirement, met ? NamedTextColor.GREEN : NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
             }
         }
+        if (!node.getRequiresAny().isEmpty()) {
+            lore.add(Component.empty());
+            lore.add(Component.text("前提ノード (いずれか1つ):", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
+            for (String requirement : node.getRequiresAny()) {
+                SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
+                boolean met = requiredNode != null && treeData.getNodeLevel(requirement) >= requiredNode.getMaxLevel();
+                lore.add(Component.text("- " + requirement, met ? NamedTextColor.GREEN : NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+            }
+        }
         if (!node.getConflicts().isEmpty()) {
             lore.add(Component.empty());
             lore.add(Component.text("競合:", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false));
@@ -339,6 +348,17 @@ public class SkillTreeGui implements Listener {
             if (requiredNode == null || data.getNodeLevel(requirement) < requiredNode.getMaxLevel()) {
                 return false;
             }
+        }
+        if (!node.getRequiresAny().isEmpty()) {
+            boolean anyMet = false;
+            for (String requirement : node.getRequiresAny()) {
+                SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
+                if (requiredNode != null && data.getNodeLevel(requirement) >= requiredNode.getMaxLevel()) {
+                    anyMet = true;
+                    break;
+                }
+            }
+            if (!anyMet) return false;
         }
         return true;
     }
