@@ -6,7 +6,8 @@ public enum CharacterClass {
     WARRIOR("戦士", Material.IRON_SWORD),
     MAGE("魔術師", Material.BLAZE_ROD),
     ARCHER("弓使い", Material.BOW),
-    HOLY("神聖", Material.GOLDEN_APPLE);
+    HOLY("神聖", Material.GOLDEN_APPLE),
+    UNKNOWN("未設定", Material.BARRIER);
 
     private final String displayName;
     private final Material icon;
