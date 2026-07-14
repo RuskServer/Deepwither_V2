@@ -123,25 +123,51 @@ public class SkillTreeService implements Listener, PlayerLifecycleTask {
             return UnlockResult.fail(Component.text("対応するスキル定義が見つかりません。", NamedTextColor.RED));
         }
 
-        for (String requirement : node.getRequirements()) {
-            SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
-            if (requiredNode == null || treeData.getNodeLevel(requirement) < requiredNode.getMaxLevel()) {
-                return UnlockResult.fail(Component.text("前提ノードが足りません。", NamedTextColor.RED));
-            }
-        }
-
-        if (!node.getRequiresAny().isEmpty()) {
-            boolean anyMet = false;
-            for (String requirement : node.getRequiresAny()) {
+        boolean hasExplicitRequirements = !node.getRequirements().isEmpty() || !node.getRequiresAny().isEmpty();
+        boolean requirementsMet = true;
+        
+        if (hasExplicitRequirements) {
+            for (String requirement : node.getRequirements()) {
                 SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
-                if (requiredNode != null && treeData.getNodeLevel(requirement) >= requiredNode.getMaxLevel()) {
-                    anyMet = true;
+                if (requiredNode == null || treeData.getNodeLevel(requirement) < requiredNode.getMaxLevel()) {
+                    requirementsMet = false;
                     break;
                 }
             }
-            if (!anyMet) {
-                return UnlockResult.fail(Component.text("いずれかの前提ノードが必要です。", NamedTextColor.RED));
+            if (requirementsMet && !node.getRequiresAny().isEmpty()) {
+                boolean anyMet = false;
+                for (String requirement : node.getRequiresAny()) {
+                    SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
+                    if (requiredNode != null && treeData.getNodeLevel(requirement) >= requiredNode.getMaxLevel()) {
+                        anyMet = true;
+                        break;
+                    }
+                }
+                if (!anyMet) requirementsMet = false;
             }
+        } else {
+            requirementsMet = false; // 明示的な指定がなければ、最初はfalse(隣接でtrueになる)
+        }
+
+        // 隣接ノード解放判定 (グリッドリンク)
+        boolean adjacentMet = false;
+        for (SkillTreeNode other : tree.getNodes()) {
+            if (other.getId().equals(node.getId())) continue;
+            int dx = Math.abs(other.getX() - node.getX());
+            int dy = Math.abs(other.getY() - node.getY());
+            if (dx + dy == 1) { // 上下左右に隣接
+                if (treeData.getNodeLevel(other.getId()) > 0) { // 隣接ノードがLv1以上ならOK
+                    adjacentMet = true;
+                    break;
+                }
+            }
+        }
+
+        // スタートノード等、特別に単独で取れるノード用 (X=0で前提がない場合)
+        boolean isStarter = !hasExplicitRequirements && node.getX() == 0;
+
+        if (!requirementsMet && !adjacentMet && !isStarter) {
+            return UnlockResult.fail(Component.text("隣接するノードを習得するか、前提条件を満たす必要があります。", NamedTextColor.RED));
         }
 
         for (String conflict : node.getConflicts()) {

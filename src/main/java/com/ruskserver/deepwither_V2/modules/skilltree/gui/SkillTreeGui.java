@@ -133,7 +133,7 @@ public class SkillTreeGui implements Listener {
                     int screenY = node.getY() - cameraY;
                     if (screenX < 0 || screenX >= VIEW_COLUMNS || screenY < 0 || screenY >= VIEW_ROWS) continue;
                     int slot = screenY * 9 + screenX;
-                    inventory.setItem(slot, buildNodeItem(player, treeData, node, treeId, cameraX, cameraY));
+                    inventory.setItem(slot, buildNodeItem(player, treeData, node, treeId, cameraX, cameraY, tree));
                 }
 
                 ItemStack separator = namedItem(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "));
@@ -152,11 +152,11 @@ public class SkillTreeGui implements Listener {
         });
     }
 
-    private ItemStack buildNodeItem(Player player, CharacterSkillTreeProvider.SkillTreeData treeData, SkillTreeNode node, String treeId, int cameraX, int cameraY) {
+    private ItemStack buildNodeItem(Player player, CharacterSkillTreeProvider.SkillTreeData treeData, SkillTreeNode node, String treeId, int cameraX, int cameraY, SkillTreeDefinition tree) {
         int level = treeData.getNodeLevel(node.getId());
         boolean learned = level > 0;
         boolean maxed = level >= node.getMaxLevel();
-        boolean requirementsMet = areRequirementsMet(treeData, node);
+        boolean requirementsMet = areRequirementsMet(treeData, node, tree);
         boolean conflicted = isConflicted(treeData, node);
         boolean available = !maxed && requirementsMet && !conflicted;
         Skill linkedSkill = node.getSkillId() == null ? null : skillRegistry.get(node.getSkillId());
@@ -342,25 +342,48 @@ public class SkillTreeGui implements Listener {
         return trees;
     }
 
-    private boolean areRequirementsMet(CharacterSkillTreeProvider.SkillTreeData data, SkillTreeNode node) {
-        for (String requirement : node.getRequirements()) {
-            SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
-            if (requiredNode == null || data.getNodeLevel(requirement) < requiredNode.getMaxLevel()) {
-                return false;
-            }
-        }
-        if (!node.getRequiresAny().isEmpty()) {
-            boolean anyMet = false;
-            for (String requirement : node.getRequiresAny()) {
+    private boolean areRequirementsMet(CharacterSkillTreeProvider.SkillTreeData data, SkillTreeNode node, SkillTreeDefinition tree) {
+        boolean hasExplicitRequirements = !node.getRequirements().isEmpty() || !node.getRequiresAny().isEmpty();
+        boolean requirementsMet = true;
+
+        if (hasExplicitRequirements) {
+            for (String requirement : node.getRequirements()) {
                 SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
-                if (requiredNode != null && data.getNodeLevel(requirement) >= requiredNode.getMaxLevel()) {
-                    anyMet = true;
+                if (requiredNode == null || data.getNodeLevel(requirement) < requiredNode.getMaxLevel()) {
+                    requirementsMet = false;
                     break;
                 }
             }
-            if (!anyMet) return false;
+            if (requirementsMet && !node.getRequiresAny().isEmpty()) {
+                boolean anyMet = false;
+                for (String requirement : node.getRequiresAny()) {
+                    SkillTreeNode requiredNode = treeRegistry.getNode(requirement);
+                    if (requiredNode != null && data.getNodeLevel(requirement) >= requiredNode.getMaxLevel()) {
+                        anyMet = true;
+                        break;
+                    }
+                }
+                if (!anyMet) requirementsMet = false;
+            }
+        } else {
+            requirementsMet = false;
         }
-        return true;
+
+        boolean adjacentMet = false;
+        for (SkillTreeNode other : tree.getNodes()) {
+            if (other.getId().equals(node.getId())) continue;
+            int dx = Math.abs(other.getX() - node.getX());
+            int dy = Math.abs(other.getY() - node.getY());
+            if (dx + dy == 1) {
+                if (data.getNodeLevel(other.getId()) > 0) {
+                    adjacentMet = true;
+                    break;
+                }
+            }
+        }
+
+        boolean isStarter = !hasExplicitRequirements && node.getX() == 0;
+        return requirementsMet || adjacentMet || isStarter;
     }
 
     private boolean isConflicted(CharacterSkillTreeProvider.SkillTreeData data, SkillTreeNode node) {

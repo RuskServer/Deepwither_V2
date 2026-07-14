@@ -50,7 +50,6 @@ public class GlobalSkillTree implements SkillTreeDefinition {
                 .description("【接続】神聖ツリーと戦士ツリーを繋ぐ。")
                 .icon(Material.LEAD)
                 .position(4, -1)
-                .requiresAny("divine_shield_node", "shield_wall_node")
                 .maxLevel(1).costPerLevel(1)
                 .build());
 
@@ -59,7 +58,6 @@ public class GlobalSkillTree implements SkillTreeDefinition {
                 .description("【接続】戦士ツリーと弓使いツリーを繋ぐ。")
                 .icon(Material.LEAD)
                 .position(4, 5)
-                .requiresAny("multi_slash_node", "arrow_rain_node")
                 .maxLevel(1).costPerLevel(1)
                 .build());
 
@@ -68,7 +66,6 @@ public class GlobalSkillTree implements SkillTreeDefinition {
                 .description("【接続】弓使いツリーと魔術師ツリーを繋ぐ。")
                 .icon(Material.LEAD)
                 .position(4, 9)
-                .requiresAny("heavy_draw_node", "chain_lightning_node")
                 .maxLevel(1).costPerLevel(1)
                 .build());
         

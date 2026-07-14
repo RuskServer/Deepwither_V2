@@ -19,245 +19,272 @@ public class GlobalHolyNodes {
                 SkillTreeNode.passive("holy_start")
                         .name("神聖の道")
                         .description("神聖のクラスを選択する。魔法防御力が10%増加する。")
-                        .icon(Material.GOLDEN_APPLE)
+                        .icon(Material.GHAST_TEAR)
                         .position(0, -4)
                         .maxLevel(1).costPerLevel(0)
-                        .conflicts("warrior_start", "mage_start", "archer_start")
+                        .conflicts("warrior_start", "archer_start", "mage_start")
                         .passiveEffect(new SkillTreePassiveEffect() {
                             @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_class_holy", 0.1, ModifierType.MULTIPLICATIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_class_holy"); }
                         }).build(),
 
-                // ========== MOBILITY ==========
-                SkillTreeNode.skill("mobility_blink_node_holy", "blink")
-                        .name("瞬間移動")
-                        .description("視線方向の安全な地点へ瞬間移動する。")
-                        .icon(Material.ENDER_PEARL)
+                SkillTreeNode.skill("mobility_evade_node_holy", "evade")
+                        .name("回避")
+                        .description("移動方向へ素早くステップし攻撃を避ける。")
+                        .icon(Material.FEATHER)
                         .position(1, -4)
-                        .requires("holy_start")
-                        .maxLevel(1)
-                        .costPerLevel(4)
-                        .build(),
+                        .maxLevel(1).costPerLevel(2).build(),
+
+                // ----- TRAVEL NODES (分岐用) -----
+                SkillTreeNode.passive("holy_travel_start_up1")
+                        .name("信仰の歩み")
+                        .description("最大マナが1%増加する。")
+                        .icon(Material.IRON_NUGGET)
+                        .position(1, -5)
+                        .maxLevel(1).costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAX_MANA, "st_holy_travel_u1", 0.01, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAX_MANA, "st_holy_travel_u1"); }
+                        }).build(),
+                SkillTreeNode.passive("holy_travel_start_up2")
+                        .name("信仰の歩み")
+                        .description("最大マナが1%増加する。")
+                        .icon(Material.IRON_NUGGET)
+                        .position(1, -6)
+                        .maxLevel(1).costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAX_MANA, "st_holy_travel_u2", 0.01, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAX_MANA, "st_holy_travel_u2"); }
+                        }).build(),
+
+                SkillTreeNode.passive("holy_travel_start_down1")
+                        .name("信仰の歩み")
+                        .description("最大HPが1%増加する。")
+                        .icon(Material.IRON_NUGGET)
+                        .position(1, -3)
+                        .maxLevel(1).costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_travel_d1", 0.01, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_travel_d1"); }
+                        }).build(),
+                SkillTreeNode.passive("holy_travel_start_down2")
+                        .name("信仰の歩み")
+                        .description("最大HPが1%増加する。")
+                        .icon(Material.IRON_NUGGET)
+                        .position(1, -2)
+                        .maxLevel(1).costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_travel_d2", 0.01, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_travel_d2"); }
+                        }).build(),
 
                 // ========== RESTORATION (Y = -6) ==========
-                SkillTreeNode.skill("holy_light_node", "holy_light")
-                        .name("聖光")
-                        .description("対象1体の最大HPの25%を回復する。")
-                        .icon(Material.GLOWSTONE_DUST)
+                SkillTreeNode.skill("heal_node", "heal")
+                        .name("ヒール")
+                        .description("自身のHPを回復する。")
+                        .icon(Material.GOLDEN_APPLE)
                         .position(2, -6)
-                        .requires("mobility_blink_node_holy")
-                        .maxLevel(1)
-                        .costPerLevel(1)
-                        .build(),
+                        .maxLevel(1).costPerLevel(1).build(),
 
-                SkillTreeNode.passive("holy_mastery_1")
-                        .name("癒しの糧 I")
-                        .description("回復量をレベルごとに5%上昇させる。")
-                        .icon(Material.SUGAR)
+                SkillTreeNode.passive("restoration_1")
+                        .name("治癒魔法 I")
+                        .description("魔法攻撃力をレベルごとに5%上昇させる。")
+                        .icon(Material.GLOWSTONE_DUST)
                         .position(3, -6)
-                        .requires("holy_light_node")
-                        .maxLevel(3)
-                        .costPerLevel(1)
+                        .maxLevel(3).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_mastery_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_mastery_1"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_restoration_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_restoration_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("renewal_node", "renewal")
-                        .name("再生")
-                        .description("対象に6秒間の継続回復を付与する。")
-                        .icon(Material.HONEY_BOTTLE)
+                SkillTreeNode.skill("group_heal_node", "group_heal")
+                        .name("グループヒール")
+                        .description("周囲の味方のHPを回復する。")
+                        .icon(Material.ENCHANTED_GOLDEN_APPLE)
                         .position(4, -6)
-                        .requires("holy_mastery_1")
-                        .maxLevel(1)
-                        .costPerLevel(2)
-                        .build(),
+                        .maxLevel(1).costPerLevel(2).build(),
 
-                SkillTreeNode.passive("holy_aura")
-                        .name("祝福の光")
-                        .description("範囲回復スキルの半径をレベルごとに0.5m増加させる。")
-                        .icon(Material.LIGHT)
+                SkillTreeNode.passive("divine_grace")
+                        .name("神の恩恵")
+                        .description("最大HPをレベルごとに5%上昇させる。")
+                        .icon(Material.TOTEM_OF_UNDYING)
                         .position(5, -6)
-                        .requires("renewal_node")
-                        .maxLevel(3)
-                        .costPerLevel(1)
+                        .maxLevel(3).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) {}
-                            @Override public void clear(Player player, SkillTreeContext context) {}
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.HEALTH, "st_divine_grace", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_divine_grace"); }
                         }).build(),
 
-                SkillTreeNode.skill("sanctuary_node", "sanctuary")
-                        .name("聖域")
-                        .description("設置した範囲内の味方を継続回復する。")
-                        .icon(Material.LIGHT)
-                        .position(6, -6)
-                        .requires("holy_aura")
-                        .maxLevel(1)
-                        .costPerLevel(3)
-                        .build(),
-
-                SkillTreeNode.passive("holy_mastery_2")
-                        .name("癒しの糧 II")
-                        .description("回復量をレベルごとに8%上昇させる。")
-                        .icon(Material.GLISTERING_MELON_SLICE)
-                        .position(7, -6)
-                        .requires("sanctuary_node")
-                        .maxLevel(3)
-                        .costPerLevel(2)
-                        .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_mastery_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_mastery_2"); }
-                        }).build(),
-
-                SkillTreeNode.skill("mass_heal_node", "mass_heal")
-                        .name("大聖光")
-                        .description("周囲の味方全員を大きく回復する。")
+                SkillTreeNode.skill("resurrection_node", "resurrection")
+                        .name("リザレクション")
+                        .description("倒れた味方を蘇生する。")
                         .icon(Material.NETHER_STAR)
+                        .position(6, -6)
+                        .maxLevel(1).costPerLevel(3).build(),
+
+                SkillTreeNode.passive("restoration_2")
+                        .name("治癒魔法 II")
+                        .description("魔法攻撃力をレベルごとに8%上昇させる。")
+                        .icon(Material.AMETHYST_SHARD)
+                        .position(7, -6)
+                        .maxLevel(3).costPerLevel(2)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_restoration_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_restoration_2"); }
+                        }).build(),
+
+                SkillTreeNode.skill("holy_nova_node", "holy_nova")
+                        .name("ホーリーノヴァ")
+                        .description("周囲の敵にダメージを与え、味方を回復する。")
+                        .icon(Material.BEACON)
                         .position(8, -6)
-                        .requires("holy_mastery_2")
-                        .maxLevel(1)
-                        .costPerLevel(5)
-                        .build(),
+                        .maxLevel(1).costPerLevel(5).build(),
+
+                // ----- ブランチ間コネクト (Y=-6 と Y=-4 を繋ぐ) -----
+                SkillTreeNode.passive("holy_travel_mid_1")
+                        .name("信仰の導き")
+                        .description("最大マナが1%増加する。")
+                        .icon(Material.IRON_NUGGET)
+                        .position(4, -5)
+                        .maxLevel(1).costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAX_MANA, "st_holy_travel_m1", 0.01, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAX_MANA, "st_holy_travel_m1"); }
+                        }).build(),
+                SkillTreeNode.passive("holy_travel_mid_2")
+                        .name("信仰の導き")
+                        .description("最大HPが1%増加する。")
+                        .icon(Material.IRON_NUGGET)
+                        .position(4, -3)
+                        .maxLevel(1).costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_travel_m2", 0.01, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_holy_travel_m2"); }
+                        }).build(),
 
                 // ========== SACRIFICE (Y = -4) ==========
-                SkillTreeNode.skill("sacrificial_light_node", "sacrificial_light")
-                        .name("献身の光")
-                        .description("自分のHPを消費し対象を大きく回復する。")
-                        .icon(Material.BLAZE_POWDER)
+                SkillTreeNode.skill("smite_node", "smite")
+                        .name("スマイト")
+                        .description("対象に神聖な一撃を下す。")
+                        .icon(Material.GOLDEN_SWORD)
                         .position(2, -4)
-                        .requires("mobility_blink_node_holy")
-                        .maxLevel(1)
-                        .costPerLevel(1)
-                        .build(),
+                        .maxLevel(1).costPerLevel(1).build(),
 
-                SkillTreeNode.passive("sacrifice_mastery_1")
-                        .name("痛みの代償")
-                        .description("HP消費スキルの回復量をレベルごとに7%上昇させる。")
-                        .icon(Material.REDSTONE)
-                        .position(3, -4)
-                        .requires("sacrificial_light_node")
-                        .maxLevel(3)
-                        .costPerLevel(1)
-                        .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) {}
-                            @Override public void clear(Player player, SkillTreeContext context) {}
-                        }).build(),
-
-                SkillTreeNode.skill("martyrdom_node", "martyrdom")
-                        .name("殉教")
-                        .description("一時的に範囲内味方の被ダメージを肩代わりする。")
-                        .icon(Material.NETHER_STAR)
-                        .position(4, -4)
-                        .requires("sacrifice_mastery_1")
-                        .maxLevel(1)
-                        .costPerLevel(2)
-                        .build(),
-
-                SkillTreeNode.passive("sacrifice_endurance")
-                        .name("忍耐")
-                        .description("最大HPをレベルごとに8%上昇させる。")
-                        .icon(Material.GOLDEN_APPLE)
-                        .position(5, -4)
-                        .requires("martyrdom_node")
-                        .maxLevel(3)
-                        .costPerLevel(1)
-                        .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.HEALTH, "st_sacrifice_endurance", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_sacrifice_endurance"); }
-                        }).build(),
-
-                SkillTreeNode.skill("holy_resurrection_node", "holy_resurrection")
-                        .name("聖なる復活")
-                        .description("自らのHPを消費し遠くの味方を蘇生する。")
-                        .icon(Material.TOTEM_OF_UNDYING)
-                        .position(6, -4)
-                        .requires("sacrifice_endurance")
-                        .maxLevel(1)
-                        .costPerLevel(3)
-                        .build(),
-
-                SkillTreeNode.passive("sacrifice_mastery_2")
-                        .name("聖なる覚悟")
-                        .description("HP50%以下で回復スキルの効果をレベルごとに5%増加させる。")
+                SkillTreeNode.passive("holy_power_1")
+                        .name("神聖力 I")
+                        .description("魔法攻撃力をレベルごとに5%上昇させる。")
                         .icon(Material.BLAZE_POWDER)
-                        .position(7, -4)
-                        .requires("holy_resurrection_node")
-                        .maxLevel(3)
-                        .costPerLevel(2)
+                        .position(3, -4)
+                        .maxLevel(3).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) {}
-                            @Override public void clear(Player player, SkillTreeContext context) {}
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_holy_power_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_holy_power_1"); }
                         }).build(),
+
+                SkillTreeNode.skill("martyr_node", "martyr")
+                        .name("マーター")
+                        .description("自身のHPを消費し、周囲の敵に大ダメージを与える。")
+                        .icon(Material.CRIMSON_ROOTS)
+                        .position(4, -4)
+                        .maxLevel(1).costPerLevel(2).build(),
+
+                SkillTreeNode.passive("zeal")
+                        .name("狂信")
+                        .description("攻撃速度をレベルごとに5%上昇させる。")
+                        .icon(Material.REDSTONE)
+                        .position(5, -4)
+                        .maxLevel(3).costPerLevel(1)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.ATTACK_SPEED, "st_zeal", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_SPEED, "st_zeal"); }
+                        }).build(),
+
+                SkillTreeNode.skill("judgement_node", "judgement")
+                        .name("ジャッジメント")
+                        .description("天からの裁きを下し、広範囲の敵を浄化する。")
+                        .icon(Material.END_CRYSTAL)
+                        .position(6, -4)
+                        .maxLevel(1).costPerLevel(3).build(),
+
+                SkillTreeNode.passive("holy_power_2")
+                        .name("神聖力 II")
+                        .description("魔法攻撃力をレベルごとに8%上昇させる。")
+                        .icon(Material.MAGMA_CREAM)
+                        .position(7, -4)
+                        .maxLevel(3).costPerLevel(2)
+                        .passiveEffect(new SkillTreePassiveEffect() {
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_holy_power_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_holy_power_2"); }
+                        }).build(),
+
+                SkillTreeNode.skill("divine_wrath_node", "divine_wrath")
+                        .name("ディバインラース")
+                        .description("神の怒りを顕現させ、全てを焼き尽くす。")
+                        .icon(Material.DRAGON_BREATH)
+                        .position(8, -4)
+                        .maxLevel(1).costPerLevel(5).build(),
 
                 // ========== PROTECTION (Y = -2) ==========
-                SkillTreeNode.skill("purify_node", "purify")
-                        .name("浄化")
-                        .description("自身のデバフを解除し耐性を付与する。")
-                        .icon(Material.MILK_BUCKET)
+                SkillTreeNode.skill("divine_shield_node", "divine_shield")
+                        .name("ディバインシールド")
+                        .description("自身にダメージを防ぐバリアを張る。")
+                        .icon(Material.SHIELD)
                         .position(2, -2)
-                        .requires("mobility_blink_node_holy")
-                        .maxLevel(1)
-                        .costPerLevel(1)
-                        .build(),
+                        .maxLevel(1).costPerLevel(1).build(),
 
                 SkillTreeNode.passive("holy_defense_1")
-                        .name("聖なる守り")
+                        .name("聖なる護り I")
                         .description("魔法防御力をレベルごとに5%上昇させる。")
-                        .icon(Material.ENDER_EYE)
+                        .icon(Material.IRON_CHESTPLATE)
                         .position(3, -2)
-                        .requires("purify_node")
-                        .maxLevel(3)
-                        .costPerLevel(1)
+                        .maxLevel(3).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
                             @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_holy_defense_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_holy_defense_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("divine_shield_node", "divine_shield")
-                        .name("聖盾")
-                        .description("自身にダメージ吸収バリアを付与する。")
-                        .icon(Material.SHIELD)
+                SkillTreeNode.skill("sanctuary_node", "sanctuary")
+                        .name("サンクチュアリ")
+                        .description("指定範囲に味方を守る聖域を展開する。")
+                        .icon(Material.CAMPFIRE)
                         .position(4, -2)
-                        .requires("holy_defense_1")
-                        .maxLevel(1)
-                        .costPerLevel(2)
-                        .build(),
+                        .maxLevel(1).costPerLevel(2).build(),
 
                 SkillTreeNode.passive("holy_defense_2")
                         .name("不屈の意思")
                         .description("防御力をレベルごとに5%上昇させる。")
                         .icon(Material.OBSIDIAN)
                         .position(5, -2)
-                        .requiresAny("divine_shield_node", "connect_holy_warrior")
-                        .maxLevel(3)
-                        .costPerLevel(1)
+                        .maxLevel(3).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
                             @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.DEFENSE, "st_holy_defense_2", level * 0.05, ModifierType.MULTIPLICATIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.DEFENSE, "st_holy_defense_2"); }
                         }).build(),
 
-                SkillTreeNode.passive("holy_cdr")
-                        .name("神の加護")
-                        .description("クールタイム短縮をレベルごとに5%上昇させる。")
-                        .icon(Material.EXPERIENCE_BOTTLE)
+                SkillTreeNode.skill("aegis_node", "aegis")
+                        .name("イージス")
+                        .description("一時的に無敵状態となる。")
+                        .icon(Material.DIAMOND_CHESTPLATE)
                         .position(6, -2)
-                        .requires("holy_defense_2")
-                        .maxLevel(3)
-                        .costPerLevel(2)
+                        .maxLevel(1).costPerLevel(3).build(),
+
+                SkillTreeNode.passive("holy_defense_3")
+                        .name("聖なる護り II")
+                        .description("魔法防御力をレベルごとに8%上昇させる。")
+                        .icon(Material.NETHERITE_CHESTPLATE)
+                        .position(7, -2)
+                        .maxLevel(3).costPerLevel(2)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_holy_cdr", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_holy_cdr"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_holy_defense_3", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_holy_defense_3"); }
                         }).build(),
 
                 SkillTreeNode.skill("guardian_angel_node", "guardian_angel")
-                        .name("守護天使")
-                        .description("周囲の味方にバリアを付与する。")
+                        .name("ガーディアンエンジェル")
+                        .description("対象の味方を死から一度だけ守る。")
                         .icon(Material.TOTEM_OF_UNDYING)
-                        .position(7, -2)
-                        .requires("holy_cdr")
-                        .maxLevel(1)
-                        .costPerLevel(5)
-                        .build()
+                        .position(8, -2)
+                        .maxLevel(1).costPerLevel(5).build()
         );
     }
 }
