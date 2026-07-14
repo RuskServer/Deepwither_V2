@@ -24,8 +24,8 @@ public class GlobalMageNodes {
                         .maxLevel(1).costPerLevel(0)
                         .conflicts("warrior_start", "archer_start", "holy_start")
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MANA, "st_class_mage", 0.1, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MANA, "st_class_mage"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAX_MANA, "st_class_mage", 0.1, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAX_MANA, "st_class_mage"); }
                         }).build(),
 
                 // ========== MOBILITY ==========
@@ -162,8 +162,8 @@ public class GlobalMageNodes {
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MANA, "st_mana_boost", level * 0.08, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MANA, "st_mana_boost"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MAX_MANA, "st_mana_boost", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAX_MANA, "st_mana_boost"); }
                         }).build(),
 
                 SkillTreeNode.skill("meteor_node", "meteor")

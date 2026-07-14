@@ -24,8 +24,8 @@ public class GlobalArcherNodes {
                         .maxLevel(1).costPerLevel(0)
                         .conflicts("warrior_start", "mage_start", "holy_start")
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MOVEMENT_SPEED, "st_class_archer", 0.1, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MOVEMENT_SPEED, "st_class_archer"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.SPEED, "st_class_archer", 0.1, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.SPEED, "st_class_archer"); }
                         }).build(),
 
                 // ========== MOBILITY ==========
@@ -82,8 +82,8 @@ public class GlobalArcherNodes {
                         .maxLevel(3)
                         .costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.MOVEMENT_SPEED, "st_nimble", level * 0.05, ModifierType.MULTIPLICATIVE); }
-                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MOVEMENT_SPEED, "st_nimble"); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.SPEED, "st_nimble", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.SPEED, "st_nimble"); }
                         }).build(),
 
                 SkillTreeNode.passive("rapid_fire_2")
