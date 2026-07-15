@@ -25,7 +25,13 @@ public class EternalIceDungeon extends DungeonDefinition {
                         new RoomSlot("room_small", RoomType.ROOM_SMALL, 60, 0, List.of("room")),
                         new RoomSlot("corridor_straight", RoomType.CORRIDOR_STRAIGHT, 40, 0, List.of("corridor"))
                 ),
-                "boss_room"
+                "boss_room",
+                "ghoul_nest",
+                "ghoul",
+                "frost_pilgrim",
+                0L,
+                1,
+                3
         );
     }
 }

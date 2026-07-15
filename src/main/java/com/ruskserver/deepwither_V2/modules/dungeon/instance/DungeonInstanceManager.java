@@ -259,7 +259,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         // 入口ルームのモブ・宝をスポーン
         mobSpawnService.spawnMobs(dungeonWorld, layout.getAllMobSpawnPositions(), definition.mobId(), modifierContext);
         for (var bossPos : layout.getBossSpawnPositions()) {
-            bossSpawnService.spawnBoss(dungeonWorld, bossPos);
+            bossSpawnService.spawnBoss(dungeonWorld, bossPos, definition.bossMobId());
         }
         lootService.placeChests(dungeonWorld, layout.getLootPositions(), definition.lootTableId(), modifierContext);
 
@@ -417,7 +417,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             // モブ・宝をスポーン
             mobSpawnService.spawnMobs(instance.getWorld(), result.placementResult().mobSpawnWorldPositions(), instance.getDefinition().mobId(), instance.getModifierContext());
             if (result.placementResult().bossSpawnWorldPos() != null) {
-                bossSpawnService.spawnBoss(instance.getWorld(), result.placementResult().bossSpawnWorldPos());
+                bossSpawnService.spawnBoss(instance.getWorld(), result.placementResult().bossSpawnWorldPos(), instance.getDefinition().bossMobId());
             }
             lootService.placeChests(instance.getWorld(), result.placementResult().lootWorldPositions(), instance.getDefinition().lootTableId(), instance.getModifierContext());
 

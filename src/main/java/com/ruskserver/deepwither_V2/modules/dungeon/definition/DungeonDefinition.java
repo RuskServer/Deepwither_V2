@@ -42,6 +42,7 @@ public class DungeonDefinition {
     private final String bossRoomSchematic;
     private final String lootTableId;
     private final String mobId;
+    private final String bossMobId;
     private final long seed;
     private final int minCorridorsBeforeRoom;
     private final int maxCorridorsBeforeRoom;
@@ -71,6 +72,7 @@ public class DungeonDefinition {
                 bossRoomSchematic,
                 "ghoul_nest",
                 "ghoul",
+                null,
                 0L,
                 1,
                 3
@@ -104,6 +106,7 @@ public class DungeonDefinition {
                 bossRoomSchematic,
                 lootTableId,
                 mobId,
+                null,
                 0L,
                 1,
                 3
@@ -123,6 +126,44 @@ public class DungeonDefinition {
             String bossRoomSchematic,
             String lootTableId,
             String mobId,
+            long seed,
+            int minCorridorsBeforeRoom,
+            int maxCorridorsBeforeRoom
+    ) {
+        this(
+                id,
+                displayName,
+                schematicFolder,
+                maxDepth,
+                timeLimitMinutes,
+                lives,
+                branchChance,
+                maxBranches,
+                roomSlots,
+                bossRoomSchematic,
+                lootTableId,
+                mobId,
+                null,
+                seed,
+                minCorridorsBeforeRoom,
+                maxCorridorsBeforeRoom
+        );
+    }
+
+    protected DungeonDefinition(
+            String id,
+            String displayName,
+            String schematicFolder,
+            int maxDepth,
+            int timeLimitMinutes,
+            int lives,
+            double branchChance,
+            int maxBranches,
+            List<RoomSlot> roomSlots,
+            String bossRoomSchematic,
+            String lootTableId,
+            String mobId,
+            String bossMobId,
             long seed,
             int minCorridorsBeforeRoom,
             int maxCorridorsBeforeRoom
@@ -151,6 +192,7 @@ public class DungeonDefinition {
         this.bossRoomSchematic = bossRoomSchematic != null ? bossRoomSchematic : "";
         this.lootTableId = lootTableId != null && !lootTableId.isBlank() ? lootTableId : "ghoul_nest";
         this.mobId = mobId != null && !mobId.isBlank() ? mobId : "ghoul";
+        this.bossMobId = bossMobId != null && !bossMobId.isBlank() ? bossMobId : null;
         this.seed = seed;
         this.minCorridorsBeforeRoom = minCorridorsBeforeRoom;
         this.maxCorridorsBeforeRoom = maxCorridorsBeforeRoom;
@@ -170,6 +212,7 @@ public class DungeonDefinition {
     public String bossRoomSchematic() { return bossRoomSchematic; }
     public String lootTableId() { return lootTableId; }
     public String mobId() { return mobId; }
+    public String bossMobId() { return bossMobId; }
     public long seed() { return seed; }
     public int minCorridorsBeforeRoom() { return minCorridorsBeforeRoom; }
     public int maxCorridorsBeforeRoom() { return maxCorridorsBeforeRoom; }
