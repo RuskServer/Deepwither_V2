@@ -36,36 +36,54 @@ MMORPG特有の「膨大なプレイヤーデータ」「複雑なランダム�
 ### 🧩 Single-File Module Architecture
 * ちょっとした新システム（例：特定のブロックを壊すとコインが出る機能など）を、1つの `.java` ファイルにデータ構造からコマンドまで全て詰め込んで実装可能。新コンテンツのプロトタイピングと本番実装の速度を劇的に引き上げます。
 
+### ⚔️ Skill & Cast Engine
+* Javaで直接定義する柔軟なスキルシステム。クールダウン、マナ消費、詠唱（キャスト）処理をサポートします。
+* `Particle.TRAIL`（線・輪郭）とベクトルパーティクル（動きのある弾）を組み合わせた高度なパーティクル演出制御を提供します。
+
+### 🌲 Skill Tree System
+* クラス選択、スキル解放、パッシブ効果付与を行うための統合的なスキルツリー基盤。
+* GUI経由での視覚的な解放プロセスやステータス反映を標準でサポートします。
+
+### 👾 Custom Mob Engine
+* Javaクラスで定義する高性能なカスタムモブ設計。独自のAI行動、ステータス、ドロップアイテム、およびエリア（Region）に応じた柔軟なスポーン制御を可能にします。
+
 ---
 
-## 🛠️ Quick Start (Developer API)
+## 🛠️ Quick Start
 
-エンジンのAPIを利用すれば、MMOの新しい成長システムなども型安全かつ爆速で実装できます。
+### 1. ビルドと導入
+本プロジェクトは Gradle を使用してビルドします。以下のコマンドを実行してプラグインの `.jar` ファイルを生成します。
+
+```bash
+# Windows
+.\gradlew.bat build
+
+# macOS / Linux
+./gradlew build
+```
+
+ビルドされた jar ファイルは `build/libs/` に出力されます。これをPaperサーバーの `plugins` フォルダに配置してください。
+
+### 2. 最初のモジュールを作成する (Developer API)
+本エンジンはアノテーションスキャンによる自動DI（依存性注入）を採用しています。以下のようにクラスに `@Component` や `@Command` を付与し、必要なリスナーやコマンドインターフェースを実装するだけで、起動時に自動登録されます。
 
 ```java
-@Service
-public class EchoesLevelingSystem {
+@Component
+public class WelcomeModule implements Listener {
 
-    private final PlayerDataRepository repository;
-
-    // エンジンがリポジトリを自動注入
-    @Inject
-    public EchoesLevelingSystem(PlayerDataRepository repository) {
-        this.repository = repository;
+    // プレイヤーが参加したときに自動でイベントを受け取る
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        event.getPlayer().sendMessage("§aEchoes of Aether へお帰りなさい！");
     }
 
-    public void grantExperience(Player player, int exp) {
-        repository.get(player.getUniqueId()).ifPresent(data -> {
-            // キャスト不要の完全な型安全性
-            LevelData levelData = data.get(LevelDataProvider.KEY);
-            levelData.addExp(exp);
-            
-            // Dirtyフラグを立てて保存（このプレイヤーのレベルデータテーブルだけが更新される）
-            data.markDirty(LevelDataProvider.KEY);
-            repository.save(player.getUniqueId(), data);
-            
-            player.sendMessage("§a+" + exp + " EXP");
-        });
+    // コマンドもクラスを定義するだけで自動登録
+    @Command
+    public static class PingCommand implements BasicCommand {
+        @Override
+        public void execute(CommandSourceStack source, String[] args) {
+            source.getSender().sendMessage("Pong!");
+        }
     }
 }
 ```
@@ -80,6 +98,9 @@ Echoes of Aetherエンジンの内部仕様や、新しいモジュールの開�
 * 🔵 **[超高速データベース・キャッシュ層 (`database-guide.md`)](docs/database-guide.md)**
 * 🟣 **[1ファイル完結モジュールの開発手法 (`example-single-file-module.md`)](docs/example-single-file-module.md)**
 * 🟡 **[カスタムアイテム・モディファイア設計 (`custom-item-guide.md`)](docs/custom-item-guide.md)**
+* 🟠 **[カスタムスキル開発 (`skill-guide.md`)](docs/skill-guide.md)**
+* 🟤 **[スキルツリーとクラス設計 (`skilltree-guide.md`)](docs/skilltree-guide.md)**
+* 🔴 **[カスタムモブ・Regionスポーン設計 (`custom-mob-guide.md`)](docs/custom-mob-guide.md)**
 
 ---
 
