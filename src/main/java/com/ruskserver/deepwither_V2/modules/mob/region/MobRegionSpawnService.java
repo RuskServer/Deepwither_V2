@@ -13,6 +13,9 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.FluidCollisionMode;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -314,10 +317,71 @@ public class MobRegionSpawnService implements Startable, Stoppable {
             Integer spawnY = findStandableY(world, x, z, playerY, min.y(), max.y());
             if (spawnY == null) continue;
 
-            return new Location(world, x + 0.5, spawnY, z + 0.5);
+            Location spawnLoc = new Location(world, x + 0.5, spawnY, z + 0.5);
+
+            // プレイヤーの視界内にある場合はスポーンさせない（視界外になるまで再試行）
+            if (isLocationInPlayerLineOfSight(player, spawnLoc)) continue;
+
+            return spawnLoc;
         }
 
         return null;  // MAX_SPAWN_ATTEMPTS 回試みても見つからなかった
+    }
+
+    /**
+     * 指定された座標がプレイヤーの視界内（視野角内かつ障害物なし）にあるかを判定します。
+     *
+     * @param player 基準プレイヤー
+     * @param loc 判定対象の座標
+     * @return 視界内である場合は true
+     */
+    private boolean isLocationInPlayerLineOfSight(Player player, Location loc) {
+        Location eyeLoc = player.getEyeLocation();
+        World world = player.getWorld();
+
+        // 1. 視野角（FOV）判定
+        // プレイヤーの視線方向（正規化）
+        Vector lookDirection = eyeLoc.getDirection().normalize();
+        // プレイヤーの目から対象位置への方向（正規化）
+        Vector toLocDirection = loc.toVector().subtract(eyeLoc.toVector());
+        double distance = toLocDirection.length();
+        if (distance <= 0) return true; // プレイヤーの目の前すぎる場合は視界内とする
+
+        toLocDirection.normalize();
+
+        // ベクトルの内積。1.0に近いほど正面。
+        // 一般的な視野角（90度）を考慮し、前方45度以内（cos(45) ≒ 0.707）を視野内とする。
+        double dot = lookDirection.dot(toLocDirection);
+        boolean inFov = dot > 0.707;
+
+        // 視野外であれば、遮蔽物に関係なく「見えていない（視界外）」と判定
+        if (!inFov) {
+            return false;
+        }
+
+        // 2. 遮蔽物（レイキャスト）判定
+        // 目の高さから、モブの標準的な高さ（足元から1.0mほど上）までレイキャストを行う
+        Location targetCheckLoc = loc.clone().add(0, 1.0, 0);
+        Vector rayDirection = targetCheckLoc.toVector().subtract(eyeLoc.toVector());
+        double rayDistance = rayDirection.length();
+        if (rayDistance > 0) {
+            rayDirection.normalize();
+            // 不透明ブロックに遮られているか確認
+            RayTraceResult result = world.rayTraceBlocks(
+                    eyeLoc,
+                    rayDirection,
+                    rayDistance,
+                    FluidCollisionMode.NEVER,
+                    true // ignorePassableBlocks (草や看板は無視する)
+            );
+            if (result != null && result.getHitBlock() != null) {
+                // 遮蔽物があるため視界外
+                return false;
+            }
+        }
+
+        // 視野内であり、かつ遮蔽物がない場合は「視界内」
+        return true;
     }
 
     /**
