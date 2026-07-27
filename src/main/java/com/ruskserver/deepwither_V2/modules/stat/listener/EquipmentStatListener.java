@@ -11,6 +11,8 @@ import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
+import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffect;
+import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectService;
 import com.ruskserver.deepwither_V2.modules.stat.ModifierType;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.Bukkit;
@@ -40,13 +42,16 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
     private final StatManager statManager;
     private final ItemPDCUtil pdcUtil;
     private final ItemManager itemManager;
+    private final SpecialEffectService specialEffectService;
     private final Deepwither_V2 plugin;
 
     @Inject
-    public EquipmentStatListener(StatManager statManager, ItemPDCUtil pdcUtil, ItemManager itemManager, Deepwither_V2 plugin) {
+    public EquipmentStatListener(StatManager statManager, ItemPDCUtil pdcUtil, ItemManager itemManager,
+                                 SpecialEffectService specialEffectService, Deepwither_V2 plugin) {
         this.statManager = statManager;
         this.pdcUtil = pdcUtil;
         this.itemManager = itemManager;
+        this.specialEffectService = specialEffectService;
         this.plugin = plugin;
     }
 
@@ -108,9 +113,14 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
         removeAllEquipmentModifiers(player);
         applyMainHand(player, player.getInventory().getItemInMainHand());
         applyArmor(player, player.getInventory().getArmorContents());
+        if (specialEffectService.hasEffect(player, SpecialEffect.HASTE)) {
+            statManager.setModifier(player.getUniqueId(), StatType.ATTACK_SPEED,
+                    "sp_haste", 0.10, ModifierType.MULTIPLICATIVE);
+        }
     }
 
     private void removeAllEquipmentModifiers(Player player) {
+        statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_SPEED, "sp_haste");
         for (StatType type : StatType.values()) {
             statManager.removeModifier(player.getUniqueId(), type, "equip_mainhand_base");
             statManager.removeModifier(player.getUniqueId(), type, "equip_mainhand_mod");

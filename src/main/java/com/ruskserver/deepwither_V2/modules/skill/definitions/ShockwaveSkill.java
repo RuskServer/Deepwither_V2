@@ -94,7 +94,7 @@ public class ShockwaveSkill implements Skill {
                 current.getWorld().getNearbyEntities(current, 2.0, 2.0, 2.0).forEach(entity -> {
                     if (entity instanceof LivingEntity living && !entity.equals(player) && !hit.contains(living)) {
                         hit.add(living);
-                        damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.0, getTags());
+                        damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.0, getTags(), getId(), 500L);
                         living.setVelocity(dir.clone().multiply(1.5).setY(0.3));
                     }
                 });

@@ -116,7 +116,7 @@ public class ChainLightningSkill implements Skill {
             }
 
             private void chain(LivingEntity hit, Location origin, LivingEntity caster) {
-                damagePipelineManager.processScaledDamage(caster, hit, DamageType.MAGIC, 1.25, getTags());
+                damagePipelineManager.processScaledDamage(caster, hit, DamageType.MAGIC, 1.25, getTags(), getId(), 500L);
 
                 var hitLoc = hit.getLocation().add(0, 1, 0);
                 origin.getWorld().spawnParticle(Particle.FLASH, hitLoc, 1, 0, 0, 0, 0, Color.WHITE);

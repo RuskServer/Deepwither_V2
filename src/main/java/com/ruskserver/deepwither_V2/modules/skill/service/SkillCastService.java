@@ -4,6 +4,7 @@ import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
+import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.CastResult;
 import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
@@ -16,6 +17,7 @@ import com.ruskserver.deepwither_V2.modules.skill.event.SkillCooldownApplyEvent;
 import com.ruskserver.deepwither_V2.modules.skill.event.SkillExecuteEvent;
 import com.ruskserver.deepwither_V2.modules.skill.event.SkillManaConsumeEvent;
 import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeService;
+import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -36,14 +38,17 @@ public class SkillCastService implements Stoppable {
     private final ManaManager manaManager;
     private final SkillCooldownService cooldownService;
     private final SkillTreeService skillTreeService;
+    private final StatManager statManager;
     private final Map<UUID, CastingState> casting = new HashMap<>();
 
     @Inject
-    public SkillCastService(Deepwither_V2 plugin, ManaManager manaManager, SkillCooldownService cooldownService, SkillTreeService skillTreeService) {
+    public SkillCastService(Deepwither_V2 plugin, ManaManager manaManager, SkillCooldownService cooldownService,
+                            SkillTreeService skillTreeService, StatManager statManager) {
         this.plugin = plugin;
         this.manaManager = manaManager;
         this.cooldownService = cooldownService;
         this.skillTreeService = skillTreeService;
+        this.statManager = statManager;
     }
 
     @Override
@@ -192,7 +197,12 @@ public class SkillCastService implements Stoppable {
         SkillCooldownApplyEvent event = new SkillCooldownApplyEvent(player, skill, cooldown);
         Bukkit.getPluginManager().callEvent(event);
         if (!event.isCancelled()) {
-            cooldownService.applyCooldown(player.getUniqueId(), skill.getId(), sanitize(event.getCooldown()));
+            Duration eventCooldown = sanitize(event.getCooldown());
+            double cdrPercent = Math.min(80.0,
+                    Math.max(0.0, statManager.getTotalStat(player, StatType.COOLDOWN_REDUCTION)));
+            long reducedMillis = Math.round(eventCooldown.toMillis() * (1.0 - cdrPercent / 100.0));
+            cooldownService.applyCooldown(player.getUniqueId(), skill.getId(),
+                    Duration.ofMillis(Math.max(0L, reducedMillis)));
         }
     }
 

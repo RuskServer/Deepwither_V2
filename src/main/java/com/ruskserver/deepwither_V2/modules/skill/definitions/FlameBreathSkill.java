@@ -107,7 +107,7 @@ public class FlameBreathSkill implements Skill {
                 if (toTarget.length() <= range) {
                     double dot = toTarget.normalize().dot(direction);
                     if (dot >= angleCos) {
-                        damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 1.25, getTags());
+                        damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 1.25, getTags(), getId(), 500L);
                         living.getWorld().spawnParticle(Particle.FLAME, living.getLocation().add(0, 1, 0), 5, 0.2, 0.2, 0.2, 0.05);
                     }
                 }

@@ -4,6 +4,8 @@ import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -67,6 +69,29 @@ public interface DamagePhase {
                 // デフォルトのクリティカル倍率を1.5倍(150%)とする。ステータスがあればそれに加算
                 double finalMultiplier = 1.5 + (critDamageMultiplier / 100.0);
                 context.multiplyDamage(finalMultiplier);
+            }
+        }
+    }
+
+    public static class PotionEffects implements DamagePhase {
+        @Override
+        public void process(DamageContext context) {
+            if (context.getAttacker() != null
+                    && (context.getType() == DamageType.PHYSICAL || context.getType() == DamageType.RANGED)) {
+                PotionEffect strength = context.getAttacker().getPotionEffect(PotionEffectType.STRENGTH);
+                if (strength != null) {
+                    context.multiplyDamage(1.0 + 0.20 * (strength.getAmplifier() + 1));
+                }
+            }
+
+            if (context.getType() == DamageType.TRUE_DAMAGE
+                    || context.getType() == DamageType.ENVIRONMENTAL) {
+                return;
+            }
+            PotionEffect resistance = context.getDefender().getPotionEffect(PotionEffectType.RESISTANCE);
+            if (resistance != null) {
+                double reduction = Math.min(0.80, 0.20 * (resistance.getAmplifier() + 1));
+                context.multiplyDamage(1.0 - reduction);
             }
         }
     }

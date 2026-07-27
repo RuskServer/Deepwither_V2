@@ -24,7 +24,7 @@ public class GlobalArcherNodes {
                         .maxLevel(1).costPerLevel(0)
                         .conflicts("warrior_start", "mage_start", "holy_start")
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.SPEED, "st_class_archer", 0.1, ModifierType.MULTIPLICATIVE); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.SPEED, "st_class_archer", 0.01, ModifierType.ADDITIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.SPEED, "st_class_archer"); }
                         }).build(),
 
@@ -72,7 +72,7 @@ public class GlobalArcherNodes {
                         .position(3, 6)
                         .maxLevel(3).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_1", level * 5.0, ModifierType.ADDITIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_1"); }
                         }).build(),
 
@@ -90,7 +90,7 @@ public class GlobalArcherNodes {
                         .position(5, 6)
                         .maxLevel(3).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.SPEED, "st_nimble", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.SPEED, "st_nimble", level * 0.005, ModifierType.ADDITIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.SPEED, "st_nimble"); }
                         }).build(),
 
@@ -101,7 +101,7 @@ public class GlobalArcherNodes {
                         .position(6, 6)
                         .maxLevel(3).costPerLevel(2)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_2", level * 8.0, ModifierType.ADDITIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_rapid_fire_2"); }
                         }).build(),
 
@@ -120,7 +120,7 @@ public class GlobalArcherNodes {
                         .position(4, 7)
                         .maxLevel(1).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.SPEED, "st_archer_travel_m1", 0.01, ModifierType.MULTIPLICATIVE); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.SPEED, "st_archer_travel_m1", 0.001, ModifierType.ADDITIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.SPEED, "st_archer_travel_m1"); }
                         }).build(),
 

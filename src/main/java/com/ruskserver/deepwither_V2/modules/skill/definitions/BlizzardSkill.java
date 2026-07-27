@@ -158,7 +158,7 @@ public class BlizzardSkill implements Skill {
                         if (entity instanceof LivingEntity target && !entity.equals(caster)) {
                             double distSq = entity.getLocation().distanceSquared(center);
                             if (distSq >= 1.0 && distSq <= 25.0) {
-                                damagePipelineManager.processScaledDamage(caster, target, DamageType.MAGIC, 0.6, getTags());
+                                damagePipelineManager.processScaledDamage(caster, target, DamageType.MAGIC, 0.6, getTags(), getId(), 0L);
                             }
                         }
                     }

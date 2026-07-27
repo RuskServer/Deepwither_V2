@@ -121,7 +121,7 @@ public class LightningStormSkill implements Skill {
         center.getWorld().getNearbyEntities(center, 7.0, 5.0, 7.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
                 if (living.getLocation().distance(center) <= 7.0) {
-                    damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.0, getTags());
+                    damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.0, getTags(), getId(), 500L);
                 }
             }
         });

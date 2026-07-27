@@ -81,7 +81,7 @@ public class TauntSkill implements Skill {
 
         context.getCaster().getNearbyEntities(6.0, 6.0, 6.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(context.getCaster())) {
-                damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 0.75, getTags());
+                damagePipelineManager.processScaledDamage(context.getCaster(), living, DamageType.MAGIC, 0.75, getTags(), getId(), 500L);
                 living.setVelocity(living.getLocation().toVector().subtract(context.getCaster().getLocation().toVector()).normalize().multiply(0.3).setY(0.2));
             }
         });

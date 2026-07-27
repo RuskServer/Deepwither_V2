@@ -127,7 +127,7 @@ public class IceShardSkill implements Skill {
 
                     world.getNearbyEntities(loc, 1.5, 1.5, 1.5).forEach(entity -> {
                         if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                            damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, damagePerShard, getTags());
+                            damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, damagePerShard, getTags(), getId(), 0L);
                         }
                     });
                 }

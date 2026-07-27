@@ -82,7 +82,7 @@ public enum StatAffinity {
 
     private static Map<StatType, StatAffinity> rangedMap() {
         Map<StatType, StatAffinity> m = new EnumMap<>(StatType.class);
-        m.put(StatType.ATTACK_DAMAGE, PRIMARY);
+        m.put(StatType.RANGED_DAMAGE, PRIMARY);
         m.put(StatType.CRITICAL_CHANCE, PRIMARY);
         m.put(StatType.CRITICAL_DAMAGE, PRIMARY);
         m.put(StatType.ATTACK_SPEED, SECONDARY);
@@ -94,6 +94,7 @@ public enum StatAffinity {
         m.put(StatType.LIGHTNING_DAMAGE, SECONDARY);
         m.put(StatType.DEFENSE, RELATED);
         m.put(StatType.MAGIC_DEFENSE, RELATED);
+        m.put(StatType.ATTACK_DAMAGE, UNRELATED);
         m.put(StatType.MAGIC_DAMAGE, UNRELATED);
         m.put(StatType.MAX_MANA, BLOCKED);
         return m;

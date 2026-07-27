@@ -165,7 +165,7 @@ public class ModifierManager {
             case CRITICAL_CHANCE -> 4.0;
             case CRITICAL_DAMAGE -> 10.0;
             case ATTACK_SPEED -> 1.2;
-            case SPEED -> 1.0;
+            case SPEED -> 0.01;
             case COOLDOWN_REDUCTION -> 3.0;
             case FIRE_DAMAGE, ICE_DAMAGE, LIGHTNING_DAMAGE -> 4.0;
             case PHYSICAL_DAMAGE_REDUCTION -> 0.05;

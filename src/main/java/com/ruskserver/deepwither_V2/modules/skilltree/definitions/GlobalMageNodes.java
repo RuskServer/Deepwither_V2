@@ -93,7 +93,7 @@ public class GlobalMageNodes {
                         .position(3, 10)
                         .maxLevel(3).costPerLevel(1)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_1", level * 0.05, ModifierType.MULTIPLICATIVE); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_1", level * 5.0, ModifierType.ADDITIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_1"); }
                         }).build(),
 
@@ -129,7 +129,7 @@ public class GlobalMageNodes {
                         .position(7, 10)
                         .maxLevel(3).costPerLevel(2)
                         .passiveEffect(new SkillTreePassiveEffect() {
-                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_2", level * 0.08, ModifierType.MULTIPLICATIVE); }
+                            @Override public void apply(Player player, int level, SkillTreeContext context) { statManager.setModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_2", level * 8.0, ModifierType.ADDITIVE); }
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_2"); }
                         }).build(),
 

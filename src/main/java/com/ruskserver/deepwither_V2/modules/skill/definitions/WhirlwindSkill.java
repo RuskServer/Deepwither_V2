@@ -72,7 +72,7 @@ public class WhirlwindSkill implements Skill {
 
         player.getNearbyEntities(3.5, 3.5, 3.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.25, getTags());
+                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.25, getTags(), getId(), 500L);
             }
         });
 

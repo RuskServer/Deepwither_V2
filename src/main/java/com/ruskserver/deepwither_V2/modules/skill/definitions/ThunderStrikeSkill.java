@@ -132,7 +132,7 @@ public class ThunderStrikeSkill implements Skill {
 
                     strikeLoc.getWorld().getNearbyEntities(strikeLoc, radius, 4.0, radius).forEach(entity -> {
                         if (entity instanceof LivingEntity victim && !entity.equals(caster)) {
-                            damagePipelineManager.processScaledDamage(caster, victim, DamageType.MAGIC, 5.0, getTags());
+                            damagePipelineManager.processScaledDamage(caster, victim, DamageType.MAGIC, 5.0, getTags(), getId(), 500L);
                         }
                     });
 

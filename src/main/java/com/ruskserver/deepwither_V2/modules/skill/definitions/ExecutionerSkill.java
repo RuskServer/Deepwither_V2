@@ -90,7 +90,7 @@ public class ExecutionerSkill implements Skill {
             target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 0.9f);
         }
 
-        damagePipelineManager.processScaledDamage(player, target, DamageType.PHYSICAL, coefficient, getTags());
+        damagePipelineManager.processScaledDamage(player, target, DamageType.PHYSICAL, coefficient, getTags(), getId(), 500L);
 
         return CastResult.success();
     }

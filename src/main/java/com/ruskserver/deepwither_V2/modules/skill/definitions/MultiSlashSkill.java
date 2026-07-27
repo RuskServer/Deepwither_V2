@@ -98,7 +98,7 @@ public class MultiSlashSkill implements Skill {
                         if (toTarget.length() <= range) {
                             double dot = toTarget.normalize().dot(dir);
                             if (dot >= angleCos) {
-                                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 0.75, getTags());
+                                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 0.75, getTags(), getId(), 0L);
                             }
                         }
                     }

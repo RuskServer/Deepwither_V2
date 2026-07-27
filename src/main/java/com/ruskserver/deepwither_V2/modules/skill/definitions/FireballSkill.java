@@ -158,7 +158,7 @@ public class FireballSkill implements Skill {
 
                 loc.getWorld().getNearbyEntities(loc, 3.0, 3.0, 3.0).forEach(entity -> {
                     if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                        damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.5, getTags());
+                        damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.5, getTags(), getId(), 500L);
                     }
                 });
             }

@@ -108,7 +108,8 @@ public class CombatMeleeListener implements Listener {
         }
 
         for (LivingEntity target : targets) {
-            damagePipelineManager.processDamage(player, target, DamageType.PHYSICAL, 0.0, null);
+            damagePipelineManager.processDamage(player, target, DamageType.PHYSICAL,
+                    0.0, null, "basic_melee", 0L);
             statsService.recordHit(player, type, Math.max(0.0, statManager.getTotalStat(player, StatType.ATTACK_DAMAGE)));
             playHitSound(target);
         }

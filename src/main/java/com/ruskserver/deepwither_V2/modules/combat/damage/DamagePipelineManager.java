@@ -5,9 +5,12 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.DamagePhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.ItemAbilityPhase;
+import com.ruskserver.deepwither_V2.modules.combat.damage.phases.SpecialEffectPhase;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
+import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
+import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectService;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
@@ -59,10 +62,15 @@ public class DamagePipelineManager implements Listener {
     private final List<DamagePhase> pipeline = new ArrayList<>();
 
     // 各エンティティの次回の攻撃可能時刻を管理 (無敵時間システム)
-    private final Map<UUID, Long> nextDamageTimeMap = new ConcurrentHashMap<>();
+    private static final long DEFAULT_IFRAME_MILLIS = 500L;
+    private final Map<DamageIFrameKey, Long> nextDamageTimeMap = new ConcurrentHashMap<>();
 
     @Inject
-    public DamagePipelineManager(VirtualHealthManager healthManager, StatManager statManager, ItemManager itemManager, ItemPDCUtil pdcUtil, CustomMobManager customMobManager, MobRegionConfig regionConfig, TraderService traderService, DamageFeedbackService feedbackService, PartyManager partyManager, org.bukkit.plugin.java.JavaPlugin plugin) {
+    public DamagePipelineManager(VirtualHealthManager healthManager, ManaManager manaManager, StatManager statManager,
+                                 ItemManager itemManager, ItemPDCUtil pdcUtil, SpecialEffectService specialEffectService,
+                                 CustomMobManager customMobManager, MobRegionConfig regionConfig,
+                                 TraderService traderService, DamageFeedbackService feedbackService,
+                                 PartyManager partyManager, org.bukkit.plugin.java.JavaPlugin plugin) {
         this.healthManager = healthManager;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
@@ -75,6 +83,7 @@ public class DamagePipelineManager implements Listener {
         // パイプラインのフェーズを順番に登録する
         // 1. 基礎ダメージの設定
         pipeline.add(new DamagePhase.Base(statManager));
+        pipeline.add(new DamagePhase.PotionEffects());
         // 2. クリティカルの判定
         pipeline.add(new DamagePhase.Critical(statManager));
         // 3. 防御力による軽減
@@ -83,6 +92,7 @@ public class DamagePipelineManager implements Listener {
         pipeline.add(new ItemAbilityPhase(itemManager, pdcUtil));
         // 5. 属性別ダメージ補正（火・氷などのパッシブ効果）
         pipeline.add(new DamagePhase.ElementModifier(statManager));
+        pipeline.add(new SpecialEffectPhase(specialEffectService, healthManager, manaManager));
     }
 
     /**
@@ -112,8 +122,8 @@ public class DamagePipelineManager implements Listener {
 
         // 無敵時間（i-frame）のチェック
         long now = System.currentTimeMillis();
-        UUID id = defender.getUniqueId();
-        if (nextDamageTimeMap.getOrDefault(id, 0L) > now) {
+        DamageIFrameKey iframeKey = iframeKey(attacker, defender, "vanilla:" + event.getCause().name());
+        if (isInvulnerable(iframeKey, now)) {
             event.setCancelled(true);
             return;
         }
@@ -145,7 +155,7 @@ public class DamagePipelineManager implements Listener {
             healthManager.damage(defender, context.getDamage());
             
             // 無敵時間を設定 (500ms = 0.5秒)
-            nextDamageTimeMap.put(id, now + 500);
+            applyIFrame(iframeKey, now, DEFAULT_IFRAME_MILLIS);
             
             // 攻撃の方向（Yaw）を計算して視界の揺れに反映
             float yaw = 0f;
@@ -174,8 +184,8 @@ public class DamagePipelineManager implements Listener {
 
         // 無敵時間（i-frame）のチェック
         long now = System.currentTimeMillis();
-        UUID id = defender.getUniqueId();
-        if (nextDamageTimeMap.getOrDefault(id, 0L) > now) {
+        DamageIFrameKey iframeKey = iframeKey(null, defender, "environment:" + event.getCause().name());
+        if (isInvulnerable(iframeKey, now)) {
             event.setCancelled(true);
             return;
         }
@@ -203,7 +213,7 @@ public class DamagePipelineManager implements Listener {
             feedbackService.playHurtFeedback(defender);
 
             // 環境ダメージ後も無敵時間を設定
-            nextDamageTimeMap.put(id, now + 500);
+            applyIFrame(iframeKey, now, DEFAULT_IFRAME_MILLIS);
         }
     }
 
@@ -252,22 +262,36 @@ public class DamagePipelineManager implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        nextDamageTimeMap.remove(event.getPlayer().getUniqueId());
+        UUID playerId = event.getPlayer().getUniqueId();
+        nextDamageTimeMap.keySet().removeIf(key ->
+                key.defenderId().equals(playerId) || playerId.equals(key.attackerId()));
     }
 
     /**
      * 外部システム（杖の魔法弾など）から直接ダメージパイプラインにダメージ処理を流し込むための公開API。
      */
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags) {
-        processDamage(attacker, defender, type, initialDamage, tags, 1.0);
+        processDamage(attacker, defender, type, initialDamage, tags, 1.0,
+                "direct:" + type.name(), DEFAULT_IFRAME_MILLIS);
+    }
+
+    public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage,
+                              java.util.Set<String> tags, String sourceId, long iframeMillis) {
+        processDamage(attacker, defender, type, initialDamage, tags, 1.0, sourceId, iframeMillis);
     }
 
     /**
      * 攻撃力または魔法攻撃力に対する倍率でスキルダメージを流し込むためのAPI。
      */
     public void processScaledDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double coefficient, java.util.Set<String> tags) {
+        processScaledDamage(attacker, defender, type, coefficient, tags,
+                "skill:" + type.name(), DEFAULT_IFRAME_MILLIS);
+    }
+
+    public void processScaledDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double coefficient,
+                                    java.util.Set<String> tags, String sourceId, long iframeMillis) {
         if (attacker == null) {
-            processDamage(null, defender, type, 0.0, tags);
+            processDamage(null, defender, type, 0.0, tags, sourceId, iframeMillis);
             return;
         }
 
@@ -281,13 +305,20 @@ public class DamagePipelineManager implements Listener {
         }
         double baseDamage = statManager.getTotalStat(attacker, statType);
         double initialDamage = (baseDamage > 0 ? baseDamage : 1.0) * coefficient;
-        processDamage(attacker, defender, type, initialDamage, tags);
+        processDamage(attacker, defender, type, initialDamage, tags, sourceId, iframeMillis);
     }
 
     /**
      * 距離倍率指定可能な processDamage のオーバーロード。
      */
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage, java.util.Set<String> tags, double distanceMultiplier) {
+        processDamage(attacker, defender, type, initialDamage, tags, distanceMultiplier,
+                "direct:" + type.name(), DEFAULT_IFRAME_MILLIS);
+    }
+
+    public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage,
+                              java.util.Set<String> tags, double distanceMultiplier,
+                              String sourceId, long iframeMillis) {
         if (isProtectedTrader(defender) || isBlockedPvp(attacker, defender) || isSameParty(attacker, defender)) {
             return;
         }
@@ -304,8 +335,8 @@ public class DamagePipelineManager implements Listener {
 
         // 無敵時間（i-frame）のチェック
         long now = System.currentTimeMillis();
-        UUID id = defender.getUniqueId();
-        if (nextDamageTimeMap.getOrDefault(id, 0L) > now) return;
+        DamageIFrameKey iframeKey = iframeKey(attacker, defender, sourceId);
+        if (isInvulnerable(iframeKey, now)) return;
 
         DamageContext context = new DamageContext(attacker, defender, type, initialDamage);
         context.setDistanceMultiplier(distanceMultiplier);
@@ -329,7 +360,7 @@ public class DamagePipelineManager implements Listener {
             healthManager.damage(defender, context.getDamage());
 
             // 無敵時間を設定
-            nextDamageTimeMap.put(id, now + 500);
+            applyIFrame(iframeKey, now, iframeMillis);
 
             // 攻撃の方向（Yaw）を計算して視界の揺れに反映
             float yaw = 0f;
@@ -339,5 +370,30 @@ public class DamagePipelineManager implements Listener {
             }
             feedbackService.playHurtFeedback(defender, yaw);
         }
+    }
+
+    private DamageIFrameKey iframeKey(LivingEntity attacker, LivingEntity defender, String sourceId) {
+        UUID attackerId = attacker == null ? null : attacker.getUniqueId();
+        String normalizedSource = sourceId == null || sourceId.isBlank() ? "unknown" : sourceId;
+        return new DamageIFrameKey(defender.getUniqueId(), attackerId, normalizedSource);
+    }
+
+    private boolean isInvulnerable(DamageIFrameKey key, long now) {
+        Long expiresAt = nextDamageTimeMap.get(key);
+        if (expiresAt == null) return false;
+        if (expiresAt > now) return true;
+        nextDamageTimeMap.remove(key, expiresAt);
+        return false;
+    }
+
+    private void applyIFrame(DamageIFrameKey key, long now, long iframeMillis) {
+        if (iframeMillis <= 0L) {
+            nextDamageTimeMap.remove(key);
+            return;
+        }
+        nextDamageTimeMap.put(key, now + iframeMillis);
+    }
+
+    private record DamageIFrameKey(UUID defenderId, UUID attackerId, String sourceId) {
     }
 }

@@ -180,8 +180,9 @@ public class TrueShotSkill implements Skill {
                 
                 // ダメージ処理
                 if (hitTarget != null) {
-                    double atk = statManager.getTotalStat(getCaster(), StatType.ATTACK_DAMAGE);
-                    damagePipelineManager.processDamage(getCaster(), hitTarget, DamageType.TRUE_DAMAGE, atk * 4.0, getTags());
+                    double atk = statManager.getTotalStat(getCaster(), StatType.RANGED_DAMAGE);
+                    damagePipelineManager.processDamage(getCaster(), hitTarget, DamageType.TRUE_DAMAGE,
+                            atk * 4.0, getTags(), getId(), 500L);
                 }
             }
         };

@@ -179,6 +179,6 @@ public class FocusedShotSkill implements Skill {
         tLoc.getWorld().spawnParticle(Particle.FLASH, tLoc, 1, 0.3, 0.3, 0.3, 0, Color.WHITE);
         tLoc.getWorld().playSound(tLoc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.2f, 0.6f);
 
-        damagePipelineManager.processScaledDamage(player, target, DamageType.RANGED, 3.0, getTags());
+        damagePipelineManager.processScaledDamage(player, target, DamageType.RANGED, 3.0, getTags(), getId(), 500L);
     }
 }

@@ -91,7 +91,7 @@ public class FortressSkill implements Skill {
 
         player.getNearbyEntities(7.0, 7.0, 7.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.5, getTags());
+                damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.5, getTags(), getId(), 500L);
                 living.setVelocity(player.getLocation().toVector().subtract(living.getLocation().toVector()).normalize().multiply(0.8).setY(0.3));
             }
         });

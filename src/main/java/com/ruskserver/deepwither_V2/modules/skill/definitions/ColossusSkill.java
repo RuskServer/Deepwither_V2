@@ -109,7 +109,7 @@ public class ColossusSkill implements Skill {
 
         player.getNearbyEntities(6.0, 6.0, 6.0).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 3.5, getTags());
+                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 3.5, getTags(), getId(), 500L);
                 living.setVelocity(living.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(2.0).setY(0.6));
                 living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 0, false, true));
             }

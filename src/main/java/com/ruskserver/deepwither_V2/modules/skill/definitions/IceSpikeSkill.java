@@ -98,7 +98,7 @@ public class IceSpikeSkill implements Skill {
             for (Entity entity : spikeLoc.getWorld().getNearbyEntities(spikeLoc, 2.5, 3.0, 2.5)) {
                 if (entity instanceof LivingEntity living && !entity.equals(player)) {
                     if (living.getNoDamageTicks() <= 10) {
-                        damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.8, getTags());
+                        damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.8, getTags(), getId(), 500L);
                         living.setNoDamageTicks(10);
                     }
                 }
