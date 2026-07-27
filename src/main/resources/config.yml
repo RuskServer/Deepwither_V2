@@ -53,6 +53,20 @@ mob-regions:
       - mob-id: ghoul_archer
         weight: 8
 
+  ancient_ruins:
+    safe-zone: false
+    pvp-enabled: false
+    world: world
+    worldguard-region: ancient_ruins
+    spawn-interval-ticks: 160
+    max-mobs: 20
+    max-level: 25
+    spawn-table:
+      - mob-id: ancient_ruin_knight
+        weight: 70
+      - mob-id: ancient_ruin_echo_mage
+        weight: 30
+
   # ----- 別のZone例（コメントアウト） -----
   # dungeon_zone:
   #   safe-zone: false
