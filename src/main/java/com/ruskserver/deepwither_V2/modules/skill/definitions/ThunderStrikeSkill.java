@@ -110,9 +110,14 @@ public class ThunderStrikeSkill implements Skill {
                     strikeLoc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, strikeLoc, 3, 2.0, 0.5, 2.0, 0);
                     strikeLoc.getWorld().spawnParticle(Particle.SONIC_BOOM, strikeLoc, 1, 0, 0, 0, 0);
 
-                    // 衝撃波リング
-                    TrailCircleHelper.spawnCircle(strikeLoc, radius, Color.fromRGB(100, 149, 237), 15, 36);
-                    TrailCircleHelper.spawnCircle(strikeLoc, radius - 1.0, Color.fromRGB(70, 130, 255), 12, 30, new Vector(0, 1, 0), 30);
+                    // 円周の形を保ったまま外側へ広がる二重衝撃波
+                    TrailCircleHelper.spawnExpandingShockwave(
+                            plugin, strikeLoc, 0.5, radius,
+                            Color.fromRGB(100, 149, 237), 6, 36);
+                    TrailCircleHelper.spawnExpandingShockwave(
+                            plugin, strikeLoc, 0.3, radius - 1.0,
+                            Color.fromRGB(70, 130, 255), 5, 30,
+                            new Vector(0, 1, 0), 30);
 
                     for (int i = 0; i < 50; i++) {
                         double angle = Math.toRadians(i * (360.0 / 50.0));

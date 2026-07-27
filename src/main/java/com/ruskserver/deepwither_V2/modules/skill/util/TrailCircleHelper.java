@@ -4,49 +4,32 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.World;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 /**
- * {@link Particle#TRAIL} を使って円・円弧をワールドに描画するヘルパー。
+ * {@link Particle#TRAIL} を使って、閉じた円周・円弧・拡大型の衝撃波を描画するヘルパー。
  *
- * <p>Trail パーティクルは spawnParticle の呼び出し位置から {@code Trail#target} へ
- * 向かうトレイルを表示する。本ヘルパーでは円周上の各点をスポーン位置とし、
- * 同じ点から中心方向に半径 + {@code outwardDistance} だけ外側に伸ばした点を
- * target として渡すことで、円周から外側へ広がっていくトレイルになる。</p>
- *
- * <h3>基本的な使い方</h3>
- * <pre>{@code
- * // XZ 水平面に半径 3m、青い円を 36 点で描く（外側へ 1m 伸びるトレイル）
- * TrailCircleHelper.spawnCircle(center, 3.0, Color.BLUE, 20, 36);
- *
- * // 法線ベクトルを指定して傾いた円を描く（Y+ 軸を前方にチルト）
- * TrailCircleHelper.spawnCircle(center, 3.0, Color.AQUA, 20, 36,
- *         new Vector(0, 1, 1).normalize(), 0);
- *
- * // 0°〜180° の半円弧だけ描き、外側へ 2m 伸びるトレイルにする
- * TrailCircleHelper.spawnArc(center, 3.0, Color.RED, 20, 36, 0, 180,
- *         new Vector(0, 1, 0), 0, 2.0);
- * }</pre>
+ * <p>円周上の隣接点を TRAIL の spawn 位置と target にすることで、
+ * 放射状の線ではなく連続したリングとして見えるようにする。</p>
  */
 public final class TrailCircleHelper {
 
+    private static final Vector UP = new Vector(0, 1, 0);
+    private static final double MAX_SHOCKWAVE_SEGMENT_LENGTH = 0.5;
+
     private TrailCircleHelper() {}
 
-    /** トレイルが円周から外側へ伸びる距離のデフォルト値（メートル）。 */
-    private static final double DEFAULT_OUTWARD_DISTANCE = 1.0;
-
-    // -----------------------------------------------------------------------
-    // 完全円（シンプル版）
-    // -----------------------------------------------------------------------
-
     /**
-     * XZ 水平面に完全な円を描く。
+     * XZ 水平面に閉じた円周を描く。
      *
      * @param center   円の中心位置
      * @param radius   半径（メートル）
      * @param color    パーティクルの色
-     * @param duration トレイルの継続時間（ticks、1以上）
-     * @param points   円周上のパーティクル数（多いほど滑らか）
+     * @param duration 各 TRAIL が隣の円周点へ到達するまでの時間（ticks）
+     * @param points   円周を構成する分割数
      */
     public static void spawnCircle(
             Location center,
@@ -54,19 +37,19 @@ public final class TrailCircleHelper {
             Color color,
             int duration,
             int points) {
-        spawnCircle(center, radius, color, duration, points, new Vector(0, 1, 0), 0.0);
+        spawnCircle(center, radius, color, duration, points, UP, 0.0);
     }
 
     /**
-     * 任意の法線ベクトル・開始角を指定して完全な円を描く。
+     * 任意の法線ベクトル・開始角を指定して閉じた円周を描く。
      *
-     * @param center          円の中心位置
-     * @param radius          半径（メートル）
-     * @param color           パーティクルの色
-     * @param duration        トレイルの継続時間（ticks、1以上）
-     * @param points          円周上のパーティクル数
-     * @param normal          円面の法線ベクトル（正規化不要）
-     * @param startAngleDeg   開始角度（度）。法線と直交する基準軸からの回転オフセット。
+     * @param center        円の中心位置
+     * @param radius        半径（メートル）
+     * @param color         パーティクルの色
+     * @param duration      各 TRAIL が隣の円周点へ到達するまでの時間（ticks）
+     * @param points        円周を構成する分割数
+     * @param normal        円面の法線ベクトル（正規化不要）
+     * @param startAngleDeg 開始角度（度）
      */
     public static void spawnCircle(
             Location center,
@@ -76,47 +59,19 @@ public final class TrailCircleHelper {
             int points,
             Vector normal,
             double startAngleDeg) {
-        spawnCircle(center, radius, color, duration, points, normal, startAngleDeg, DEFAULT_OUTWARD_DISTANCE);
+        spawnArc(center, radius, color, duration, points, 0.0, 360.0, normal, startAngleDeg);
     }
-
-    /**
-     * 任意の法線ベクトル・開始角・外側へのトレイル距離を指定して完全な円を描く。
-     *
-     * @param center          円の中心位置
-     * @param radius          半径（メートル）
-     * @param color           パーティクルの色
-     * @param duration        トレイルの継続時間（ticks、1以上）
-     * @param points          円周上のパーティクル数
-     * @param normal          円面の法線ベクトル（正規化不要）
-     * @param startAngleDeg   開始角度（度）。法線と直交する基準軸からの回転オフセット。
-     * @param outwardDistance トレイルが円周から外側へ伸びる距離（メートル）。0以下なら伸びない。
-     */
-    public static void spawnCircle(
-            Location center,
-            double radius,
-            Color color,
-            int duration,
-            int points,
-            Vector normal,
-            double startAngleDeg,
-            double outwardDistance) {
-        spawnArc(center, radius, color, duration, points, 0.0, 360.0, normal, startAngleDeg, outwardDistance);
-    }
-
-    // -----------------------------------------------------------------------
-    // 円弧
-    // -----------------------------------------------------------------------
 
     /**
      * XZ 水平面に円弧を描く。
      *
-     * @param center        円の中心位置
-     * @param radius        半径（メートル）
-     * @param color         パーティクルの色
-     * @param duration      トレイルの継続時間（ticks、1以上）
-     * @param points        円弧上のパーティクル数
-     * @param fromDeg       開始角度（度）
-     * @param toDeg         終了角度（度）
+     * @param center   円の中心位置
+     * @param radius   半径（メートル）
+     * @param color    パーティクルの色
+     * @param duration 各 TRAIL が次の円周点へ到達するまでの時間（ticks）
+     * @param points   円弧上の点数
+     * @param fromDeg  開始角度（度）
+     * @param toDeg    終了角度（度）
      */
     public static void spawnArc(
             Location center,
@@ -126,25 +81,24 @@ public final class TrailCircleHelper {
             int points,
             double fromDeg,
             double toDeg) {
-        spawnArc(center, radius, color, duration, points, fromDeg, toDeg,
-                new Vector(0, 1, 0), 0.0, DEFAULT_OUTWARD_DISTANCE);
+        spawnArc(center, radius, color, duration, points, fromDeg, toDeg, UP, 0.0);
     }
 
     /**
-     * 任意の法線ベクトル・開始角を指定して円弧を描く（外側トレイルはデフォルト距離）。
+     * 任意の法線ベクトル・開始角を指定して円弧を描く。
      *
-     * <p>法線ベクトルは円面の向きを決める。例えば {@code new Vector(0,1,0)} なら
-     * XZ 水平面、{@code new Vector(1,0,0)} なら YZ 垂直面になる。</p>
+     * <p>完全円では最後の点から最初の点へ接続して閉じる。
+     * 部分円弧では両端を含む {@code points} 個の点を、隣接順に接続する。</p>
      *
      * @param center        円の中心位置
      * @param radius        半径（メートル）
      * @param color         パーティクルの色
-     * @param duration      トレイルの継続時間（ticks、1以上）
-     * @param points        円弧上のパーティクル数（完全円換算ではなく弧上の点数）
+     * @param duration      各 TRAIL が次の円周点へ到達するまでの時間（ticks）
+     * @param points        円周または円弧上の点数
      * @param fromDeg       開始角度（度）
      * @param toDeg         終了角度（度）
      * @param normal        円面の法線ベクトル（正規化不要）
-     * @param startAngleDeg 法線と直交する基準軸からの回転オフセット（度）
+     * @param startAngleDeg 開始角度の回転オフセット（度）
      */
     public static void spawnArc(
             Location center,
@@ -156,99 +110,194 @@ public final class TrailCircleHelper {
             double toDeg,
             Vector normal,
             double startAngleDeg) {
-        spawnArc(center, radius, color, duration, points, fromDeg, toDeg, normal, startAngleDeg, DEFAULT_OUTWARD_DISTANCE);
+
+        World world = center.getWorld();
+        if (world == null || radius <= 0 || normal == null || normal.lengthSquared() == 0) return;
+
+        double arcSpan = toDeg - fromDeg;
+        boolean fullCircle = isFullCircle(arcSpan);
+        if ((fullCircle && points < 3) || (!fullCircle && points < 2)) return;
+
+        Basis basis = createBasis(normal, startAngleDeg);
+        int segmentCount = fullCircle ? points : points - 1;
+        double stepDeg = arcSpan / segmentCount;
+        int trailDuration = Math.max(1, duration);
+
+        for (int i = 0; i < segmentCount; i++) {
+            Location from = pointOnCircle(center, radius, fromDeg + stepDeg * i, basis);
+            Location to = pointOnCircle(center, radius, fromDeg + stepDeg * (i + 1), basis);
+            spawnTrail(world, from, to, color, trailDuration);
+        }
     }
 
     /**
-     * 任意の法線ベクトル・開始角・外側へのトレイル距離を指定して円弧を描く。
+     * 水平なリングを、開始半径から終了半径まで1tickごとに広げる。
      *
-     * <p>各点のスポーン位置は円周上（中心から半径の距離）。トレイルの target は
-     * 同じ方向へさらに {@code outwardDistance} だけ進んだ位置になるため、
-     * トレイルは中心から見て外側へ流れるように見える。</p>
-     *
-     * @param center          円の中心位置
-     * @param radius          半径（メートル）
-     * @param color           パーティクルの色
-     * @param duration        トレイルの継続時間（ticks、1以上）
-     * @param points          円弧上のパーティクル数（完全円換算ではなく弧上の点数）
-     * @param fromDeg         開始角度（度）
-     * @param toDeg           終了角度（度）
-     * @param normal          円面の法線ベクトル（正規化不要）
-     * @param startAngleDeg   法線と直交する基準軸からの回転オフセット（度）
-     * @param outwardDistance トレイルが円周から外側へ伸びる距離（メートル）。0以下なら伸びない（target=スポーン位置と同一になり事実上表示されない点に注意）。
+     * @param plugin         タスクを所有するプラグイン
+     * @param center         衝撃波の中心位置
+     * @param startRadius    開始半径（メートル）
+     * @param endRadius      終了半径（メートル）
+     * @param color          パーティクルの色
+     * @param expansionTicks 拡大にかける時間（ticks）
+     * @param minimumPoints  円周の最低分割数。大きな円では密度維持のため自動的に増える
+     * @return 実行中の描画タスク
      */
-    public static void spawnArc(
+    public static BukkitTask spawnExpandingShockwave(
+            Plugin plugin,
+            Location center,
+            double startRadius,
+            double endRadius,
+            Color color,
+            int expansionTicks,
+            int minimumPoints) {
+        return spawnExpandingShockwave(
+                plugin, center, startRadius, endRadius, color, expansionTicks, minimumPoints, UP, 0.0);
+    }
+
+    /**
+     * 任意の向きのリングを、開始半径から終了半径まで1tickごとに広げる。
+     */
+    public static BukkitTask spawnExpandingShockwave(
+            Plugin plugin,
+            Location center,
+            double startRadius,
+            double endRadius,
+            Color color,
+            int expansionTicks,
+            int minimumPoints,
+            Vector normal,
+            double startAngleDeg) {
+
+        if (plugin == null) throw new IllegalArgumentException("plugin must not be null");
+        if (center == null || center.getWorld() == null) {
+            throw new IllegalArgumentException("center must have a world");
+        }
+        if (startRadius <= 0 || endRadius <= 0) {
+            throw new IllegalArgumentException("radii must be greater than zero");
+        }
+        if (expansionTicks <= 0) {
+            throw new IllegalArgumentException("expansionTicks must be greater than zero");
+        }
+        if (minimumPoints < 3) {
+            throw new IllegalArgumentException("minimumPoints must be at least 3");
+        }
+        if (normal == null || normal.lengthSquared() == 0) {
+            throw new IllegalArgumentException("normal must not be zero");
+        }
+
+        Location fixedCenter = center.clone();
+        Vector fixedNormal = normal.clone();
+
+        return new BukkitRunnable() {
+            private int tick;
+
+            @Override
+            public void run() {
+                double progress = (double) tick / expansionTicks;
+                double radius = startRadius + (endRadius - startRadius) * easeOutCubic(progress);
+                int points = Math.max(
+                        minimumPoints,
+                        (int) Math.ceil(2.0 * Math.PI * radius / MAX_SHOCKWAVE_SEGMENT_LENGTH)
+                );
+
+                spawnCircle(fixedCenter, radius, color, 2, points, fixedNormal, startAngleDeg);
+
+                if (tick >= expansionTicks) {
+                    cancel();
+                    return;
+                }
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    /**
+     * 円周上の各点から外側へ短い TRAIL を放つ。リング形状へ動きを足す用途。
+     */
+    public static void spawnRadialBurstRing(
             Location center,
             double radius,
+            double outwardDistance,
             Color color,
             int duration,
             int points,
-            double fromDeg,
-            double toDeg,
             Vector normal,
-            double startAngleDeg,
-            double outwardDistance) {
+            double startAngleDeg) {
 
         World world = center.getWorld();
-        if (world == null) return;
-        if (points <= 0 || radius <= 0) return;
-        if (duration <= 0) duration = 1;
-        if (outwardDistance < 0) outwardDistance = 0;
+        if (world == null || radius <= 0 || outwardDistance <= 0 || points < 3
+                || normal == null || normal.lengthSquared() == 0) {
+            return;
+        }
 
-        // 法線方向に直交する2つの基底ベクトルを求める
+        Basis basis = createBasis(normal, startAngleDeg);
+        int trailDuration = Math.max(1, duration);
+        double stepDeg = 360.0 / points;
+
+        for (int i = 0; i < points; i++) {
+            double angleDeg = stepDeg * i;
+            Location from = pointOnCircle(center, radius, angleDeg, basis);
+            Location to = pointOnCircle(center, radius + outwardDistance, angleDeg, basis);
+            spawnTrail(world, from, to, color, trailDuration);
+        }
+    }
+
+    private static void spawnTrail(
+            World world,
+            Location from,
+            Location to,
+            Color color,
+            int duration) {
+        world.spawnParticle(
+                Particle.TRAIL,
+                from,
+                1,
+                0, 0, 0,
+                0,
+                new Particle.Trail(to, color, duration)
+        );
+    }
+
+    private static Location pointOnCircle(
+            Location center,
+            double radius,
+            double angleDeg,
+            Basis basis) {
+        double angleRad = Math.toRadians(angleDeg);
+        Vector offset = basis.u().clone().multiply(Math.cos(angleRad) * radius)
+                .add(basis.v().clone().multiply(Math.sin(angleRad) * radius));
+        return center.clone().add(offset);
+    }
+
+    private static Basis createBasis(Vector normal, double startAngleDeg) {
         Vector n = normal.clone().normalize();
         Vector u = perpendicular(n).normalize();
         Vector v = n.clone().crossProduct(u).normalize();
 
-        // 開始角オフセットを u に適用して回転
         double offsetRad = Math.toRadians(startAngleDeg);
-        Vector uRot = u.clone().multiply(Math.cos(offsetRad)).add(v.clone().multiply(Math.sin(offsetRad)));
-        Vector vRot = u.clone().multiply(-Math.sin(offsetRad)).add(v.clone().multiply(Math.cos(offsetRad)));
-
-        double arcSpan = toDeg - fromDeg;
-        // 完全円のとき最後の点が最初と重複しないよう点数分割
-        boolean fullCircle = Math.abs(arcSpan % 360) < 0.001;
-        int divisions = fullCircle ? points : Math.max(1, points - 1);
-        double stepDeg = arcSpan / divisions;
-
-        for (int i = 0; i < points; i++) {
-            double angleDeg = fromDeg + stepDeg * i;
-            double rad = Math.toRadians(angleDeg);
-
-            double cosA = Math.cos(rad);
-            double sinA = Math.sin(rad);
-
-            // 中心から見た放射方向の単位ベクトル
-            Vector radialDir = uRot.clone().multiply(cosA).add(vRot.clone().multiply(sinA));
-
-            // 円周上の点（スポーン位置）
-            Location spawnLoc = center.clone().add(radialDir.clone().multiply(radius));
-
-            // target = 同じ放射方向にさらに outwardDistance だけ進んだ位置
-            // （中心ではなく外側へ向けることで、トレイルが外向きに流れる）
-            Location targetLoc = center.clone().add(radialDir.clone().multiply(radius + outwardDistance));
-
-            world.spawnParticle(
-                    Particle.TRAIL,
-                    spawnLoc,
-                    1,          // count
-                    0, 0, 0,    // offset
-                    0,          // extra
-                    new Particle.Trail(targetLoc, color, duration)
-            );
-        }
+        Vector rotatedU = u.clone().multiply(Math.cos(offsetRad))
+                .add(v.clone().multiply(Math.sin(offsetRad)));
+        Vector rotatedV = u.clone().multiply(-Math.sin(offsetRad))
+                .add(v.clone().multiply(Math.cos(offsetRad)));
+        return new Basis(rotatedU, rotatedV);
     }
 
-    // -----------------------------------------------------------------------
-    // ユーティリティ
-    // -----------------------------------------------------------------------
-
-    /**
-     * 与えられたベクトルに直交する（ゼロでない）ベクトルを返す。
-     */
-    private static Vector perpendicular(Vector n) {
-        // n と線形独立な軸を選んでクロス積で直交ベクトルを得る
-        Vector axis = (Math.abs(n.getX()) < 0.9) ? new Vector(1, 0, 0) : new Vector(0, 1, 0);
-        return axis.crossProduct(n);
+    private static boolean isFullCircle(double arcSpan) {
+        return Math.abs(arcSpan) >= 360.0
+                && Math.abs(arcSpan % 360.0) < 0.001;
     }
+
+    private static double easeOutCubic(double progress) {
+        double remaining = 1.0 - progress;
+        return 1.0 - remaining * remaining * remaining;
+    }
+
+    private static Vector perpendicular(Vector normal) {
+        Vector axis = Math.abs(normal.getX()) < 0.9
+                ? new Vector(1, 0, 0)
+                : new Vector(0, 1, 0);
+        return axis.crossProduct(normal);
+    }
+
+    private record Basis(Vector u, Vector v) {}
 }

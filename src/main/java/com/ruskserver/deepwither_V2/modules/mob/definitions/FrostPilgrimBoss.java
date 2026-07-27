@@ -471,8 +471,9 @@ public class FrostPilgrimBoss extends CustomMob {
 
         blizzardCenter.getWorld().playSound(blizzardCenter, Sound.ENTITY_WITHER_SHOOT, 1.5f, 0.5f);
 
-        TrailCircleHelper.spawnCircle(blizzardCenter.clone().add(0, 3, 0), BLIZZARD_RADIUS, ICE_WHITE, 40, 48,
-                new Vector(0, 1, 0), 0, 2.0);
+        TrailCircleHelper.spawnRadialBurstRing(
+                blizzardCenter.clone().add(0, 3, 0), BLIZZARD_RADIUS, 2.0,
+                ICE_WHITE, 40, 48, new Vector(0, 1, 0), 0);
 
         TrailCircleHelper.spawnCircle(blizzardCenter.clone().add(0, 0.1, 0), BLIZZARD_RADIUS, ICE_PALE, 40, 48);
 
