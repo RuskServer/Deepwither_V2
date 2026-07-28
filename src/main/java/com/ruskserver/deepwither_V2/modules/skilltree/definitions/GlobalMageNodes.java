@@ -35,6 +35,13 @@ public class GlobalMageNodes {
                         .position(1, 12)
                         .maxLevel(1).costPerLevel(2).build(),
 
+                SkillTreeNode.skill("arcane_bolt_node", "arcane_bolt")
+                        .name("アーケインボルト")
+                        .description("純粋な魔力の弾を前方へ放つ。")
+                        .icon(Material.AMETHYST_SHARD)
+                        .position(2, 13)
+                        .maxLevel(1).costPerLevel(1).build(),
+
                 // ----- TRAVEL NODES (分岐用) -----
                 SkillTreeNode.passive("mage_travel_start_up1")
                         .name("魔術の歩み")
@@ -79,7 +86,7 @@ public class GlobalMageNodes {
                         }).build(),
 
                 // ========== LIGHTNING (Y = 10) ==========
-                SkillTreeNode.skill("lightning_strike_node", "lightning_strike")
+                SkillTreeNode.skill("lightning_strike_node", "thunder_strike")
                         .name("ライトニングストライク")
                         .description("対象に雷を落としダメージを与える。")
                         .icon(Material.LIGHTNING_ROD)
@@ -115,7 +122,7 @@ public class GlobalMageNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_overload"); }
                         }).build(),
 
-                SkillTreeNode.skill("thunderstorm_node", "thunderstorm")
+                SkillTreeNode.skill("thunderstorm_node", "lightning_storm")
                         .name("サンダーストーム")
                         .description("指定範囲に激しい雷雨を呼び起こす。")
                         .icon(Material.DIAMOND_SWORD)
@@ -133,7 +140,7 @@ public class GlobalMageNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.COOLDOWN_REDUCTION, "st_mage_cdr_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("emp_node", "emp")
+                SkillTreeNode.skill("emp_node", "thunder_blast")
                         .name("EMP")
                         .description("強力な電磁波で周囲の敵を沈黙させる。")
                         .icon(Material.BEACON)
@@ -181,7 +188,7 @@ public class GlobalMageNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_fire_mastery_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("flame_breath_node", "flame_breath")
+                SkillTreeNode.skill("flame_breath_node", "flame_pillar")
                         .name("フレイムブレス")
                         .description("前方に継続的な炎を放射する。")
                         .icon(Material.BLAZE_POWDER)
@@ -199,7 +206,7 @@ public class GlobalMageNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAX_MANA, "st_mana_boost"); }
                         }).build(),
 
-                SkillTreeNode.skill("meteor_node", "meteor")
+                SkillTreeNode.skill("meteor_node", "flame_breath")
                         .name("メテオ")
                         .description("巨大な隕石を落下させ大爆発を起こす。")
                         .icon(Material.NETHERRACK)
@@ -217,7 +224,7 @@ public class GlobalMageNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_fire_mastery_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("inferno_node", "inferno")
+                SkillTreeNode.skill("inferno_node", "fire_nova")
                         .name("インフェルノ")
                         .description("周囲一帯を業火で包み込む。")
                         .icon(Material.LAVA_BUCKET)
@@ -225,7 +232,7 @@ public class GlobalMageNodes {
                         .maxLevel(1).costPerLevel(5).build(),
 
                 // ========== ICE (Y = 14) ==========
-                SkillTreeNode.skill("ice_spike_node", "ice_spike")
+                SkillTreeNode.skill("ice_spike_node", "ice_shard")
                         .name("アイススパイク")
                         .description("地面から氷の棘を突き出させる。")
                         .icon(Material.ICE)
@@ -243,7 +250,7 @@ public class GlobalMageNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_frost_mastery_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("blizzard_node", "blizzard")
+                SkillTreeNode.skill("blizzard_node", "ice_spike")
                         .name("ブリザード")
                         .description("指定範囲に吹雪を起こし敵を遅くする。")
                         .icon(Material.PACKED_ICE)
@@ -261,7 +268,7 @@ public class GlobalMageNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.DEFENSE, "st_ice_barrier"); }
                         }).build(),
 
-                SkillTreeNode.skill("frost_nova_node", "frost_nova")
+                SkillTreeNode.skill("frost_nova_node", "frost_breath")
                         .name("フロストノヴァ")
                         .description("自身の周囲に氷の輪を放ち敵を凍結させる。")
                         .icon(Material.GHAST_TEAR)
@@ -279,7 +286,7 @@ public class GlobalMageNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DEFENSE, "st_frost_mastery_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("absolute_zero_node", "absolute_zero")
+                SkillTreeNode.skill("absolute_zero_node", "blizzard")
                         .name("アブソリュートゼロ")
                         .description("周囲を絶対零度にし、全てを凍り付かせる。")
                         .icon(Material.HEART_OF_THE_SEA)

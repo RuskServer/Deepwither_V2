@@ -41,6 +41,10 @@ import java.util.UUID;
 @Component
 public class WandAttackListener implements Listener {
 
+    private static final double DEFAULT_ATTACKS_PER_SECOND = 1.0;
+    private static final double MIN_ATTACKS_PER_SECOND = 0.2;
+    private static final double MAX_ATTACKS_PER_SECOND = 3.0;
+
     private final Map<UUID, Long> cooldowns = new HashMap<>();
     private final ItemManager itemManager;
     private final ItemPDCUtil pdcUtil;
@@ -90,7 +94,10 @@ public class WandAttackListener implements Listener {
         // --- クールダウン処理 ---
         // 攻撃速度(ATTACK_SPEED)からクールダウンを計算。例: 1.5 なら 1秒間に1.5回発射可能 = 1000 / 1.5 = 666ms
         double attackSpeed = statManager.getTotalStat(player, StatType.ATTACK_SPEED);
-        if (attackSpeed <= 0) attackSpeed = 1.0; // デフォルト 1.0回/秒
+        if (!wand.getBaseStats().containsKey(StatType.ATTACK_SPEED)) {
+            attackSpeed += DEFAULT_ATTACKS_PER_SECOND;
+        }
+        attackSpeed = Math.max(MIN_ATTACKS_PER_SECOND, Math.min(MAX_ATTACKS_PER_SECOND, attackSpeed));
 
         long cooldownMs = (long) (1000.0 / attackSpeed);
         long lastUse = cooldowns.getOrDefault(player.getUniqueId(), 0L);

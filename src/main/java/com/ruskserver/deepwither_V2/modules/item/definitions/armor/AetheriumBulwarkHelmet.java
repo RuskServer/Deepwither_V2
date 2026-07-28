@@ -19,7 +19,7 @@ public class AetheriumBulwarkHelmet implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 32.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 28.0);
         this.baseStats.put(StatType.HEALTH, 40.0);
-        this.baseStats.put(StatType.SPEED, -0.01);
+        this.baseStats.put(StatType.SPEED, -10.0);
     }
 
     @Override

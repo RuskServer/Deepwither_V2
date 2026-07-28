@@ -18,7 +18,7 @@ public class MoonShadowLower implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 6.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 24.0);
-        this.baseStats.put(StatType.SPEED, 0.01);
+        this.baseStats.put(StatType.SPEED, 10.0);
     }
 
     @Override

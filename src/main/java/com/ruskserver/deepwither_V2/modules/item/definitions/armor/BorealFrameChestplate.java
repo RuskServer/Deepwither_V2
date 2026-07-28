@@ -19,7 +19,7 @@ public class BorealFrameChestplate implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 42.0);
         this.baseStats.put(StatType.HEALTH, 30.0);
         this.baseStats.put(StatType.ATTACK_DAMAGE, 6.0);
-        this.baseStats.put(StatType.SPEED, -0.02);
+        this.baseStats.put(StatType.SPEED, -20.0);
     }
 
     @Override

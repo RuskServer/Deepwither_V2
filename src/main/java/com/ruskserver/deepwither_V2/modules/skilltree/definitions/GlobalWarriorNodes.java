@@ -28,7 +28,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_class_warrior"); }
                         }).build(),
 
-                SkillTreeNode.skill("mobility_dash_node_warrior", "dash")
+                SkillTreeNode.skill("mobility_dash_node_warrior", "charge")
                         .name("突撃")
                         .description("前方に素早くダッシュする。")
                         .icon(Material.RABBIT_FOOT)
@@ -115,7 +115,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_vitality_boost"); }
                         }).build(),
 
-                SkillTreeNode.skill("counter_stance_node", "counter_stance")
+                SkillTreeNode.skill("counter_stance_node", "battle_cry")
                         .name("カウンタースタンス")
                         .description("一定時間、受けたダメージを敵に跳ね返す。")
                         .icon(Material.DIAMOND_CHESTPLATE)
@@ -133,7 +133,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.DEFENSE, "st_iron_skin_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("last_stand_node", "last_stand")
+                SkillTreeNode.skill("last_stand_node", "fortress")
                         .name("ラストスタンド")
                         .description("HPがゼロになっても一定時間倒れなくなる。")
                         .icon(Material.TOTEM_OF_UNDYING)
@@ -163,7 +163,7 @@ public class GlobalWarriorNodes {
                         }).build(),
 
                 // ========== HEAVY (Y = 2) ==========
-                SkillTreeNode.skill("heavy_strike_node", "heavy_strike")
+                SkillTreeNode.skill("heavy_strike_node", "hammer_slam")
                         .name("ヘビーストライク")
                         .description("強力な一撃を放ち、敵に大ダメージを与える。")
                         .icon(Material.IRON_AXE)
@@ -181,7 +181,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_muscle_training_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("earthquake_node", "earthquake")
+                SkillTreeNode.skill("earthquake_node", "shockwave")
                         .name("アースクエイク")
                         .description("地面を叩き割り、周囲の敵を転倒させる。")
                         .icon(Material.DIRT)
@@ -199,7 +199,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_toughness"); }
                         }).build(),
 
-                SkillTreeNode.skill("berserk_node", "berserk")
+                SkillTreeNode.skill("berserk_node", "seismic_stomp")
                         .name("バーサーク")
                         .description("防御力を犠牲にして攻撃力を大幅に上げる。")
                         .icon(Material.RED_DYE)
@@ -217,7 +217,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_DAMAGE, "st_muscle_training_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("execute_node", "execute")
+                SkillTreeNode.skill("execute_node", "colossus")
                         .name("エクスキュート")
                         .description("HPが低い敵を即死させる一撃。")
                         .icon(Material.NETHERITE_AXE)
@@ -243,7 +243,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_SPEED, "st_agility_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("blade_dance_node", "blade_dance")
+                SkillTreeNode.skill("blade_dance_node", "whirlwind")
                         .name("ブレードダンス")
                         .description("剣の舞を踊り、周囲の敵を切り刻む。")
                         .icon(Material.DIAMOND_SWORD)
@@ -261,7 +261,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.CRITICAL_CHANCE, "st_precision"); }
                         }).build(),
 
-                SkillTreeNode.skill("parry_node", "parry")
+                SkillTreeNode.skill("parry_node", "power_strike")
                         .name("パリィ")
                         .description("敵の攻撃を弾き返し、隙を作る。")
                         .icon(Material.IRON_INGOT)
@@ -279,7 +279,7 @@ public class GlobalWarriorNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_SPEED, "st_agility_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("phantom_strike_node", "phantom_strike")
+                SkillTreeNode.skill("phantom_strike_node", "executioner")
                         .name("ファントムストライク")
                         .description("幻影のようになり、敵の背後から致命傷を与える。")
                         .icon(Material.NETHERITE_SWORD)

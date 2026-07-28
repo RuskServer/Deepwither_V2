@@ -19,7 +19,7 @@ public class CelestialWeaveRBoots implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DAMAGE, 7.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 26.0);
         this.baseStats.put(StatType.DEFENSE, 5.0);
-        this.baseStats.put(StatType.SPEED, 0.015);
+        this.baseStats.put(StatType.SPEED, 15.0);
     }
 
     @Override

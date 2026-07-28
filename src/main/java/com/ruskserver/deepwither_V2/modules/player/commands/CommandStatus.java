@@ -122,6 +122,11 @@ public class CommandStatus implements BasicCommand {
                 .append(statValue("クリ率", statManager.getTotalStat(player, StatType.CRITICAL_CHANCE) * 100, NamedTextColor.GOLD, null))
                 .append(Component.text("   "))
                 .append(statValue("クリ倍率", statManager.getTotalStat(player, StatType.CRITICAL_DAMAGE) * 100, NamedTextColor.GOLD, null)));
+        player.sendMessage(Component.text("  移動速度: ", NamedTextColor.GRAY)
+                .append(Component.text(
+                        String.format("%.1f%%", statManager.getTotalStat(player, StatType.SPEED)),
+                        NamedTextColor.AQUA
+                )));
         player.sendMessage(Component.empty());
 
         player.sendMessage(sectionTitle("信用度"));

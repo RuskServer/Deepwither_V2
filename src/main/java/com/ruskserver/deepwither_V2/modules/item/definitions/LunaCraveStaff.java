@@ -20,6 +20,7 @@ public class LunaCraveStaff implements WandItem {
     public LunaCraveStaff() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.MAGIC_DAMAGE, 30.0);
+        this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         this.baseStats.put(StatType.ICE_DAMAGE, 10.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 130.0);

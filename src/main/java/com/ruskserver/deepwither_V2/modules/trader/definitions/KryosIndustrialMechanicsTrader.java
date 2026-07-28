@@ -25,6 +25,8 @@ public class KryosIndustrialMechanicsTrader implements TraderDefinition {
     @Override
     public List<TraderProduct> getProducts() {
         return Arrays.asList(
+                new TraderProduct("greater_healing_potion", 750.0, 0),
+                new TraderProduct("greater_mana_potion", 1400.0, 0),
                 new TraderProduct("gravemind_machete", 42000.0, 0),
                 new TraderProduct("boreal_frame_helmet", 16000.0, 0),
                 new TraderProduct("boreal_frame_chestplate", 18000.0, 0),
@@ -35,7 +37,7 @@ public class KryosIndustrialMechanicsTrader implements TraderDefinition {
                 new TraderProduct("glacial_fortress_leggings", 82000.0, 1000),
                 new TraderProduct("glacial_fortress_boots", 62000.0, 1000),
                 new TraderProduct("gravemelt_breaker", 120000.0, 1500),
-                new TraderProduct("frostward_testament", 150000.0, 2000)
+                new TraderProduct("kim_frostward_testament", 150000.0, 2000)
         );
     }
 }

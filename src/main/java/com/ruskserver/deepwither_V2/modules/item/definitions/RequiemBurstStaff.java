@@ -20,6 +20,7 @@ public class RequiemBurstStaff implements WandItem {
     public RequiemBurstStaff() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.MAGIC_DAMAGE, 35.0);
+        this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         this.baseStats.put(StatType.FIRE_DAMAGE, 8.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 7.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 180.0);

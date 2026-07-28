@@ -40,7 +40,7 @@ public enum ArtifactItemType {
     // LUNAR_SKIRMISHER
     LUNAR_RING("§d§l月駆の紋輪", ArtifactSetType.LUNAR_SKIRMISHER, 
             Material.PLAYER_HEAD, "31f748a43f3b3ada04f44d5d290a8b9bf583d93e1c83ab93c60c4dec1fde1c5c", 
-            StatType.SPEED, 0.05),
+            StatType.SPEED, 5.0),
     LUNAR_CIRCUIT("§d§lアークレイン・サーキット", ArtifactSetType.LUNAR_SKIRMISHER, 
             Material.PLAYER_HEAD, "98ec21d20f1aaf5635f48beda88626403c6385b81673fb7cfa7ff82179c63e39", 
             StatType.CRITICAL_CHANCE, 5.0),

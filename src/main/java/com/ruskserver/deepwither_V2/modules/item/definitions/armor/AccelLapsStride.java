@@ -17,7 +17,7 @@ public class AccelLapsStride implements CustomItem {
     public AccelLapsStride() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 22.0);
-        this.baseStats.put(StatType.SPEED, 0.015);
+        this.baseStats.put(StatType.SPEED, 15.0);
     }
 
     @Override

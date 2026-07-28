@@ -18,7 +18,7 @@ public class AF07FluxBoots implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 14.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 12.0);
-        this.baseStats.put(StatType.SPEED, 0.008);
+        this.baseStats.put(StatType.SPEED, 8.0);
     }
 
     @Override

@@ -18,7 +18,7 @@ public class BorealFrameHelmet implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 18.0);
         this.baseStats.put(StatType.HEALTH, 30.0);
-        this.baseStats.put(StatType.SPEED, -0.02);
+        this.baseStats.put(StatType.SPEED, -20.0);
     }
 
     @Override

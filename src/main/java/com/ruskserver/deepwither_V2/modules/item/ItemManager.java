@@ -192,11 +192,11 @@ public class ItemManager implements Startable {
                 double baseValue = entry.getValue();
                 double modValue = modifiers.getOrDefault(type, 0.0);
 
-                String line = " §7" + type.getDisplayName() + ": §f" + baseValue;
+                String line = " §7" + type.getDisplayName() + ": §f" + formatStatValue(type, baseValue);
                 if (modValue > 0) {
-                    line += " §a(+" + modValue + ")";
+                    line += " §a(+" + formatStatValue(type, modValue) + ")";
                 } else if (modValue < 0) {
-                    line += " §c(" + modValue + ")";
+                    line += " §c(" + formatStatValue(type, modValue) + ")";
                 }
                 lore.add(Component.text(line).decoration(TextDecoration.ITALIC, false));
             }
@@ -205,7 +205,7 @@ public class ItemManager implements Startable {
             for (Map.Entry<StatType, Double> entry : addedStats.entrySet()) {
                 StatType type = entry.getKey();
                 double value = entry.getValue();
-                String line = " §b+" + type.getDisplayName() + ": §f" + value;
+                String line = " §b+" + type.getDisplayName() + ": §f" + formatStatValue(type, value);
                 lore.add(Component.text(line).decoration(TextDecoration.ITALIC, false));
             }
         }
@@ -232,6 +232,10 @@ public class ItemManager implements Startable {
 
         item.setItemMeta(meta);
         applyArmorAppearance(item, customItem);
+    }
+
+    private String formatStatValue(StatType type, double value) {
+        return type == StatType.SPEED ? String.format("%.1f%%", value) : Double.toString(value);
     }
 
     private void applyArmorAppearance(ItemStack item, CustomItem customItem) {

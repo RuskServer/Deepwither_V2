@@ -19,7 +19,7 @@ public class MoonweaveLeggings implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 10.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 5.0);
         this.baseStats.put(StatType.MAX_MANA, 40.0);
-        this.baseStats.put(StatType.SPEED, -0.01);
+        this.baseStats.put(StatType.SPEED, -10.0);
     }
 
     @Override

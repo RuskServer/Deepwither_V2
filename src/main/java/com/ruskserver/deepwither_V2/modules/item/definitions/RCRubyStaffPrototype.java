@@ -20,6 +20,7 @@ public class RCRubyStaffPrototype implements WandItem {
     public RCRubyStaffPrototype() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.MAGIC_DAMAGE, 50.0);
+        this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         this.baseStats.put(StatType.FIRE_DAMAGE, 12.0);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 6.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);

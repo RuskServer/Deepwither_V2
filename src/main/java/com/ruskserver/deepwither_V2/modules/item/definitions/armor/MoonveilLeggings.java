@@ -18,7 +18,7 @@ public class MoonveilLeggings implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 22.0);
         this.baseStats.put(StatType.DEFENSE, 4.0);
-        this.baseStats.put(StatType.SPEED, 0.005);
+        this.baseStats.put(StatType.SPEED, 5.0);
     }
 
     @Override

@@ -8,9 +8,11 @@ import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeDefinition;
 import com.ruskserver.deepwither_V2.modules.skilltree.api.SkillTreeNode;
 import org.bukkit.Bukkit;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -20,7 +22,7 @@ public class SkillTreeRegistry implements Startable {
     private final Map<String, SkillTreeDefinition> trees = new LinkedHashMap<>();
     private final Map<String, SkillTreeNode> nodesById = new LinkedHashMap<>();
     private final Map<String, SkillTreeDefinition> treeByNodeId = new LinkedHashMap<>();
-    private final Map<String, SkillTreeNode> nodeBySkillId = new LinkedHashMap<>();
+    private final Map<String, List<SkillTreeNode>> nodesBySkillId = new LinkedHashMap<>();
 
     @Inject
     public SkillTreeRegistry(DIContainer container) {
@@ -50,7 +52,13 @@ public class SkillTreeRegistry implements Startable {
     }
 
     public SkillTreeNode getNodeBySkillId(String skillId) {
-        return nodeBySkillId.get(skillId);
+        List<SkillTreeNode> nodes = nodesBySkillId.get(skillId);
+        return nodes == null || nodes.isEmpty() ? null : nodes.get(0);
+    }
+
+    public List<SkillTreeNode> getNodesBySkillId(String skillId) {
+        List<SkillTreeNode> nodes = nodesBySkillId.get(skillId);
+        return nodes == null ? List.of() : Collections.unmodifiableList(nodes);
     }
 
     public Collection<SkillTreeDefinition> getTrees() {
@@ -76,7 +84,7 @@ public class SkillTreeRegistry implements Startable {
             nodesById.put(node.getId(), node);
             treeByNodeId.put(node.getId(), tree);
             if (node.getSkillId() != null) {
-                nodeBySkillId.putIfAbsent(node.getSkillId(), node);
+                nodesBySkillId.computeIfAbsent(node.getSkillId(), ignored -> new ArrayList<>()).add(node);
             }
         }
     }

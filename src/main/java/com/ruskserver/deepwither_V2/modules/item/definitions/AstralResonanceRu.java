@@ -20,6 +20,7 @@ public class AstralResonanceRu implements WandItem {
     public AstralResonanceRu() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.MAGIC_DAMAGE, 50.0);
+        this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         this.baseStats.put(StatType.LIGHTNING_DAMAGE, 4.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 3.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);

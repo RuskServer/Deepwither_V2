@@ -20,6 +20,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityCombustByBlockEvent;
+import org.bukkit.event.entity.EntityCombustByEntityEvent;
+import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
@@ -385,6 +388,26 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
     }
 
     // --- イベントディスパッチ ---
+
+    /**
+     * カスタムモブの日光炎上を防ぐ。
+     * ブロックやエンティティを原因とする発火は、炎属性攻撃として通常どおり残す。
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityCombust(EntityCombustEvent event) {
+        if (event instanceof EntityCombustByBlockEvent || event instanceof EntityCombustByEntityEvent) {
+            return;
+        }
+        if (!(event.getEntity() instanceof LivingEntity entity)) {
+            return;
+        }
+        if (!entity.getPersistentDataContainer().has(mobIdKey, PersistentDataType.STRING)) {
+            return;
+        }
+
+        event.setCancelled(true);
+        entity.setFireTicks(0);
+    }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {

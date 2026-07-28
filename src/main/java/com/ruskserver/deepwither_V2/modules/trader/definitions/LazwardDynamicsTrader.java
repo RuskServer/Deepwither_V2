@@ -25,6 +25,8 @@ public class LazwardDynamicsTrader implements TraderDefinition {
     @Override
     public List<TraderProduct> getProducts() {
         return Arrays.asList(
+                new TraderProduct("greater_healing_potion", 750.0, 0),
+                new TraderProduct("greater_mana_potion", 1400.0, 0),
                 new TraderProduct("variant_spear", 24000.0, 0),
                 new TraderProduct("fieldline_bow", 2500.0, 0),
                 new TraderProduct("laps_visor", 8500.0, 0),
@@ -37,7 +39,7 @@ public class LazwardDynamicsTrader implements TraderDefinition {
                 new TraderProduct("accel_laps_stride", 34000.0, 500),
                 new TraderProduct("accel_laps_tread", 28000.0, 500),
                 new TraderProduct("kobalt_reverb_mace", 52000.0, 1000),
-                new TraderProduct("hammer_mk1", 75000.0, 1500),
+                new TraderProduct("ld_hammer_mk1", 75000.0, 1500),
                 new TraderProduct("tactical_dagger_td10", 62000.0, 1800)
         );
     }

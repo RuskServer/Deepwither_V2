@@ -79,7 +79,7 @@ public class GlobalHolyNodes {
                         }).build(),
 
                 // ========== RESTORATION (Y = -6) ==========
-                SkillTreeNode.skill("heal_node", "heal")
+                SkillTreeNode.skill("heal_node", "holy_light")
                         .name("ヒール")
                         .description("自身のHPを回復する。")
                         .icon(Material.GOLDEN_APPLE)
@@ -97,7 +97,7 @@ public class GlobalHolyNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_restoration_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("group_heal_node", "group_heal")
+                SkillTreeNode.skill("group_heal_node", "renewal")
                         .name("グループヒール")
                         .description("周囲の味方のHPを回復する。")
                         .icon(Material.ENCHANTED_GOLDEN_APPLE)
@@ -115,7 +115,7 @@ public class GlobalHolyNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.HEALTH, "st_divine_grace"); }
                         }).build(),
 
-                SkillTreeNode.skill("resurrection_node", "resurrection")
+                SkillTreeNode.skill("resurrection_node", "holy_resurrection")
                         .name("リザレクション")
                         .description("倒れた味方を蘇生する。")
                         .icon(Material.NETHER_STAR)
@@ -133,7 +133,7 @@ public class GlobalHolyNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_restoration_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("holy_nova_node", "holy_nova")
+                SkillTreeNode.skill("holy_nova_node", "mass_heal")
                         .name("ホーリーノヴァ")
                         .description("周囲の敵にダメージを与え、味方を回復する。")
                         .icon(Material.BEACON)
@@ -163,7 +163,7 @@ public class GlobalHolyNodes {
                         }).build(),
 
                 // ========== SACRIFICE (Y = -4) ==========
-                SkillTreeNode.skill("smite_node", "smite")
+                SkillTreeNode.skill("smite_node", "sacrificial_light")
                         .name("スマイト")
                         .description("対象に神聖な一撃を下す。")
                         .icon(Material.GOLDEN_SWORD)
@@ -181,7 +181,7 @@ public class GlobalHolyNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_holy_power_1"); }
                         }).build(),
 
-                SkillTreeNode.skill("martyr_node", "martyr")
+                SkillTreeNode.skill("martyr_node", "martyrdom")
                         .name("マーター")
                         .description("自身のHPを消費し、周囲の敵に大ダメージを与える。")
                         .icon(Material.CRIMSON_ROOTS)
@@ -199,7 +199,7 @@ public class GlobalHolyNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_SPEED, "st_zeal"); }
                         }).build(),
 
-                SkillTreeNode.skill("judgement_node", "judgement")
+                SkillTreeNode.skill("judgement_node", "purify")
                         .name("ジャッジメント")
                         .description("天からの裁きを下し、広範囲の敵を浄化する。")
                         .icon(Material.END_CRYSTAL)
@@ -217,7 +217,7 @@ public class GlobalHolyNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.MAGIC_DAMAGE, "st_holy_power_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("divine_wrath_node", "divine_wrath")
+                SkillTreeNode.skill("divine_wrath_node", "holy_nova")
                         .name("ディバインラース")
                         .description("神の怒りを顕現させ、全てを焼き尽くす。")
                         .icon(Material.DRAGON_BREATH)
@@ -261,7 +261,7 @@ public class GlobalHolyNodes {
                             @Override public void clear(Player player, SkillTreeContext context) { statManager.removeModifier(player.getUniqueId(), StatType.DEFENSE, "st_holy_defense_2"); }
                         }).build(),
 
-                SkillTreeNode.skill("aegis_node", "aegis")
+                SkillTreeNode.skill("aegis_node", "first_aid")
                         .name("イージス")
                         .description("一時的に無敵状態となる。")
                         .icon(Material.DIAMOND_CHESTPLATE)

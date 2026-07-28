@@ -19,7 +19,7 @@ public class AF07FluxLeggings implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 28.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 24.0);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 8.0);
-        this.baseStats.put(StatType.SPEED, 0.002);
+        this.baseStats.put(StatType.SPEED, 2.0);
     }
 
     @Override

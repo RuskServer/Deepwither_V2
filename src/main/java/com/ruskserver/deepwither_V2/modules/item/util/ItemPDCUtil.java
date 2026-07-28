@@ -18,10 +18,14 @@ import java.util.*;
 @Component
 public class ItemPDCUtil {
 
+    private static final int CURRENT_STAT_FORMAT_VERSION = 2;
+    private static final double LEGACY_SPEED_TO_PERCENT = 1000.0;
+
     private final NamespacedKey idKey;
     private final NamespacedKey modifierKey;
     private final NamespacedKey addedStatKey;
     private final NamespacedKey specialEffectKey;
+    private final NamespacedKey statFormatVersionKey;
 
     @Inject
     public ItemPDCUtil(Deepwither_V2 plugin) {
@@ -29,6 +33,7 @@ public class ItemPDCUtil {
         this.modifierKey = new NamespacedKey(plugin, "custom_item_modifiers");
         this.addedStatKey = new NamespacedKey(plugin, "custom_item_added_stats");
         this.specialEffectKey = new NamespacedKey(plugin, "custom_item_special_effects");
+        this.statFormatVersionKey = new NamespacedKey(plugin, "custom_item_stat_format_version");
     }
 
     public void setItemId(ItemStack item, String id) {
@@ -50,6 +55,11 @@ public class ItemPDCUtil {
         setBaseModifiers(meta, result.getBaseModifiers());
         setAddedStats(meta, result.getAddedStats());
         setSpecialEffects(meta, result.getSpecialEffects());
+        meta.getPersistentDataContainer().set(
+                statFormatVersionKey,
+                PersistentDataType.INTEGER,
+                CURRENT_STAT_FORMAT_VERSION
+        );
 
         item.setItemMeta(meta);
     }
@@ -118,6 +128,8 @@ public class ItemPDCUtil {
 
         PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
         String raw = pdc.get(key, PersistentDataType.STRING);
+        Integer formatVersion = pdc.get(statFormatVersionKey, PersistentDataType.INTEGER);
+        boolean usesLegacySpeedScale = formatVersion == null || formatVersion < CURRENT_STAT_FORMAT_VERSION;
 
         if (raw != null && !raw.isEmpty()) {
             String[] parts = raw.split(",");
@@ -127,6 +139,9 @@ public class ItemPDCUtil {
                     try {
                         StatType type = StatType.valueOf(kv[0]);
                         double value = Double.parseDouble(kv[1]);
+                        if (type == StatType.SPEED && usesLegacySpeedScale) {
+                            value *= LEGACY_SPEED_TO_PERCENT;
+                        }
                         result.put(type, value);
                     } catch (IllegalArgumentException ignored) {
                     }

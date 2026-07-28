@@ -76,7 +76,8 @@ public class StatManager {
         AttributeInstance attribute = player.getAttribute(Attribute.MOVEMENT_SPEED);
         if (attribute == null) return;
 
-        double speed = DEFAULT_MOVEMENT_SPEED + getProfile(entityId).getTotal(StatType.SPEED);
+        double speedBonusPercent = getProfile(entityId).getTotal(StatType.SPEED);
+        double speed = DEFAULT_MOVEMENT_SPEED * (1.0 + speedBonusPercent / 100.0);
         attribute.setBaseValue(Math.max(MIN_MOVEMENT_SPEED, Math.min(MAX_MOVEMENT_SPEED, speed)));
     }
 }

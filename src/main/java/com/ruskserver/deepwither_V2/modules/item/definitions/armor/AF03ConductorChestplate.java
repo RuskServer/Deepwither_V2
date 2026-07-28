@@ -19,7 +19,7 @@ public class AF03ConductorChestplate implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 12.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 12.0);
         this.baseStats.put(StatType.MAX_MANA, 40.0);
-        this.baseStats.put(StatType.SPEED, -0.01);
+        this.baseStats.put(StatType.SPEED, -10.0);
     }
 
     @Override

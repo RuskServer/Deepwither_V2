@@ -17,7 +17,7 @@ public class LapsVisor implements CustomItem {
     public LapsVisor() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 6.0);
-        this.baseStats.put(StatType.SPEED, 0.005);
+        this.baseStats.put(StatType.SPEED, 5.0);
     }
 
     @Override

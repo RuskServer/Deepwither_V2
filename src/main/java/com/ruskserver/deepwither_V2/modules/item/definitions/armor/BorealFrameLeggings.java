@@ -18,7 +18,7 @@ public class BorealFrameLeggings implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 33.0);
         this.baseStats.put(StatType.HEALTH, 25.0);
-        this.baseStats.put(StatType.SPEED, -0.01);
+        this.baseStats.put(StatType.SPEED, -10.0);
     }
 
     @Override

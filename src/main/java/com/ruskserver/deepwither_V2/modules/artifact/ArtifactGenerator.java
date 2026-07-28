@@ -118,7 +118,7 @@ public class ArtifactGenerator {
 
         // メインステータス
         lore.add(net.kyori.adventure.text.Component.text("【メインステータス】", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
-        lore.add(net.kyori.adventure.text.Component.text("  " + data.getMainStat().getDisplayName() + ": +" + String.format("%.1f", data.getMainStatValue()))
+        lore.add(net.kyori.adventure.text.Component.text("  " + data.getMainStat().getDisplayName() + ": +" + formatStatValue(data.getMainStat(), data.getMainStatValue()))
                 .color(NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
         lore.add(net.kyori.adventure.text.Component.empty());
 
@@ -126,7 +126,7 @@ public class ArtifactGenerator {
         if (!data.getSubStats().isEmpty()) {
             lore.add(net.kyori.adventure.text.Component.text("【サブステータス】", NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
             for (Map.Entry<StatType, Double> entry : data.getSubStats().entrySet()) {
-                lore.add(net.kyori.adventure.text.Component.text("  ・" + entry.getKey().getDisplayName() + ": +" + String.format("%.1f", entry.getValue()))
+                lore.add(net.kyori.adventure.text.Component.text("  ・" + entry.getKey().getDisplayName() + ": +" + formatStatValue(entry.getKey(), entry.getValue()))
                         .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
             }
             lore.add(net.kyori.adventure.text.Component.empty());
@@ -145,6 +145,10 @@ public class ArtifactGenerator {
 
         meta.lore(lore);
         item.setItemMeta(meta);
+    }
+
+    private String formatStatValue(StatType type, double value) {
+        return type == StatType.SPEED ? String.format("%.1f%%", value) : String.format("%.1f", value);
     }
 
     private double generateStatValue(StatType stat, ItemRarity rarity) {

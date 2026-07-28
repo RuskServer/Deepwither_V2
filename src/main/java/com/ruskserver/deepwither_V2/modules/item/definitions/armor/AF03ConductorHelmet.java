@@ -20,7 +20,7 @@ public class AF03ConductorHelmet implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 7.0);
         this.baseStats.put(StatType.MAGIC_DAMAGE, 3.0);
         this.baseStats.put(StatType.MAX_MANA, 40.0);
-        this.baseStats.put(StatType.SPEED, -0.01);
+        this.baseStats.put(StatType.SPEED, -10.0);
     }
 
     @Override

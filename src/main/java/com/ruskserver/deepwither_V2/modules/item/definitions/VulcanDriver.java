@@ -20,7 +20,7 @@ public class VulcanDriver implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 0.8);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 12.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
-        this.baseStats.put(StatType.SPEED, -0.01);
+        this.baseStats.put(StatType.SPEED, -10.0);
     }
 
     @Override

@@ -20,6 +20,7 @@ public class AfSpreadCaster implements WandItem {
     public AfSpreadCaster() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.MAGIC_DAMAGE, 18.0);
+        this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         this.baseStats.put(StatType.MAX_MANA, 30.0);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 10.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 4.0);

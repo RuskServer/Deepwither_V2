@@ -180,6 +180,7 @@ public class MainMenuGui implements GuiView {
         lore.add(statLine("魔法防御力", statManager.getTotalStat(player, StatType.MAGIC_DEFENSE), NamedTextColor.DARK_AQUA, false));
         lore.add(statLine("クリティカル率", statManager.getTotalStat(player, StatType.CRITICAL_CHANCE) * 100.0, NamedTextColor.GOLD, true));
         lore.add(statLine("クリティカル倍率", statManager.getTotalStat(player, StatType.CRITICAL_DAMAGE) * 100.0, NamedTextColor.GOLD, true));
+        lore.add(statLine("移動速度", statManager.getTotalStat(player, StatType.SPEED), NamedTextColor.AQUA, true));
 
         meta.lore(lore);
         item.setItemMeta(meta);

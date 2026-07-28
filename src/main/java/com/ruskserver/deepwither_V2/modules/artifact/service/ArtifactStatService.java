@@ -146,7 +146,7 @@ public class ArtifactStatService implements Listener, PlayerLifecycleTask {
                         statManager.setModifier(uuid, StatType.DEFENSE, sourceId2pc, 25.0, ModifierType.ADDITIVE);
                     }
                     case LUNAR_SKIRMISHER -> {
-                        statManager.setModifier(uuid, StatType.SPEED, sourceId2pc, 0.002, ModifierType.ADDITIVE);
+                        statManager.setModifier(uuid, StatType.SPEED, sourceId2pc, 2.0, ModifierType.ADDITIVE);
                         statManager.setModifier(uuid, StatType.CRITICAL_DAMAGE, sourceId2pc, 0.10, ModifierType.MULTIPLICATIVE);
                     }
                     case ETERNAL_HEARTS -> {

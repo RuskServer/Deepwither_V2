@@ -20,7 +20,7 @@ public class HammerMk1 implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 0.95);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 3.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
-        this.baseStats.put(StatType.SPEED, -0.02);
+        this.baseStats.put(StatType.SPEED, -20.0);
     }
 
     @Override

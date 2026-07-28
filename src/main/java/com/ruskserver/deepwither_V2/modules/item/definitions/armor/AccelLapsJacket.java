@@ -17,8 +17,8 @@ public class AccelLapsJacket implements CustomItem {
     public AccelLapsJacket() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 28.0);
-        this.baseStats.put(StatType.SPEED, 0.005);
-        this.baseStats.put(StatType.ATTACK_SPEED, 8.0);
+        this.baseStats.put(StatType.SPEED, 5.0);
+        this.baseStats.put(StatType.ATTACK_SPEED, 0.08);
     }
 
     @Override

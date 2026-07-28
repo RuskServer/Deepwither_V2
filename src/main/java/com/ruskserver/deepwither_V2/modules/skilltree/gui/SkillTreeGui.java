@@ -161,7 +161,7 @@ public class SkillTreeGui implements Listener {
         boolean available = !maxed && requirementsMet && !conflicted;
         Skill linkedSkill = node.getSkillId() == null ? null : skillRegistry.get(node.getSkillId());
 
-        Material material = node.getIcon();
+        Material material = linkedSkill == null ? node.getIcon() : linkedSkill.getIcon();
         if (node.getType() == SkillTreeNodeType.SKILL && linkedSkill == null) {
             material = Material.BARRIER;
             available = false;
@@ -174,7 +174,8 @@ public class SkillTreeGui implements Listener {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         NamedTextColor nameColor = learned ? NamedTextColor.GREEN : available ? NamedTextColor.YELLOW : NamedTextColor.RED;
-        meta.displayName(Component.text(node.getDisplayName(), nameColor).decoration(TextDecoration.ITALIC, false));
+        String displayName = linkedSkill == null ? node.getDisplayName() : linkedSkill.getDisplayName();
+        meta.displayName(Component.text(displayName, nameColor).decoration(TextDecoration.ITALIC, false));
 
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("ID: " + node.getId(), NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
@@ -184,16 +185,9 @@ public class SkillTreeGui implements Listener {
             lore.add(Component.text("スキル: " + skillLabel, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
         }
         lore.add(Component.empty());
-        for (String line : node.getDescription()) {
+        List<String> description = linkedSkill == null ? node.getDescription() : linkedSkill.getDescription();
+        for (String line : description) {
             lore.add(Component.text(line, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-        }
-        // ノード説明とは別に、実際に解放されるスキルの効果説明も表示する。
-        if (linkedSkill != null && !linkedSkill.getDescription().isEmpty()) {
-            lore.add(Component.empty());
-            lore.add(Component.text("スキル説明:", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
-            for (String line : linkedSkill.getDescription()) {
-                lore.add(Component.text(line, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-            }
         }
         lore.add(Component.empty());
         lore.add(Component.text("Lv: " + level + "/" + node.getMaxLevel(), NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));

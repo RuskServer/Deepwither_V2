@@ -73,8 +73,8 @@ public class SkillTreeService implements Listener, PlayerLifecycleTask {
     }
 
     public int getSkillLevel(Player player, String skillId) {
-        SkillTreeNode node = treeRegistry.getNodeBySkillId(skillId);
-        if (node == null) {
+        var nodes = treeRegistry.getNodesBySkillId(skillId);
+        if (nodes.isEmpty()) {
             return 0;
         }
         var characterOpt = characterService.getActiveCharacter(player.getUniqueId());
@@ -82,7 +82,11 @@ public class SkillTreeService implements Listener, PlayerLifecycleTask {
         var dataOpt = characterDataRepository.get(characterOpt.get().characterId());
         if (dataOpt.isEmpty()) return 0;
         CharacterSkillTreeProvider.SkillTreeData treeData = dataOpt.get().get(CharacterSkillTreeProvider.KEY);
-        return treeData == null ? 0 : treeData.getNodeLevel(node.getId());
+        if (treeData == null) return 0;
+        return nodes.stream()
+                .mapToInt(node -> treeData.getNodeLevel(node.getId()))
+                .max()
+                .orElse(0);
     }
 
     public UnlockResult unlock(Player player, String treeId, String nodeId) {
@@ -194,7 +198,10 @@ public class SkillTreeService implements Listener, PlayerLifecycleTask {
 
         recalculatePassives(player);
         Bukkit.getPluginManager().callEvent(new SkillTreeNodeUnlockEvent(player, tree, node, newLevel));
-        return UnlockResult.success(Component.text("ノード習得: " + node.getDisplayName(), NamedTextColor.GREEN));
+        String unlockedName = node.getSkillId() == null
+                ? node.getDisplayName()
+                : skillRegistry.get(node.getSkillId()).getDisplayName();
+        return UnlockResult.success(Component.text("ノード習得: " + unlockedName, NamedTextColor.GREEN));
     }
 
     public void saveCamera(Player player, String treeId, int x, int y) {

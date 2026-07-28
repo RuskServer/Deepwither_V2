@@ -18,7 +18,7 @@ public class GlacialFortressHelmet implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 38.0);
         this.baseStats.put(StatType.HEALTH, 50.0);
-        this.baseStats.put(StatType.SPEED, -0.02);
+        this.baseStats.put(StatType.SPEED, -20.0);
     }
 
     @Override
