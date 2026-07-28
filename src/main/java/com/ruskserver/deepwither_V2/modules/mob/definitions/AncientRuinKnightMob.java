@@ -35,9 +35,11 @@ public class AncientRuinKnightMob extends CustomMob {
             "rusted_abyss_boots"
     };
 
-    private static final double MAX_HP = 34.0;
-    private static final double BASE_ATTACK_DAMAGE = 4.0;
-    private static final double HEAVY_SLASH_DAMAGE = 6.0;
+    private static final double MAX_HP = 60.0;
+    private static final double BASE_ATTACK_DAMAGE = 7.0;
+    private static final double BASE_DEFENSE = 60.0;
+    private static final double BASE_MAGIC_DEFENSE = 35.0;
+    private static final double HEAVY_SLASH_DAMAGE = 12.0;
     private static final int EXP_REWARD = 120;
     private static final int HEAVY_SLASH_COOLDOWN = 180;
     private static final int HEAVY_SLASH_WINDUP = 16;
@@ -131,6 +133,16 @@ public class AncientRuinKnightMob extends CustomMob {
     @Override
     public double getBaseAttackDamage() {
         return BASE_ATTACK_DAMAGE;
+    }
+
+    @Override
+    public double getBaseDefense() {
+        return BASE_DEFENSE;
+    }
+
+    @Override
+    public double getBaseMagicDefense() {
+        return BASE_MAGIC_DEFENSE;
     }
 
     private void startHeavySlash(Player target) {

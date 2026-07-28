@@ -17,6 +17,7 @@ import com.ruskserver.deepwither_V2.modules.character.provider.SharedEconomyProv
 import com.ruskserver.deepwither_V2.modules.item.service.MenuCompassService;
 import com.ruskserver.deepwither_V2.modules.skill.provider.CharacterSkillSlotProvider;
 import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -349,8 +350,10 @@ public class CharacterService {
      * メインスレッドから呼び出すこと（Playerオブジェクトの取得に必要）。
      */
     public void saveCharacterState(Player player) {
-        getCachedActiveCharacter(player.getUniqueId()).ifPresent(character ->
-                saveCharacterState(player, character.characterId()));
+        getCachedActiveCharacter(player.getUniqueId()).ifPresent(character -> {
+            saveCharacterState(player, character.characterId());
+            saveEconomyForCharacter(player, character);
+        });
     }
 
     /**
@@ -427,10 +430,9 @@ public class CharacterService {
 
         // 現在のキャラクターをセーブ（まだアクティブキャラがいる場合）
         getCachedActiveCharacter(playerId).ifPresent(prev -> {
-            if (!prev.characterId().equals(characterId)) {
-                saveCharacterState(player, prev.characterId());
-                saveEconomyForCharacter(player, prev);
-            }
+            // 同じキャラクターの再選択でも、復元前に最新状態を保存して巻き戻りを防ぐ。
+            saveCharacterState(player, prev.characterId());
+            saveEconomyForCharacter(player, prev);
         });
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -549,6 +551,11 @@ public class CharacterService {
         if (!vaultAvailable || economy == null) return;
 
         double currentBalance = economy.getBalance(player);
+        if (!Double.isFinite(currentBalance) || currentBalance < 0.0) {
+            logger.warning("[CharacterService] Refusing to save invalid Vault balance for "
+                    + player.getUniqueId() + ": " + currentBalance);
+            return;
+        }
 
         if (isTrueHardcore(character)) {
             // 真HC: 現在のVault残高をDBに保存
@@ -603,16 +610,29 @@ public class CharacterService {
      */
     private void setVaultBalance(Player player, double targetBalance) {
         if (!vaultAvailable || economy == null) return;
+        if (!Double.isFinite(targetBalance) || targetBalance < 0.0) {
+            logger.warning("[CharacterService] Invalid target balance for "
+                    + player.getUniqueId() + ": " + targetBalance);
+            return;
+        }
 
         double currentBalance = economy.getBalance(player);
+        if (!Double.isFinite(currentBalance) || currentBalance < 0.0) {
+            logger.warning("[CharacterService] Invalid Vault balance for "
+                    + player.getUniqueId() + ": " + currentBalance);
+            return;
+        }
         double diff = targetBalance - currentBalance;
 
         if (Math.abs(diff) < 0.001) return; // ほぼ同じなら何もしない
 
-        if (diff > 0) {
-            economy.depositPlayer(player, diff);
-        } else {
-            economy.withdrawPlayer(player, -diff);
+        EconomyResponse response = diff > 0
+                ? economy.depositPlayer(player, diff)
+                : economy.withdrawPlayer(player, -diff);
+        if (!response.transactionSuccess()) {
+            logger.warning("[CharacterService] Failed to synchronize Vault balance for "
+                    + player.getUniqueId() + " (current=" + currentBalance
+                    + ", target=" + targetBalance + "): " + response.errorMessage);
         }
     }
 

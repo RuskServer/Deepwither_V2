@@ -31,14 +31,16 @@ public class AncientRuinEchoMageMob extends CustomMob {
 
     private static final String MOB_ID = "ancient_ruin_echo_mage";
     private static final String STAFF_ID = "astral_resonance_ru";
-    private static final double MAX_HP = 22.0;
+    private static final double MAX_HP = 42.0;
+    private static final double BASE_DEFENSE = 15.0;
+    private static final double BASE_MAGIC_DEFENSE = 25.0;
     private static final int EXP_REWARD = 140;
     private static final double TARGET_RANGE = 18.0;
-    private static final double BOLT_DAMAGE = 3.8;
+    private static final double BOLT_DAMAGE = 6.0;
     private static final double BOLT_SPEED = 0.75;
     private static final int BOLT_COOLDOWN = 70;
     private static final int BOLT_WINDUP = 12;
-    private static final double RUNE_DAMAGE = 5.0;
+    private static final double RUNE_DAMAGE = 8.0;
     private static final double RUNE_RADIUS = 2.5;
     private static final int RUNE_COOLDOWN = 220;
     private static final int RUNE_WINDUP = 24;
@@ -130,6 +132,16 @@ public class AncientRuinEchoMageMob extends CustomMob {
         dropGenerated(STAFF_ID, 0.05);
         dropGenerated("abyss_shard", 0.25);
         dropGenerated("artifact_box", 0.01);
+    }
+
+    @Override
+    public double getBaseDefense() {
+        return BASE_DEFENSE;
+    }
+
+    @Override
+    public double getBaseMagicDefense() {
+        return BASE_MAGIC_DEFENSE;
     }
 
     private void startBolt(Player target) {

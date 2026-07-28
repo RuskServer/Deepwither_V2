@@ -214,6 +214,16 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
                 statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE,
                         "mob_base_attack", baseAttackDamage, ModifierType.ADDITIVE);
             }
+            double baseDefense = mobLogic.getBaseDefense();
+            if (baseDefense > 0) {
+                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.DEFENSE,
+                        "mob_base_defense", baseDefense, ModifierType.ADDITIVE);
+            }
+            double baseMagicDefense = mobLogic.getBaseMagicDefense();
+            if (baseMagicDefense > 0) {
+                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.MAGIC_DEFENSE,
+                        "mob_base_magic_defense", baseMagicDefense, ModifierType.ADDITIVE);
+            }
 
             activeMobs.put(entity.getUniqueId(), mobLogic);
             return mobLogic;
@@ -242,6 +252,16 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             if (baseAttackDamage > 0) {
                 statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE,
                         "mob_base_attack", baseAttackDamage, ModifierType.ADDITIVE);
+            }
+            double baseDefense = mobLogic.getBaseDefense();
+            if (baseDefense > 0) {
+                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.DEFENSE,
+                        "mob_base_defense", baseDefense, ModifierType.ADDITIVE);
+            }
+            double baseMagicDefense = mobLogic.getBaseMagicDefense();
+            if (baseMagicDefense > 0) {
+                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.MAGIC_DEFENSE,
+                        "mob_base_magic_defense", baseMagicDefense, ModifierType.ADDITIVE);
             }
 
             activeMobs.put(entity.getUniqueId(), mobLogic);
@@ -297,7 +317,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             if (locationFilter.test(mob.getLocation())) {
                 UUID entityId = entry.getKey();
                 mob.entity.remove();           // エンティティをワールドから削除
-                statManager.removeModifier(entityId, com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE, "mob_base_attack");
+                statManager.removeProfile(entityId);
                 healthManager.cleanup(entityId);  // 仮想HPデータを解放
                 iterator.remove();             // activeMobsから除去
             }
@@ -404,7 +424,9 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             Bukkit.getPluginManager().callEvent(new CustomMobDeathEvent(mob, event.getEntity(), killer));
         }
         // StatManagerのモブ用モディファイアを削除
-        statManager.removeModifier(entityId, com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE, "mob_base_attack");
+        if (mob != null) {
+            statManager.removeProfile(entityId);
+        }
         // VirtualHealthManagerのメモリを解放
         lastPlayerDamagers.remove(entityId);
         healthManager.cleanup(entityId);

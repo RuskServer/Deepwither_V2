@@ -15,10 +15,15 @@ import com.ruskserver.deepwither_V2.modules.dungeon.generator.LootService;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.MobSpawnService;
 import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
 import com.sk89q.worldedit.math.BlockVector3;
+import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -59,6 +64,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     private final Map<UUID, String> playerToInstance = new HashMap<>();
     /** プレイヤーごとのダンジョン参加前の位置 */
     private final Map<UUID, Location> returnLocations = new HashMap<>();
+    private final Map<UUID, Location> pendingRespawnLocations = new HashMap<>();
     private final AtomicInteger instanceCounter = new AtomicInteger(0);
 
     private int tickTaskId = -1;
@@ -118,13 +124,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             return;
         }
 
-        tempWorld.setGameRuleValue("doDaylightCycle", "false");
-        tempWorld.setGameRuleValue("doWeatherCycle", "false");
-        tempWorld.setGameRuleValue("doMobSpawning", "false");
-        tempWorld.setGameRuleValue("doFireTick", "false");
-        tempWorld.setGameRuleValue("keepInventory", "true");
-        tempWorld.setGameRuleValue("doImmediateRespawn", "true");
-        tempWorld.setGameRuleValue("showDeathMessages", "false");
+        configureDungeonGameRules(tempWorld);
         tempWorld.setTime(6000);
         tempWorld.save();
 
@@ -178,6 +178,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         activeInstances.clear();
         playerToInstance.clear();
         returnLocations.clear();
+        pendingRespawnLocations.clear();
     }
 
     // ========================================================================
@@ -231,13 +232,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         }
 
         // ゲームルールを設定
-        dungeonWorld.setGameRuleValue("doDaylightCycle", "false");
-        dungeonWorld.setGameRuleValue("doWeatherCycle", "false");
-        dungeonWorld.setGameRuleValue("doMobSpawning", "false");
-        dungeonWorld.setGameRuleValue("doFireTick", "false");
-        dungeonWorld.setGameRuleValue("keepInventory", "true");
-        dungeonWorld.setGameRuleValue("doImmediateRespawn", "true");
-        dungeonWorld.setGameRuleValue("showDeathMessages", "false");
+        configureDungeonGameRules(dungeonWorld);
         dungeonWorld.setTime(6000);
         dungeonWorld.setDifficulty(org.bukkit.Difficulty.NORMAL);
 
@@ -299,10 +294,42 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         instance.addParticipant(playerId);
         playerToInstance.put(playerId, instanceId);
 
-        BlockVector3 origin = instance.getOrigin();
-        Location tpLoc = new Location(instance.getWorld(), origin.x() + 0.5, origin.y() + 1, origin.z() + 0.5);
-        player.teleport(tpLoc);
+        player.teleport(getEntrySpawnLocation(instance));
         return true;
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onDungeonPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getPlayer();
+        DungeonInstance instance = getPlayerInstance(player.getUniqueId());
+        if (instance == null) {
+            return;
+        }
+
+        // Keep-inventory is enforced here as well as by the world rule.
+        event.setKeepInventory(true);
+        event.getDrops().clear();
+        event.setKeepLevel(true);
+        event.setDroppedExp(0);
+
+        if (instance.consumeLife() <= 0) {
+            wipeDungeon(instance);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onDungeonPlayerRespawn(PlayerRespawnEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        Location returnLocation = pendingRespawnLocations.remove(playerId);
+        if (returnLocation != null && returnLocation.getWorld() != null) {
+            event.setRespawnLocation(returnLocation);
+            return;
+        }
+
+        DungeonInstance instance = getPlayerInstance(playerId);
+        if (instance != null && instance.isActive()) {
+            event.setRespawnLocation(getEntrySpawnLocation(instance));
+        }
     }
 
     public void leaveDungeon(UUID playerId) {
@@ -464,11 +491,25 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         activeInstances.remove(instance.getInstanceId());
     }
 
+    private void wipeDungeon(DungeonInstance instance) {
+        for (UUID participantId : new ArrayList<>(instance.getParticipants())) {
+            teleportBack(participantId);
+            instance.removeParticipant(participantId);
+            playerToInstance.remove(participantId);
+        }
+        activeInstances.remove(instance.getInstanceId());
+        scheduleWorldDelete(instance);
+    }
+
     private void teleportBack(UUID playerId) {
         Player player = plugin.getServer().getPlayer(playerId);
         Location returnLoc = returnLocations.remove(playerId);
         if (player != null && player.isOnline() && returnLoc != null) {
-            player.teleport(returnLoc);
+            if (player.isDead()) {
+                pendingRespawnLocations.put(playerId, returnLoc);
+            } else {
+                player.teleport(returnLoc);
+            }
         }
     }
 
@@ -520,6 +561,25 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
     private static Location toLocation(World world, BlockVector3 pos) {
         return new Location(world, pos.x() + 0.5, pos.y() + 0.5, pos.z() + 0.5);
+    }
+
+    private static Location getEntrySpawnLocation(DungeonInstance instance) {
+        DungeonLayout.PlacedRoom entryRoom = instance.getLayout().getPlacedRooms().getFirst();
+        BlockVector3 localEntry = entryRoom.schematic().entryTeleport();
+        BlockVector3 worldEntry = localEntry != null
+                ? entryRoom.origin().add(DungeonGenerator.rotatePosition(localEntry, entryRoom.rotation()))
+                : entryRoom.origin().add(0, 1, 0);
+        return new Location(instance.getWorld(), worldEntry.x() + 0.5, worldEntry.y(), worldEntry.z() + 0.5);
+    }
+
+    private static void configureDungeonGameRules(World world) {
+        world.setGameRule(GameRules.ADVANCE_TIME, false);
+        world.setGameRule(GameRules.ADVANCE_WEATHER, false);
+        world.setGameRule(GameRules.SPAWN_MOBS, false);
+        world.setGameRule(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0);
+        world.setGameRule(GameRules.KEEP_INVENTORY, true);
+        world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
+        world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
     }
 
     private static String pendingDoorSummary(DungeonInstance instance) {

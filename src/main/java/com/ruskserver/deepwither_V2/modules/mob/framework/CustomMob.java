@@ -207,4 +207,18 @@ public abstract class CustomMob {
     public double getBaseAttackDamage() {
         return 0.0;
     }
+
+    /**
+     * このモブの基礎物理防御力を返します。
+     */
+    public double getBaseDefense() {
+        return 0.0;
+    }
+
+    /**
+     * このモブの基礎魔法防御力を返します。
+     */
+    public double getBaseMagicDefense() {
+        return 0.0;
+    }
 }
