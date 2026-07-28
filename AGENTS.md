@@ -13,6 +13,7 @@ Deepwither_V2 / Echoes of Aether Core Engine で作業するエージェント�
 * Java定義スキル、スキルキャスト、スキルイベント: `docs/skill-guide.md`
 * Java定義スキルツリー、スキル解放、パッシブノード: `docs/skilltree-guide.md`
 * Java定義カスタムモブ、Regionスポーン設定: `docs/custom-mob-guide.md`
+* ダンジョン定義、ルームスケマティック、ボス部屋: `docs/dungeon-guide.md`
 * 小規模機能を1ファイルで作る場合: `docs/example-single-file-module.md`
 
 ## アーキテクチャ方針

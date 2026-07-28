@@ -10,6 +10,7 @@ import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.party.PartyManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -191,6 +192,7 @@ public class DungeonPortalManager implements Startable {
 
     private boolean canSeePortal(Player player, PortalLocation portal) {
         if (hasMapForPortal(player, portal)) return true;
+        if (portalToInstance.containsKey(portal.id())) return true;
         var party = partyManager.getParty(player);
         if (party != null) {
             for (UUID memberId : party.getMembers()) {
@@ -221,17 +223,12 @@ public class DungeonPortalManager implements Startable {
         World world = player.getServer().getWorld(portal.world());
         if (world == null) return;
         Location center = new Location(world, portal.x(), portal.y(), portal.z());
-        double time = System.currentTimeMillis() / 1000.0;
-        for (int i = 0; i < 3; i++) {
-            double angle = time * 2.0 + (i * Math.PI * 2 / 3);
-            double radius = 1.2;
-            double x = center.getX() + Math.cos(angle) * radius;
-            double z = center.getZ() + Math.sin(angle) * radius;
-            double y = center.getY() + 0.5 + i * 0.8;
-            player.spawnParticle(Particle.END_ROD, x, y, z, 0, 0, 0, 0, 0.02);
-            player.spawnParticle(Particle.PORTAL, x, y, z, 1, 0, 0, 0, 0.01);
-        }
-        player.spawnParticle(Particle.END_ROD, center.getX(), center.getY() + 0.5, center.getZ(), 0, 0, 0.5, 0, 0.05);
+        DungeonPortalVisualHelper.spawnPortal(
+                player,
+                center,
+                Color.fromRGB(90, 180, 255),
+                Color.fromRGB(155, 90, 255)
+        );
     }
 
     private void spawnHintParticle(Player player, PortalLocation portal) {

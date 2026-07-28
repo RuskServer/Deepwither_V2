@@ -25,7 +25,6 @@ import java.util.UUID;
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class DungeonPortalListener implements Listener {
 
-    private static final double ENTRY_RANGE = 2.0;
     private static final long ENTRY_COOLDOWN_MS = 30_000L;
 
     private final JavaPlugin plugin;
@@ -66,11 +65,8 @@ public class DungeonPortalListener implements Listener {
             World world = player.getServer().getWorld(portal.world());
             if (world == null || !player.getWorld().equals(world)) continue;
 
-            double dx = player.getLocation().getX() - portal.x();
-            double dz = player.getLocation().getZ() - portal.z();
-            double dist = Math.sqrt(dx * dx + dz * dz);
-
-            if (dist > ENTRY_RANGE) continue;
+            Location portalBase = new Location(world, portal.x(), portal.y(), portal.z());
+            if (!DungeonPortalVisualHelper.isInside(player.getLocation(), portalBase)) continue;
 
             if (!canEnterPortal(player, portal)) continue;
 

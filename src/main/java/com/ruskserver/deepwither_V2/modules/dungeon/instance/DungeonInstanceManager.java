@@ -14,14 +14,19 @@ import com.ruskserver.deepwither_V2.modules.dungeon.generator.DungeonLayout;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.LootService;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.MobSpawnService;
 import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
+import com.ruskserver.deepwither_V2.modules.dungeon.portal.DungeonPortalVisualHelper;
 import com.sk89q.worldedit.math.BlockVector3;
+import org.bukkit.Color;
 import org.bukkit.GameRules;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -65,6 +70,8 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     /** プレイヤーごとのダンジョン参加前の位置 */
     private final Map<UUID, Location> returnLocations = new HashMap<>();
     private final Map<UUID, Location> pendingRespawnLocations = new HashMap<>();
+    /** ボスエンティティと、それが属するインスタンス・赤石マーカー座標の対応 */
+    private final Map<UUID, BossContext> activeBosses = new HashMap<>();
     private final AtomicInteger instanceCounter = new AtomicInteger(0);
 
     private int tickTaskId = -1;
@@ -179,6 +186,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         playerToInstance.clear();
         returnLocations.clear();
         pendingRespawnLocations.clear();
+        activeBosses.clear();
     }
 
     // ========================================================================
@@ -251,11 +259,8 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             return null;
         }
 
-        // 入口ルームのモブ・宝をスポーン
+        // 入口ルームの通常モブ・宝をスポーン
         mobSpawnService.spawnMobs(dungeonWorld, layout.getAllMobSpawnPositions(), definition.mobId(), modifierContext);
-        for (var bossPos : layout.getBossSpawnPositions()) {
-            bossSpawnService.spawnBoss(dungeonWorld, bossPos, definition.bossMobId());
-        }
         lootService.placeChests(dungeonWorld, layout.getLootPositions(), definition.lootTableId(), modifierContext);
 
         // モディファイアーによるライフ補正
@@ -332,12 +337,43 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onDungeonBossDeath(EntityDeathEvent event) {
+        BossContext bossContext = activeBosses.remove(event.getEntity().getUniqueId());
+        if (bossContext == null) {
+            return;
+        }
+
+        DungeonInstance instance = activeInstances.get(bossContext.instanceId());
+        if (instance == null || !instance.isActive()) {
+            return;
+        }
+
+        instance.clear(bossContext.portalPosition());
+        Location portalBase = toPortalLocation(instance.getWorld(), bossContext.portalPosition());
+        for (UUID participantId : instance.getParticipants()) {
+            Player participant = plugin.getServer().getPlayer(participantId);
+            if (participant == null || !participant.isOnline()) {
+                continue;
+            }
+            participant.sendMessage("§6§lボスを撃破した！ §e出現したポータルから脱出できます。");
+            participant.playSound(portalBase, Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 1.15f);
+        }
+        log.info("[DungeonInstanceManager] ボス撃破・脱出ポータル有効化: "
+                + instance.getInstanceId() + " at " + bossContext.portalPosition());
+    }
+
     public void leaveDungeon(UUID playerId) {
         String instanceId = playerToInstance.remove(playerId);
         if (instanceId != null) {
             DungeonInstance instance = activeInstances.get(instanceId);
             if (instance != null) {
                 instance.removeParticipant(playerId);
+                if (instance.getParticipants().isEmpty()) {
+                    activeInstances.remove(instanceId);
+                    removeBossTracking(instanceId);
+                    scheduleWorldDelete(instance);
+                }
             }
         }
         teleportBack(playerId);
@@ -362,7 +398,13 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
     private void tick() {
         for (DungeonInstance instance : new ArrayList<>(activeInstances.values())) {
-            if (!instance.isActive()) continue;
+            if (instance.getState() == DungeonState.CLEARED) {
+                tickExitPortal(instance);
+                continue;
+            }
+            if (!instance.isActive()) {
+                continue;
+            }
 
             // タイムアウトチェック
             if (instance.isTimedOut()) {
@@ -375,6 +417,51 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             if (instance.hasPendingDoors()) {
                 tryTriggerGeneration(instance);
             }
+        }
+    }
+
+    private void tickExitPortal(DungeonInstance instance) {
+        BlockVector3 portalPosition = instance.getExitPortalPosition();
+        World world = instance.getWorld();
+        if (portalPosition == null || world == null) {
+            return;
+        }
+
+        Location portalBase = toPortalLocation(world, portalPosition);
+        for (UUID participantId : new ArrayList<>(instance.getParticipants())) {
+            Player player = plugin.getServer().getPlayer(participantId);
+            if (player == null || !player.isOnline() || !player.getWorld().equals(world)) {
+                continue;
+            }
+
+            if (player.getLocation().distanceSquared(portalBase) <= 24.0 * 24.0) {
+                DungeonPortalVisualHelper.spawnPortal(
+                        player,
+                        portalBase,
+                        Color.fromRGB(190, 110, 255),
+                        Color.fromRGB(90, 220, 255)
+                );
+            }
+
+            if (DungeonPortalVisualHelper.isInside(player.getLocation(), portalBase)) {
+                exitThroughPortal(instance, player);
+            }
+        }
+    }
+
+    private void exitThroughPortal(DungeonInstance instance, Player player) {
+        UUID playerId = player.getUniqueId();
+        player.playSound(player.getLocation(), Sound.BLOCK_PORTAL_TRAVEL, 0.8f, 1.2f);
+        player.sendMessage("§bダンジョンを脱出しました。");
+
+        instance.removeParticipant(playerId);
+        playerToInstance.remove(playerId);
+        teleportBack(playerId);
+
+        if (instance.getParticipants().isEmpty()) {
+            activeInstances.remove(instance.getInstanceId());
+            removeBossTracking(instance.getInstanceId());
+            scheduleWorldDelete(instance);
         }
     }
 
@@ -443,8 +530,11 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
             // モブ・宝をスポーン
             mobSpawnService.spawnMobs(instance.getWorld(), result.placementResult().mobSpawnWorldPositions(), instance.getDefinition().mobId(), instance.getModifierContext());
-            if (result.placementResult().bossSpawnWorldPos() != null) {
-                bossSpawnService.spawnBoss(instance.getWorld(), result.placementResult().bossSpawnWorldPos(), instance.getDefinition().bossMobId());
+            if (isBossRoom(instance, result)) {
+                for (DoorConnection remainingDoor : instance.drainPendingDoors()) {
+                    generator.sealDoor(instance.getWorld(), remainingDoor);
+                }
+                spawnTrackedBoss(instance, result.placementResult().bossSpawnWorldPos());
             }
             lootService.placeChests(instance.getWorld(), result.placementResult().lootWorldPositions(), instance.getDefinition().lootTableId(), instance.getModifierContext());
 
@@ -465,6 +555,37 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         } catch (Exception e) {
             log.severe("[DungeonInstanceManager] ルーム生成例外: " + e.getMessage());
         }
+    }
+
+    private boolean isBossRoom(DungeonInstance instance, GenerationResult result) {
+        String bossSchematic = instance.getDefinition().bossRoomSchematic();
+        return bossSchematic != null
+                && !bossSchematic.isBlank()
+                && result.placedRoom().schematic().schematicId()
+                .equals(instance.getDefinition().id() + ":" + bossSchematic);
+    }
+
+    private void spawnTrackedBoss(DungeonInstance instance, BlockVector3 bossPosition) {
+        if (bossPosition == null) {
+            log.severe("[DungeonInstanceManager] ボスルームにREDSTONE_BLOCKマーカーがありません: "
+                    + instance.getDefinition().bossRoomSchematic());
+            return;
+        }
+
+        Entity boss = bossSpawnService.spawnBoss(
+                instance.getWorld(),
+                bossPosition,
+                instance.getDefinition().bossMobId()
+        );
+        if (boss == null) {
+            log.severe("[DungeonInstanceManager] ボスのスポーンに失敗: " + instance.getInstanceId());
+            return;
+        }
+
+        activeBosses.put(
+                boss.getUniqueId(),
+                new BossContext(instance.getInstanceId(), bossPosition)
+        );
     }
 
     // ========================================================================
@@ -489,6 +610,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             playerToInstance.remove(playerId);
         }
         activeInstances.remove(instance.getInstanceId());
+        removeBossTracking(instance.getInstanceId());
     }
 
     private void wipeDungeon(DungeonInstance instance) {
@@ -498,7 +620,12 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             playerToInstance.remove(participantId);
         }
         activeInstances.remove(instance.getInstanceId());
+        removeBossTracking(instance.getInstanceId());
         scheduleWorldDelete(instance);
+    }
+
+    private void removeBossTracking(String instanceId) {
+        activeBosses.entrySet().removeIf(entry -> entry.getValue().instanceId().equals(instanceId));
     }
 
     private void teleportBack(UUID playerId) {
@@ -563,6 +690,10 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         return new Location(world, pos.x() + 0.5, pos.y() + 0.5, pos.z() + 0.5);
     }
 
+    private static Location toPortalLocation(World world, BlockVector3 pos) {
+        return new Location(world, pos.x() + 0.5, pos.y(), pos.z() + 0.5);
+    }
+
     private static Location getEntrySpawnLocation(DungeonInstance instance) {
         DungeonLayout.PlacedRoom entryRoom = instance.getLayout().getPlacedRooms().getFirst();
         BlockVector3 localEntry = entryRoom.schematic().entryTeleport();
@@ -584,5 +715,8 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
     private static String pendingDoorSummary(DungeonInstance instance) {
         return instance.getPendingDoors().size() + " pending doors";
+    }
+
+    private record BossContext(String instanceId, BlockVector3 portalPosition) {
     }
 }

@@ -48,6 +48,8 @@ public class DungeonInstance {
 
     private final DungeonModifierContext modifierContext;
     private final long effectiveTimeLimitMillis;
+    /** ボス撃破後に有効化される脱出ポータルのワールド座標 */
+    private BlockVector3 exitPortalPosition;
 
     public DungeonInstance(
             String instanceId,
@@ -121,6 +123,16 @@ public class DungeonInstance {
     }
 
     /**
+     * 残っている未接続ドアをすべて取り出します。
+     * ボス部屋が確定した際、別分岐から追加のボス部屋が生成されるのを防ぐために使用します。
+     */
+    public List<DoorConnection> drainPendingDoors() {
+        List<DoorConnection> drained = List.copyOf(pendingDoors);
+        pendingDoors.clear();
+        return drained;
+    }
+
+    /**
      * 深度を1増やします。
      */
     public void incrementDepth() {
@@ -190,6 +202,17 @@ public class DungeonInstance {
     }
 
     /**
+     * ダンジョンをクリア状態にし、ボス部屋内の脱出ポータルを有効化します。
+     */
+    public void clear(BlockVector3 exitPortalPosition) {
+        if (exitPortalPosition == null) {
+            throw new IllegalArgumentException("exitPortalPosition は null にできません");
+        }
+        this.exitPortalPosition = exitPortalPosition;
+        state = DungeonState.CLEARED;
+    }
+
+    /**
      * タイムアウト処理を行います。
      */
     public void timeout() {
@@ -254,6 +277,7 @@ public class DungeonInstance {
     public Set<UUID> getParticipants() { return Collections.unmodifiableSet(participants); }
     public DungeonModifierContext getModifierContext() { return modifierContext; }
     public long getEffectiveTimeLimitMillis() { return effectiveTimeLimitMillis; }
+    public BlockVector3 getExitPortalPosition() { return exitPortalPosition; }
 
     /**
      * ダンジョンが進行中か（ACTIVE のみ）を判定します。

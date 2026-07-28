@@ -133,21 +133,20 @@ public class DungeonGenerator {
             Random rng,
             int consecutiveCorridors
     ) {
-        if (currentDepth >= definition.maxDepth()) {
+        // 最後の深度は必ずボスルームに予約する。
+        // ボスルームは通常のRoomSlotやドアタグには依存せず、専用定義から直接配置する。
+        if (definition.hasBossRoom() && currentDepth >= definition.maxDepth() - 1) {
+            GenerationResult bossResult = placeBossRoom(definition, world, layout, fromDoor);
+            if (bossResult != null) {
+                return bossResult;
+            }
+            log.warning("[DungeonGenerator] 最深部へのボスルーム配置に失敗: "
+                    + definition.id() + " door=" + fromDoor.worldPosition());
             return placeDeadEnd(definition, world, layout, fromDoor);
         }
 
-        // ボスルーム判定
-        if (definition.hasBossRoom() && currentDepth >= Math.max(1, definition.maxDepth() / 2)) {
-            List<String> bossTags = definition.roomSlots().stream()
-                    .filter(slot -> slot.type() == RoomType.BOSS)
-                    .findFirst()
-                    .map(RoomSlot::tags)
-                    .orElse(List.of());
-            if (fromDoor.door().acceptsAny(bossTags)) {
-                GenerationResult bossResult = placeBossRoom(definition, world, layout, fromDoor);
-                if (bossResult != null) return bossResult;
-            }
+        if (currentDepth >= definition.maxDepth()) {
+            return placeDeadEnd(definition, world, layout, fromDoor);
         }
 
         // 確率的分岐判定（branchChance を実際の確率として使用）
