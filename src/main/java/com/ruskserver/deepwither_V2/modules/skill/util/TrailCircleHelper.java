@@ -19,6 +19,10 @@ public final class TrailCircleHelper {
 
     private static final Vector UP = new Vector(0, 1, 0);
     private static final double MAX_SHOCKWAVE_SEGMENT_LENGTH = 0.5;
+    private static final int MAX_AUTOMATIC_SHOCKWAVE_POINTS = 96;
+    private static final double SHOCKWAVE_TRAILING_GAP = 0.22;
+    private static final double SHOCKWAVE_TRAILING_HEIGHT = 0.08;
+    private static final int SHOCKWAVE_TRAIL_DURATION = 2;
 
     private TrailCircleHelper() {}
 
@@ -187,20 +191,60 @@ public final class TrailCircleHelper {
 
         Location fixedCenter = center.clone();
         Vector fixedNormal = normal.clone();
+        Basis basis = createBasis(fixedNormal, startAngleDeg);
+        Vector trailingCenterOffset = fixedNormal.clone().normalize().multiply(SHOCKWAVE_TRAILING_HEIGHT);
+        double largestRadius = Math.max(startRadius, endRadius);
+        int leadingPoints = Math.max(
+                minimumPoints,
+                Math.min(
+                        MAX_AUTOMATIC_SHOCKWAVE_POINTS,
+                        (int) Math.ceil(2.0 * Math.PI * largestRadius / MAX_SHOCKWAVE_SEGMENT_LENGTH)
+                )
+        );
+        int trailingPoints = Math.max(3, leadingPoints / 3);
+        double movementDirection = Math.signum(endRadius - startRadius);
 
         return new BukkitRunnable() {
             private int tick;
 
             @Override
             public void run() {
-                double progress = (double) tick / expansionTicks;
-                double radius = startRadius + (endRadius - startRadius) * easeOutCubic(progress);
-                int points = Math.max(
-                        minimumPoints,
-                        (int) Math.ceil(2.0 * Math.PI * radius / MAX_SHOCKWAVE_SEGMENT_LENGTH)
+                double currentProgress = (double) tick / expansionTicks;
+                double nextProgress = Math.min(1.0, (double) (tick + 1) / expansionTicks);
+                double currentRadius = interpolateRadius(
+                        startRadius, endRadius, easeOutCubic(currentProgress)
+                );
+                double nextRadius = interpolateRadius(
+                        startRadius, endRadius, easeOutCubic(nextProgress)
                 );
 
-                spawnCircle(fixedCenter, radius, color, 2, points, fixedNormal, startAngleDeg);
+                spawnRadialTransitionRing(
+                        fixedCenter,
+                        currentRadius,
+                        nextRadius,
+                        color,
+                        SHOCKWAVE_TRAIL_DURATION,
+                        leadingPoints,
+                        basis,
+                        0.0
+                );
+
+                if (movementDirection != 0.0) {
+                    double trailingOffset = -movementDirection * SHOCKWAVE_TRAILING_GAP;
+                    double trailingCurrentRadius = Math.max(0.05, currentRadius + trailingOffset);
+                    double trailingNextRadius = Math.max(0.05, nextRadius + trailingOffset);
+                    double angleOffset = 180.0 / trailingPoints;
+                    spawnRadialTransitionRing(
+                            fixedCenter.clone().add(trailingCenterOffset),
+                            trailingCurrentRadius,
+                            trailingNextRadius,
+                            color,
+                            SHOCKWAVE_TRAIL_DURATION + 1,
+                            trailingPoints,
+                            basis,
+                            angleOffset
+                    );
+                }
 
                 if (tick >= expansionTicks) {
                     cancel();
@@ -209,6 +253,33 @@ public final class TrailCircleHelper {
                 tick++;
             }
         }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private static void spawnRadialTransitionRing(
+            Location center,
+            double fromRadius,
+            double toRadius,
+            Color color,
+            int duration,
+            int points,
+            Basis basis,
+            double angleOffsetDeg) {
+        World world = center.getWorld();
+        if (world == null || fromRadius <= 0 || toRadius <= 0 || points < 3) {
+            return;
+        }
+
+        double stepDeg = 360.0 / points;
+        for (int i = 0; i < points; i++) {
+            double angleDeg = angleOffsetDeg + stepDeg * i;
+            Location from = pointOnCircle(center, fromRadius, angleDeg, basis);
+            Location to = pointOnCircle(center, toRadius, angleDeg, basis);
+            spawnTrail(world, from, to, color, duration);
+        }
+    }
+
+    private static double interpolateRadius(double startRadius, double endRadius, double progress) {
+        return startRadius + (endRadius - startRadius) * progress;
     }
 
     /**
