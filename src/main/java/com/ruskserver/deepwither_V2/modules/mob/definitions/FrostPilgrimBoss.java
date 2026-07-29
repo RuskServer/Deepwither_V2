@@ -20,6 +20,10 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarFlag;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -92,6 +96,8 @@ public class FrostPilgrimBoss extends CustomMob {
     private int glacialChargeWindup = 0;
     private Player glacialChargeTarget = null;
     private boolean glacialCharging = false;
+    private int glacialChargeTicks = 0;
+    private Vector glacialChargeDirection = null;
 
     private boolean blizzardActive = false;
     private int blizzardTicks = 0;
@@ -101,6 +107,7 @@ public class FrostPilgrimBoss extends CustomMob {
     private int currentPhase = 1;
     private boolean phaseTransitioning = false;
     private int phaseTransitionTicks = 0;
+    private BossBar bossBar;
 
     private final DamagePipelineManager damageManager;
     private final StatManager statManager;
@@ -145,11 +152,35 @@ public class FrostPilgrimBoss extends CustomMob {
 
         statManager.setModifier(uuid, StatType.DEFENSE, "boss_defense", BASE_DEFENSE, ModifierType.ADDITIVE);
         statManager.setModifier(uuid, StatType.MAGIC_DEFENSE, "boss_magic_defense", BASE_MAGIC_DEFENSE, ModifierType.ADDITIVE);
+
+        bossBar = Bukkit.createBossBar(
+                bossBarTitle(),
+                BarColor.BLUE,
+                BarStyle.SEGMENTED_10
+        );
+        bossBar.setProgress(1.0);
+        bossBar.setVisible(true);
+        updateBossBar();
+
+        Location spawnLoc = getLocation();
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, spawnLoc.clone().add(0, 0.15, 0),
+                1.0, 8.0, ICE_PALE, 18, 28
+        );
+        spawnLoc.getWorld().playSound(spawnLoc, Sound.ENTITY_WITHER_SPAWN, 1.7f, 0.55f);
+        spawnLoc.getWorld().playSound(spawnLoc, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.4f, 0.65f);
     }
 
     @Override
     public void onTick() {
-        if (entity == null || !entity.isValid() || isDead()) return;
+        if (entity == null || !entity.isValid() || isDead()) {
+            removeBossBar();
+            return;
+        }
+
+        if (ticksLived % 5 == 0) {
+            updateBossBar();
+        }
 
         double hpRatio = getHealth() / getMaxHealth();
         int newPhase = hpRatio <= PHASE_3_THRESHOLD ? 3 : hpRatio <= PHASE_2_THRESHOLD ? 2 : 1;
@@ -233,10 +264,17 @@ public class FrostPilgrimBoss extends CustomMob {
 
     @Override
     public void onDeath() {
+        removeBossBar();
+
         Location loc = getLocation();
         loc.getWorld().spawnParticle(Particle.CLOUD, loc.add(0, 1, 0), 8, 2, 2, 2, 0.2);
         loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc, 100, 5, 3, 5, 0.5);
         loc.getWorld().playSound(loc, Sound.ENTITY_WITHER_DEATH, 2.0f, 0.5f);
+        loc.getWorld().playSound(loc, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.8f, 0.5f);
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, loc.clone().add(0, 0.15, 0),
+                1.0, 12.0, ICE_WHITE, 24, 36
+        );
 
         statManager.removeModifier(uuid, StatType.DEFENSE, "boss_defense");
         statManager.removeModifier(uuid, StatType.MAGIC_DEFENSE, "boss_magic_defense");
@@ -268,12 +306,24 @@ public class FrostPilgrimBoss extends CustomMob {
 
         Location loc = getLocation();
         loc.getWorld().playSound(loc, Sound.ENTITY_WITHER_SPAWN, 1.5f, 0.8f);
+        loc.getWorld().playSound(loc, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.5f,
+                newPhase == 3 ? 0.45f : 0.65f);
+
+        if (bossBar != null) {
+            bossBar.setTitle(bossBarTitle());
+            bossBar.setColor(newPhase == 3 ? BarColor.WHITE : BarColor.BLUE);
+            bossBar.addFlag(BarFlag.DARKEN_SKY);
+        }
 
         if (newPhase == 2) {
             TrailCircleHelper.spawnCircle(loc.add(0, 0.1, 0), 8.0, ICE_DARK, 40, 48);
             loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc, 80, 4, 2, 4, 0.3);
         } else if (newPhase == 3) {
             TrailCircleHelper.spawnCircle(loc.add(0, 0.1, 0), 10.0, ICE_WHITE, 40, 48);
+            TrailCircleHelper.spawnRadialBurstRing(
+                    loc.clone(), 6.0, 4.0, ICE_WHITE, 24, 40,
+                    new Vector(0, 1, 0), 0
+            );
             loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc, 120, 6, 3, 6, 0.5);
             loc.getWorld().spawnParticle(Particle.CRIT, loc, 60, 4, 2, 4, 0.5);
         }
@@ -290,6 +340,16 @@ public class FrostPilgrimBoss extends CustomMob {
             return;
         }
         phaseTransitioning = false;
+        Location loc = getLocation();
+        loc.getWorld().playSound(loc, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1.6f,
+                currentPhase == 3 ? 0.45f : 0.65f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.55f);
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, loc.clone().add(0, 0.15, 0),
+                1.0, currentPhase == 3 ? 11.0 : 8.0,
+                currentPhase == 3 ? ICE_WHITE : ICE_BLUE,
+                16, 32
+        );
     }
 
     private void castIceBolt(Player target) {
@@ -299,7 +359,12 @@ public class FrostPilgrimBoss extends CustomMob {
         dir.normalize();
 
         TrailHelper.spawnLine(eye, target.getEyeLocation(), ICE_BLUE, 15);
+        TrailHelper.spawnBeam(
+                eye, dir, eye.distance(target.getEyeLocation()),
+                ICE_PALE, 8, 0.16
+        );
         eye.getWorld().playSound(eye, Sound.ENTITY_SNOWBALL_THROW, 1.0f, 1.5f);
+        eye.getWorld().playSound(eye, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 1.7f);
 
         if (target.isOnline() && !target.isDead()) {
             double magDamage = statManager.getTotalStat(entity, StatType.MAGIC_DAMAGE);
@@ -310,6 +375,11 @@ public class FrostPilgrimBoss extends CustomMob {
 
         target.getWorld().spawnParticle(Particle.DUST, target.getEyeLocation(), 12, 0.3, 0.3, 0.3, 0,
                 new Particle.DustOptions(ICE_WHITE, 1.8f));
+        TrailCircleHelper.spawnRadialBurstRing(
+                target.getEyeLocation(), 0.5, 1.4, ICE_WHITE,
+                8, 12, dir, 0
+        );
+        target.getWorld().playSound(target.getLocation(), Sound.BLOCK_GLASS_BREAK, 0.9f, 1.65f);
 
         iceBoltCooldown = currentPhase == 3 ? P3_ICE_BOLT_COOLDOWN : ICE_BOLT_COOLDOWN;
     }
@@ -318,6 +388,7 @@ public class FrostPilgrimBoss extends CustomMob {
         Location loc = getLocation().add(0, 0.5, 0);
         TrailCircleHelper.spawnCircle(loc, FROST_NOVA_RADIUS, ICE_WHITE, 20, 36);
         loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 0.4f);
+        loc.getWorld().playSound(loc, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.75f);
 
         windingFrostNova = true;
         frostNovaWindup = 20;
@@ -329,6 +400,9 @@ public class FrostPilgrimBoss extends CustomMob {
             if (frostNovaWindup % 5 == 0) {
                 Location loc = getLocation().add(0, 0.5, 0);
                 TrailCircleHelper.spawnCircle(loc, FROST_NOVA_RADIUS, ICE_PALE, 10, 36);
+                if (frostNovaWindup == 10) {
+                    loc.getWorld().playSound(loc, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.0f, 0.5f);
+                }
             }
             return;
         }
@@ -339,6 +413,16 @@ public class FrostPilgrimBoss extends CustomMob {
         loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc.add(0, 1, 0), 60, 3, 1, 3, 0.3);
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 40, 3, 1, 3, 0.4);
         loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.6f);
+        loc.getWorld().playSound(loc, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1.8f, 0.55f);
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, getLocation().clone().add(0, 0.15, 0),
+                0.8, FROST_NOVA_RADIUS + 1.5, ICE_WHITE, 10, 32
+        );
+        TrailCircleHelper.spawnRadialBurstRing(
+                getLocation().clone().add(0, 0.4, 0),
+                FROST_NOVA_RADIUS, 2.5, ICE_PALE,
+                12, 36, new Vector(0, 1, 0), 0
+        );
 
         double magDamage = statManager.getTotalStat(entity, StatType.MAGIC_DAMAGE);
         double damage = magDamage * FROST_NOVA_DAMAGE_RATIO;
@@ -364,17 +448,28 @@ public class FrostPilgrimBoss extends CustomMob {
 
         TrailCircleHelper.spawnCircle(targetLoc.clone().add(0, 0.1, 0), 1.5, ICE_WHITE, 30, 24);
         world.playSound(targetLoc, Sound.BLOCK_SNOW_BREAK, 0.8f, 0.5f);
+        world.playSound(targetLoc, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.8f, 1.4f);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!entity.isValid()) return;
-            world.spawnParticle(Particle.SNOWFLAKE, targetLoc.add(0, 1, 0), 40, 1.5, 2, 1.5, 0.2);
-            world.spawnParticle(Particle.DUST, targetLoc, 30, 1.5, 2, 1.5, 0,
+            Location pillarBase = targetLoc.clone();
+            world.spawnParticle(Particle.SNOWFLAKE, pillarBase.clone().add(0, 2.5, 0), 70, 1.5, 2.5, 1.5, 0.2);
+            world.spawnParticle(Particle.DUST, pillarBase.clone().add(0, 2.0, 0), 45, 1.5, 2, 1.5, 0,
                     new Particle.DustOptions(ICE_WHITE, 2.0f));
-            world.playSound(targetLoc, Sound.BLOCK_GLASS_BREAK, 1.2f, 0.7f);
+            TrailHelper.spawnBeam(
+                    pillarBase.clone().add(0, 0.1, 0),
+                    new Vector(0, 1, 0), 6.0, ICE_WHITE, 12, 0.45
+            );
+            TrailCircleHelper.spawnExpandingShockwave(
+                    plugin, pillarBase.clone().add(0, 0.15, 0),
+                    0.5, 3.5, ICE_PALE, 8, 20
+            );
+            world.playSound(pillarBase, Sound.BLOCK_GLASS_BREAK, 1.5f, 0.6f);
+            world.playSound(pillarBase, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 1.35f);
 
             for (Player p : world.getPlayers()) {
                 if (p.isDead() || !p.isOnline()) continue;
-                if (p.getLocation().distance(targetLoc) <= 3.0) {
+                if (p.getLocation().distance(pillarBase) <= 3.0) {
                     damageManager.processDamage(entity, p, DamageType.MAGIC, ICE_PILLAR_DAMAGE, Set.of("ice"));
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 1));
                 }
@@ -393,15 +488,27 @@ public class FrostPilgrimBoss extends CustomMob {
         TrailHelper.spawnLine(from, to, ICE_DARK, 15);
 
         getLocation().getWorld().playSound(getLocation(), Sound.ENTITY_STRAY_AMBIENT, 1.0f, 0.5f);
+        getLocation().getWorld().playSound(getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.2f, 0.55f);
 
         windingGlacialCharge = true;
-        glacialChargeWindup = 15;
+        glacialChargeWindup = 20;
         glacialChargeTarget = target;
     }
 
     private void tickGlacialChargeWindup() {
         if (glacialChargeWindup > 0) {
             glacialChargeWindup--;
+            if (glacialChargeWindup % 5 == 0) {
+                Location loc = getLocation().clone().add(0, 0.25, 0);
+                TrailCircleHelper.spawnCircle(
+                        loc, 1.0 + (20 - glacialChargeWindup) * 0.04,
+                        ICE_DARK, 6, 16
+                );
+                loc.getWorld().playSound(
+                        loc, Sound.BLOCK_AMETHYST_BLOCK_RESONATE,
+                        0.7f, 0.55f + (20 - glacialChargeWindup) * 0.035f
+                );
+            }
             return;
         }
 
@@ -420,48 +527,82 @@ public class FrostPilgrimBoss extends CustomMob {
             glacialChargeTarget = null;
             return;
         }
-        dir.setY(0).normalize().multiply(GLACIAL_CHARGE_POWER);
-        entity.setVelocity(dir);
+        glacialChargeDirection = dir.setY(0).normalize();
+        entity.setVelocity(glacialChargeDirection.clone().multiply(GLACIAL_CHARGE_POWER));
 
         Location loc = getLocation();
         loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc.add(0, 0.5, 0), 30, 0.5, 0.3, 0.5, 0.1);
         loc.getWorld().playSound(loc, Sound.ENTITY_STRAY_HURT, 1.2f, 0.6f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.7f, 1.65f);
 
         glacialCharging = true;
+        glacialChargeTicks = 14;
         glacialChargeCooldown = currentPhase == 3 ? P3_GLACIAL_CHARGE_COOLDOWN : GLACIAL_CHARGE_COOLDOWN;
     }
 
     private void tickGlacialChargeMove() {
-        if (entity.isOnGround() || ticksLived % 3 == 0) {
-            Location loc = getLocation();
-            loc.getWorld().spawnParticle(Particle.DUST, loc.add(0, 0.3, 0), 3, 0.2, 0.1, 0.2, 0,
-                    new Particle.DustOptions(ICE_BLUE, 1.2f));
+        if (glacialChargeDirection == null || glacialChargeTicks <= 0) {
+            finishGlacialCharge(null);
+            return;
         }
 
-        if (!entity.isOnGround()) return;
+        entity.setVelocity(glacialChargeDirection.clone().multiply(GLACIAL_CHARGE_POWER));
+        Location loc = getLocation();
+        Location trailEnd = loc.clone().subtract(glacialChargeDirection.clone().multiply(2.5));
+        TrailHelper.spawnSegmentedLine(
+                loc.clone().add(0, 0.8, 0),
+                trailEnd.add(0, 0.8, 0),
+                ICE_BLUE, 4, 5
+        );
+        loc.getWorld().spawnParticle(
+                Particle.SNOWFLAKE, loc.clone().add(0, 0.6, 0),
+                8, 0.45, 0.35, 0.45, 0.08
+        );
 
+        Player hit = loc.getWorld().getPlayers().stream()
+                .filter(player -> player.isOnline() && !player.isDead())
+                .filter(player -> player.getLocation().distanceSquared(loc)
+                        <= GLACIAL_CHARGE_HIT_RADIUS * GLACIAL_CHARGE_HIT_RADIUS)
+                .findFirst()
+                .orElse(null);
+        if (hit != null) {
+            finishGlacialCharge(hit);
+            return;
+        }
+
+        glacialChargeTicks--;
+        if (glacialChargeTicks <= 0) {
+            finishGlacialCharge(null);
+        }
+    }
+
+    private void finishGlacialCharge(Player hitTarget) {
         glacialCharging = false;
-        Player target = glacialChargeTarget;
+        glacialChargeTicks = 0;
+        glacialChargeDirection = null;
         glacialChargeTarget = null;
 
-        if (target != null && target.isOnline() && !target.isDead()) {
-            double dist = target.getLocation().distance(getLocation());
-            if (dist <= GLACIAL_CHARGE_HIT_RADIUS) {
-                double magDamage = statManager.getTotalStat(entity, StatType.MAGIC_DAMAGE);
-                double damage = magDamage * GLACIAL_CHARGE_DAMAGE_RATIO;
-                damageManager.processDamage(entity, target, DamageType.MAGIC, damage, Set.of("ice"));
+        if (hitTarget != null && hitTarget.isOnline() && !hitTarget.isDead()) {
+            double magDamage = statManager.getTotalStat(entity, StatType.MAGIC_DAMAGE);
+            double damage = magDamage * GLACIAL_CHARGE_DAMAGE_RATIO;
+            damageManager.processDamage(entity, hitTarget, DamageType.MAGIC, damage, Set.of("ice"));
 
-                Vector kb = target.getLocation().subtract(getLocation()).toVector();
-                kb.setY(0.4);
-                if (kb.lengthSquared() > 0.01) kb.normalize().multiply(2.0);
-                target.setVelocity(kb);
-                target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 80, 2));
-            }
+            Vector kb = hitTarget.getLocation().subtract(getLocation()).toVector();
+            kb.setY(0.4);
+            if (kb.lengthSquared() > 0.01) kb.normalize().multiply(2.0);
+            hitTarget.setVelocity(kb);
+            hitTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 80, 2));
         }
 
         Location loc = getLocation();
-        loc.getWorld().spawnParticle(Particle.CRIT, loc.add(0, 0.5, 0), 20, 0.8, 0.5, 0.8, 0.3);
-        loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.2f, 0.5f);
+        loc.getWorld().spawnParticle(Particle.CRIT, loc.clone().add(0, 0.5, 0), 40, 1.4, 0.8, 1.4, 0.35);
+        loc.getWorld().spawnParticle(Particle.SNOWFLAKE, loc.clone().add(0, 0.8, 0), 60, 1.8, 1.0, 1.8, 0.2);
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, loc.clone().add(0, 0.15, 0),
+                0.7, 5.0, ICE_DARK, 9, 24
+        );
+        loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.4f, 0.55f);
+        loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, 1.4f, 0.7f);
     }
 
     private void startBlizzard() {
@@ -470,18 +611,32 @@ public class FrostPilgrimBoss extends CustomMob {
         blizzardCenter = getLocation();
 
         blizzardCenter.getWorld().playSound(blizzardCenter, Sound.ENTITY_WITHER_SHOOT, 1.5f, 0.5f);
+        blizzardCenter.getWorld().playSound(blizzardCenter, Sound.ITEM_TRIDENT_RETURN, 1.3f, 0.45f);
+        blizzardCenter.getWorld().playSound(blizzardCenter, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.1f, 0.4f);
 
         TrailCircleHelper.spawnRadialBurstRing(
                 blizzardCenter.clone().add(0, 3, 0), BLIZZARD_RADIUS, 2.0,
                 ICE_WHITE, 40, 48, new Vector(0, 1, 0), 0);
 
         TrailCircleHelper.spawnCircle(blizzardCenter.clone().add(0, 0.1, 0), BLIZZARD_RADIUS, ICE_PALE, 40, 48);
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, blizzardCenter.clone().add(0, 0.15, 0),
+                2.0, BLIZZARD_RADIUS, ICE_DARK, 18, 36
+        );
 
         blizzardCooldown = currentPhase == 3 ? P3_BLIZZARD_COOLDOWN : BLIZZARD_COOLDOWN;
     }
 
     private void tickBlizzard() {
         if (blizzardTicks <= 0) {
+            Location endCenter = blizzardCenter;
+            if (endCenter != null && endCenter.getWorld() != null) {
+                endCenter.getWorld().playSound(endCenter, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1.5f, 0.45f);
+                TrailCircleHelper.spawnExpandingShockwave(
+                        plugin, endCenter.clone().add(0, 0.15, 0),
+                        BLIZZARD_RADIUS, 1.0, ICE_WHITE, 16, 36
+                );
+            }
             blizzardActive = false;
             blizzardCenter = null;
             return;
@@ -491,7 +646,7 @@ public class FrostPilgrimBoss extends CustomMob {
         if (blizzardTicks % 10 != 0) return;
 
         World world = blizzardCenter.getWorld();
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 14; i++) {
             double angle = RANDOM.nextDouble() * Math.PI * 2;
             double r = RANDOM.nextDouble() * BLIZZARD_RADIUS;
             double x = blizzardCenter.getX() + r * Math.cos(angle);
@@ -499,6 +654,21 @@ public class FrostPilgrimBoss extends CustomMob {
             double y = blizzardCenter.getY() + 5 + RANDOM.nextDouble() * 5;
             Location particleLoc = new Location(world, x, y, z);
             world.spawnParticle(Particle.SNOWFLAKE, particleLoc, 1, 0.3, 0.3, 0.3, 0.05);
+        }
+
+        for (int i = 0; i < 4; i++) {
+            double angle = RANDOM.nextDouble() * Math.PI * 2;
+            double radius = RANDOM.nextDouble() * BLIZZARD_RADIUS;
+            Location ground = blizzardCenter.clone().add(
+                    Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius
+            );
+            Location sky = ground.clone().add(0, 7.0 + RANDOM.nextDouble() * 4.0, 0);
+            TrailHelper.spawnLine(sky, ground, ICE_PALE, 7);
+        }
+
+        if (blizzardTicks % 40 == 0) {
+            world.playSound(blizzardCenter, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 0.45f);
+            world.playSound(blizzardCenter, Sound.ENTITY_STRAY_AMBIENT, 0.7f, 0.35f);
         }
 
         for (Player p : world.getPlayers()) {
@@ -537,6 +707,52 @@ public class FrostPilgrimBoss extends CustomMob {
                         b.getLocation().distanceSquared(getLocation())))
                 .toList();
         return nearby.isEmpty() ? null : nearby.get(0);
+    }
+
+    private void updateBossBar() {
+        if (bossBar == null || entity == null || !entity.isValid()) {
+            return;
+        }
+
+        double maxHealth = getMaxHealth();
+        double progress = maxHealth <= 0.0 ? 0.0 : getHealth() / maxHealth;
+        bossBar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
+        bossBar.setTitle(bossBarTitle());
+
+        Location bossLocation = getLocation();
+        double visibleRangeSquared = 56.0 * 56.0;
+        for (Player viewer : List.copyOf(bossBar.getPlayers())) {
+            if (!viewer.isOnline()
+                    || !viewer.getWorld().equals(entity.getWorld())
+                    || viewer.getLocation().distanceSquared(bossLocation) > visibleRangeSquared) {
+                bossBar.removePlayer(viewer);
+            }
+        }
+
+        for (Player viewer : entity.getWorld().getPlayers()) {
+            if (!viewer.isDead()
+                    && viewer.getLocation().distanceSquared(bossLocation) <= visibleRangeSquared
+                    && !bossBar.getPlayers().contains(viewer)) {
+                bossBar.addPlayer(viewer);
+            }
+        }
+    }
+
+    private String bossBarTitle() {
+        return switch (currentPhase) {
+            case 2 -> "§9§l氷結の巡礼者 §7— §b凍界";
+            case 3 -> "§f§l氷結の巡礼者 §7— §c終氷";
+            default -> "§b§l氷結の巡礼者 §7— §f静謐";
+        };
+    }
+
+    private void removeBossBar() {
+        if (bossBar == null) {
+            return;
+        }
+        bossBar.removeAll();
+        bossBar.setVisible(false);
+        bossBar = null;
     }
 
     private boolean isDead() {
