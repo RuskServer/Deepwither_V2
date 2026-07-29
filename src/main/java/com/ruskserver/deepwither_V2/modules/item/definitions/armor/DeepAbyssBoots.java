@@ -50,6 +50,16 @@ public class DeepAbyssBoots implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "eye";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "quartz";
+    }
+
+    @Override
     public String getFlavorText() {
         return "LunarisAtelier製の安価なブーツ";
     }

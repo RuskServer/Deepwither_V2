@@ -50,6 +50,16 @@ public class VoidStarChestplate implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "vex";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "quartz";
+    }
+
+    @Override
     public String getFlavorText() {
         return "LunarisAtelier製の安価なチェストプレート";
     }

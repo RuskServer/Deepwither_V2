@@ -261,7 +261,13 @@ public class ItemManager implements Startable {
 
         String armorTrimPattern = customItem.getArmorTrimPattern();
         String armorTrimMaterial = customItem.getArmorTrimMaterial();
-        if (armorTrimPattern != null && armorTrimMaterial != null) {
+        if ((armorTrimPattern == null) != (armorTrimMaterial == null)) {
+            Bukkit.getLogger().warning("[ItemManager] Armor trim pattern and material must both be defined for item "
+                    + customItem.getId() + ": pattern=" + armorTrimPattern + ", material=" + armorTrimMaterial);
+            return;
+        }
+
+        if (armorTrimPattern != null) {
             NamespacedKey trimKey = NamespacedKey.minecraft(armorTrimPattern);
             NamespacedKey materialKey = NamespacedKey.minecraft(armorTrimMaterial);
 

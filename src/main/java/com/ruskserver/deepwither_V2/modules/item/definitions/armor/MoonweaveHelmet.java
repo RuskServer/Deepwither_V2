@@ -54,6 +54,16 @@ public class MoonweaveHelmet implements CustomItem {
     }
 
     @Override
+    public String getArmorTrimPattern() {
+        return "dune";
+    }
+
+    @Override
+    public String getArmorTrimMaterial() {
+        return "diamond";
+    }
+
+    @Override
     public String getFlavorText() {
         return "LunarisAtelier製の洞窟の月光花から抽出した魔素糸を織り込み、魔力の流れを安定させるヘルメット。光なき地に咲く月光花。その糸を紡ぎ、祈りを縫う。";
     }

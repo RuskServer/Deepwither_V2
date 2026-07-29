@@ -92,6 +92,27 @@ public class StarterSword implements CustomItem {
 }
 ```
 
+### 防具へアーマートリムを設定する
+
+バニラ防具へアーマートリムを設定する場合は、`getArmorTrimPattern()`と
+`getArmorTrimMaterial()`を両方オーバーライドし、Minecraftの名前空間キーを返します。
+片方だけを定義するとトリムは適用されず、`ItemManager`が警告を出力します。
+
+```java
+@Override
+public String getArmorTrimPattern() {
+    return "dune";
+}
+
+@Override
+public String getArmorTrimMaterial() {
+    return "diamond";
+}
+```
+
+生成済みのカスタム防具も、プレイヤーのログイン時または格納先インベントリを開いた際に
+現在のJava定義へ更新され、トリムが再適用されます。
+
 ---
 
 ## 3. 生成されるアイテムのレイアウト
