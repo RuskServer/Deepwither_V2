@@ -67,6 +67,7 @@ public class ArtifactBoxItem implements CustomItem {
         if (!event.getAction().isRightClick()) {
             return;
         }
+        event.setCancelled(true);
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
 

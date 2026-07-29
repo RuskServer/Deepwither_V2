@@ -13,6 +13,8 @@ import com.ruskserver.deepwither_V2.modules.stat.ModifierType;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
 import com.ruskserver.deepwither_V2.modules.skill.util.TrailHelper;
+import io.papermc.paper.entity.LookAnchor;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -32,8 +34,10 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Component
 public class FrostPilgrimBoss extends CustomMob {
@@ -77,6 +81,16 @@ public class FrostPilgrimBoss extends CustomMob {
     private static final double BLIZZARD_DAMAGE_PER_TICK = 10.0;
     private static final double FREEZING_AURA_DAMAGE_PER_TICK = 8.0;
 
+    private static final double INTRO_AUDIENCE_RADIUS = 36.0;
+    private static final double INTRO_IMPACT_RADIUS = 6.0;
+    private static final double INTRO_IMPACT_DAMAGE = 100.0;
+    private static final int INTRO_FOCUS_TICKS = 20;
+    private static final int INTRO_REVEAL_TICKS = 20;
+    private static final int INTRO_DIVE_TICKS = 12;
+    private static final int INTRO_CHARACTER_TICKS = 2;
+    private static final int INTRO_POST_COMBAT_GRACE_TICKS = 50;
+    private static final String INTRO_FLAVOR_TEXT = "「凍てつく祈りは、終わりを赦さない。」";
+
     private static final Color ICE_BLUE = Color.fromRGB(0x8FD4E6);
     private static final Color ICE_WHITE = Color.fromRGB(0xFFFFFF);
     private static final Color ICE_DARK = Color.fromRGB(0x4A90D9);
@@ -108,6 +122,13 @@ public class FrostPilgrimBoss extends CustomMob {
     private boolean phaseTransitioning = false;
     private int phaseTransitionTicks = 0;
     private BossBar bossBar;
+
+    private IntroPhase introPhase = IntroPhase.ACTIVE;
+    private int introPhaseTicks = 0;
+    private Location introGroundLocation;
+    private Location introRevealLocation;
+    private double introHeight = 0.0;
+    private final Set<UUID> introAudience = new HashSet<>();
 
     private final DamagePipelineManager damageManager;
     private final StatManager statManager;
@@ -159,22 +180,24 @@ public class FrostPilgrimBoss extends CustomMob {
                 BarStyle.SEGMENTED_10
         );
         bossBar.setProgress(1.0);
-        bossBar.setVisible(true);
-        updateBossBar();
+        bossBar.setVisible(false);
 
-        Location spawnLoc = getLocation();
-        TrailCircleHelper.spawnExpandingShockwave(
-                plugin, spawnLoc.clone().add(0, 0.15, 0),
-                1.0, 8.0, ICE_PALE, 18, 28
-        );
-        spawnLoc.getWorld().playSound(spawnLoc, Sound.ENTITY_WITHER_SPAWN, 1.7f, 0.55f);
-        spawnLoc.getWorld().playSound(spawnLoc, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.4f, 0.65f);
+        if (entity.getWorld().getName().startsWith("dungeon_")) {
+            initializeDungeonIntro();
+        } else {
+            activateImmediately();
+        }
     }
 
     @Override
     public void onTick() {
         if (entity == null || !entity.isValid() || isDead()) {
             removeBossBar();
+            return;
+        }
+
+        if (introPhase != IntroPhase.ACTIVE) {
+            tickIntro();
             return;
         }
 
@@ -265,6 +288,7 @@ public class FrostPilgrimBoss extends CustomMob {
     @Override
     public void onDeath() {
         removeBossBar();
+        introAudience.clear();
 
         Location loc = getLocation();
         loc.getWorld().spawnParticle(Particle.CLOUD, loc.add(0, 1, 0), 8, 2, 2, 2, 0.2);
@@ -293,6 +317,10 @@ public class FrostPilgrimBoss extends CustomMob {
 
     @Override
     public void onAttack(LivingEntity victim, org.bukkit.event.entity.EntityDamageByEntityEvent event) {
+        if (introPhase != IntroPhase.ACTIVE) {
+            event.setCancelled(true);
+            return;
+        }
         if (victim instanceof Player player) {
             double magDamage = statManager.getTotalStat(entity, StatType.MAGIC_DAMAGE);
             damageManager.processDamage(entity, player, DamageType.MAGIC, magDamage * 0.5, null);
@@ -574,6 +602,347 @@ public class FrostPilgrimBoss extends CustomMob {
         if (glacialChargeTicks <= 0) {
             finishGlacialCharge(null);
         }
+    }
+
+    @Override
+    public void onDamaged(LivingEntity attacker, org.bukkit.event.entity.EntityDamageByEntityEvent event) {
+        if (introPhase != IntroPhase.ACTIVE) {
+            event.setCancelled(true);
+        }
+    }
+
+    private void initializeDungeonIntro() {
+        introGroundLocation = getLocation().clone();
+        introHeight = findSafeIntroHeight(introGroundLocation);
+        introRevealLocation = introGroundLocation.clone().add(0, introHeight, 0);
+        introPhase = IntroPhase.WAITING;
+        introPhaseTicks = 0;
+
+        entity.setAI(false);
+        entity.setGravity(false);
+        entity.setInvulnerable(true);
+        entity.setInvisible(true);
+        entity.setSilent(true);
+        entity.setCollidable(false);
+        entity.setCustomNameVisible(false);
+        entity.teleport(introRevealLocation);
+        entity.setVelocity(new Vector());
+    }
+
+    private double findSafeIntroHeight(Location ground) {
+        for (int height = 6; height >= 3; height--) {
+            Location feet = ground.clone().add(0, height, 0);
+            if (feet.getBlock().isPassable() && feet.clone().add(0, 1, 0).getBlock().isPassable()) {
+                return height;
+            }
+        }
+        return 0.0;
+    }
+
+    private void tickIntro() {
+        switch (introPhase) {
+            case WAITING -> tickIntroWaiting();
+            case FOCUS -> tickIntroFocus();
+            case TYPEWRITER -> tickIntroTypewriter();
+            case REVEAL -> tickIntroReveal();
+            case DIVE -> tickIntroDive();
+            case ACTIVE -> {
+            }
+        }
+    }
+
+    private void tickIntroWaiting() {
+        entity.setVelocity(new Vector());
+        if (ticksLived % 5 != 0) {
+            return;
+        }
+
+        introAudience.clear();
+        double radiusSquared = INTRO_AUDIENCE_RADIUS * INTRO_AUDIENCE_RADIUS;
+        for (Player player : entity.getWorld().getPlayers()) {
+            if (player.isOnline() && !player.isDead()
+                    && player.getLocation().distanceSquared(introGroundLocation) <= radiusSquared) {
+                introAudience.add(player.getUniqueId());
+            }
+        }
+        if (introAudience.isEmpty()) {
+            return;
+        }
+
+        introPhase = IntroPhase.FOCUS;
+        introPhaseTicks = 0;
+        World world = introGroundLocation.getWorld();
+        world.playSound(introGroundLocation, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.35f);
+        world.playSound(introGroundLocation, Sound.BLOCK_POWDER_SNOW_BREAK, 1.4f, 0.45f);
+    }
+
+    private void tickIntroFocus() {
+        if (!hasValidIntroAudience()) {
+            resetIntroWaiting();
+            return;
+        }
+
+        focusIntroAudience();
+        if (introPhaseTicks % 5 == 0) {
+            Location center = introGroundLocation.clone().add(0, 0.15, 0);
+            TrailCircleHelper.spawnCircle(
+                    center, 2.0 + introPhaseTicks * 0.08,
+                    introPhaseTicks < 10 ? ICE_DARK : ICE_PALE, 8, 28
+            );
+            spawnAscendingIce(center, 8);
+        }
+
+        introPhaseTicks++;
+        if (introPhaseTicks >= INTRO_FOCUS_TICKS) {
+            introPhase = IntroPhase.TYPEWRITER;
+            introPhaseTicks = 0;
+        }
+    }
+
+    private void tickIntroTypewriter() {
+        if (!hasValidIntroAudience()) {
+            resetIntroWaiting();
+            return;
+        }
+
+        if (introPhaseTicks % 2 == 0) {
+            focusIntroAudience();
+        }
+
+        int codePointCount = INTRO_FLAVOR_TEXT.codePointCount(0, INTRO_FLAVOR_TEXT.length());
+        int visibleCharacters = Math.min(
+                codePointCount,
+                introPhaseTicks / INTRO_CHARACTER_TICKS + 1
+        );
+        int endIndex = INTRO_FLAVOR_TEXT.offsetByCodePoints(0, visibleCharacters);
+        net.kyori.adventure.text.Component message =
+                net.kyori.adventure.text.Component.text(INTRO_FLAVOR_TEXT.substring(0, endIndex))
+                .color(TextColor.color(0xBFEFFF));
+        forEachIntroAudience(player -> player.sendActionBar(message));
+
+        if (introPhaseTicks % 8 == 0) {
+            float pitch = 0.8f + visibleCharacters * 0.025f;
+            forEachIntroAudience(player -> player.playSound(
+                    player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.45f, pitch
+            ));
+            spawnAscendingIce(introGroundLocation.clone().add(0, 0.2, 0), 5);
+        }
+
+        introPhaseTicks++;
+        if (introPhaseTicks >= codePointCount * INTRO_CHARACTER_TICKS + 10) {
+            beginIntroReveal();
+        }
+    }
+
+    private void beginIntroReveal() {
+        introPhase = IntroPhase.REVEAL;
+        introPhaseTicks = 0;
+        entity.setInvisible(false);
+        entity.setSilent(false);
+        entity.setCustomNameVisible(true);
+        entity.teleport(introRevealLocation);
+
+        World world = introGroundLocation.getWorld();
+        world.playSound(introRevealLocation, Sound.ENTITY_STRAY_AMBIENT, 1.8f, 0.45f);
+        world.playSound(introRevealLocation, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.6f, 0.55f);
+        world.playSound(introGroundLocation, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.4f, 0.4f);
+        TrailCircleHelper.spawnCircle(
+                introRevealLocation.clone().add(0, 1, 0), 2.2, ICE_WHITE, 30, 32
+        );
+        TrailCircleHelper.spawnCircle(
+                introGroundLocation.clone().add(0, 0.15, 0), INTRO_IMPACT_RADIUS, ICE_DARK, 30, 48
+        );
+    }
+
+    private void tickIntroReveal() {
+        entity.setVelocity(new Vector());
+        if (introPhaseTicks % 5 == 0) {
+            TrailCircleHelper.spawnCircle(
+                    introGroundLocation.clone().add(0, 0.15, 0),
+                    INTRO_IMPACT_RADIUS, introPhaseTicks < 10 ? ICE_DARK : ICE_WHITE, 10, 48
+            );
+            spawnDescendingIce(introRevealLocation.clone().add(0, 1, 0), 10);
+        }
+
+        introPhaseTicks++;
+        if (introPhaseTicks >= INTRO_REVEAL_TICKS) {
+            if (introHeight <= 0.0) {
+                impactAndActivate();
+                return;
+            }
+            introPhase = IntroPhase.DIVE;
+            introPhaseTicks = 0;
+            introGroundLocation.getWorld().playSound(
+                    introRevealLocation, Sound.ENTITY_STRAY_HURT, 1.5f, 0.45f
+            );
+        }
+    }
+
+    private void tickIntroDive() {
+        introPhaseTicks++;
+        double progress = Math.min(1.0, introPhaseTicks / (double) INTRO_DIVE_TICKS);
+        double easedProgress = progress * progress;
+        Location next = introRevealLocation.clone().add(0, -introHeight * easedProgress, 0);
+        entity.teleport(next);
+        entity.setVelocity(new Vector());
+
+        Location trailStart = next.clone().add(0, 2.0, 0);
+        TrailHelper.spawnSegmentedLine(
+                trailStart, trailStart.clone().add(0, 2.5, 0), ICE_PALE, 3, 5
+        );
+        spawnDescendingIce(next.clone().add(0, 1.0, 0), 7);
+
+        if (introPhaseTicks >= INTRO_DIVE_TICKS) {
+            impactAndActivate();
+        }
+    }
+
+    private void impactAndActivate() {
+        entity.teleport(introGroundLocation);
+        entity.setVelocity(new Vector());
+
+        World world = introGroundLocation.getWorld();
+        Location impact = introGroundLocation.clone().add(0, 0.15, 0);
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, impact, 0.8, INTRO_IMPACT_RADIUS + 1.5, ICE_WHITE, 10, 40
+        );
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, impact.clone().add(0, 0.18, 0),
+                1.4, INTRO_IMPACT_RADIUS, ICE_DARK, 12, 36
+        );
+        TrailCircleHelper.spawnRadialBurstRing(
+                impact.clone().add(0, 0.4, 0),
+                INTRO_IMPACT_RADIUS, 3.0, ICE_PALE, 20, 40,
+                new Vector(0, 1, 0), 0
+        );
+        world.spawnParticle(Particle.SNOWFLAKE, impact, 90, 2.5, 0.8, 2.5, 0.35);
+        world.spawnParticle(Particle.CRIT, impact, 55, 2.0, 0.5, 2.0, 0.45);
+        world.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 1.8f, 0.5f);
+        world.playSound(impact, Sound.BLOCK_GLASS_BREAK, 1.7f, 0.55f);
+        world.playSound(impact, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1.7f, 0.45f);
+        world.playSound(impact, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.65f, 1.55f);
+
+        double radiusSquared = INTRO_IMPACT_RADIUS * INTRO_IMPACT_RADIUS;
+        for (Player player : world.getPlayers()) {
+            if (!player.isOnline() || player.isDead()
+                    || player.getLocation().distanceSquared(introGroundLocation) > radiusSquared) {
+                continue;
+            }
+            damageManager.processDamage(
+                    entity, player, DamageType.MAGIC, INTRO_IMPACT_DAMAGE, Set.of("ice", "boss_intro")
+            );
+            Vector knockback = player.getLocation().subtract(introGroundLocation).toVector();
+            knockback.setY(0.38);
+            if (knockback.lengthSquared() > 0.01) {
+                knockback.normalize().multiply(1.25);
+            }
+            player.setVelocity(knockback);
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 50, 1));
+        }
+
+        introPhase = IntroPhase.ACTIVE;
+        introPhaseTicks = 0;
+        introAudience.clear();
+        restoreActiveBossState();
+        iceBoltCooldown = Math.max(iceBoltCooldown, INTRO_POST_COMBAT_GRACE_TICKS);
+        frostNovaCooldown = Math.max(frostNovaCooldown, INTRO_POST_COMBAT_GRACE_TICKS + 30);
+        icePillarCooldown = Math.max(icePillarCooldown, INTRO_POST_COMBAT_GRACE_TICKS + 50);
+        bossBar.setVisible(true);
+        updateBossBar();
+    }
+
+    private void resetIntroWaiting() {
+        introPhase = IntroPhase.WAITING;
+        introPhaseTicks = 0;
+        introAudience.clear();
+        entity.setInvisible(true);
+        entity.setSilent(true);
+        entity.setCustomNameVisible(false);
+        entity.teleport(introRevealLocation);
+        entity.setVelocity(new Vector());
+    }
+
+    private boolean hasValidIntroAudience() {
+        introAudience.removeIf(uuid -> {
+            Player player = Bukkit.getPlayer(uuid);
+            return player == null || !player.isOnline() || player.isDead()
+                    || !player.getWorld().equals(entity.getWorld());
+        });
+        return !introAudience.isEmpty();
+    }
+
+    private void focusIntroAudience() {
+        forEachIntroAudience(player -> player.lookAt(entity, LookAnchor.EYES, LookAnchor.EYES));
+    }
+
+    private void forEachIntroAudience(java.util.function.Consumer<Player> action) {
+        for (UUID audienceId : Set.copyOf(introAudience)) {
+            Player player = Bukkit.getPlayer(audienceId);
+            if (player != null && player.isOnline() && !player.isDead()
+                    && player.getWorld().equals(entity.getWorld())) {
+                action.accept(player);
+            }
+        }
+    }
+
+    private void spawnAscendingIce(Location center, int count) {
+        World world = center.getWorld();
+        for (int i = 0; i < count; i++) {
+            double angle = RANDOM.nextDouble() * Math.PI * 2;
+            double radius = 1.0 + RANDOM.nextDouble() * (INTRO_IMPACT_RADIUS - 1.0);
+            Location particleLocation = center.clone().add(
+                    Math.cos(angle) * radius,
+                    RANDOM.nextDouble() * 1.5,
+                    Math.sin(angle) * radius
+            );
+            world.spawnParticle(Particle.SNOWFLAKE, particleLocation, 0, 0, 1, 0, 0.08);
+        }
+    }
+
+    private void spawnDescendingIce(Location center, int count) {
+        World world = center.getWorld();
+        for (int i = 0; i < count; i++) {
+            Location particleLocation = center.clone().add(
+                    (RANDOM.nextDouble() - 0.5) * 3.5,
+                    RANDOM.nextDouble() * 2.0,
+                    (RANDOM.nextDouble() - 0.5) * 3.5
+            );
+            world.spawnParticle(Particle.SNOWFLAKE, particleLocation, 0, 0, -1, 0, 0.12);
+        }
+    }
+
+    private void activateImmediately() {
+        introPhase = IntroPhase.ACTIVE;
+        restoreActiveBossState();
+        bossBar.setVisible(true);
+        updateBossBar();
+
+        Location spawnLoc = getLocation();
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, spawnLoc.clone().add(0, 0.15, 0),
+                1.0, 8.0, ICE_PALE, 18, 28
+        );
+        spawnLoc.getWorld().playSound(spawnLoc, Sound.ENTITY_WITHER_SPAWN, 1.7f, 0.55f);
+        spawnLoc.getWorld().playSound(spawnLoc, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.4f, 0.65f);
+    }
+
+    private void restoreActiveBossState() {
+        entity.setAI(true);
+        entity.setGravity(true);
+        entity.setInvulnerable(false);
+        entity.setInvisible(false);
+        entity.setSilent(false);
+        entity.setCollidable(true);
+        entity.setCustomNameVisible(true);
+    }
+
+    private enum IntroPhase {
+        WAITING,
+        FOCUS,
+        TYPEWRITER,
+        REVEAL,
+        DIVE,
+        ACTIVE
     }
 
     private void finishGlacialCharge(Player hitTarget) {
