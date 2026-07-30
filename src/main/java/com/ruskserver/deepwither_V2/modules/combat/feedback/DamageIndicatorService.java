@@ -37,8 +37,8 @@ public class DamageIndicatorService implements Listener, Startable, Stoppable {
 
     private static final DecimalFormat INTEGER_FORMAT = new DecimalFormat("#,##0");
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#,##0.0");
-    private static final int LIFETIME_TICKS = 16;
-    private static final int FADE_START_TICK = 8;
+    private static final int LIFETIME_TICKS = 24;
+    private static final int FADE_START_TICK = 14;
     private static final int MAX_PER_VIEWER = 24;
     private static final int MAX_GLOBAL = 128;
     private static final double MAX_VIEW_DISTANCE_SQUARED = 48.0 * 48.0;
