@@ -107,7 +107,8 @@ public class MultiSlashSkill implements Skill {
 
                 center.getWorld().getNearbyEntities(center, 3.5, 2.5, 3.5).forEach(entity -> {
                     if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                        damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 0.35, getTags(), getId(), 0L);
+                        damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 0.35,
+                                getTags(), getId(), 0L, null, 0.3);
                     }
                 });
 

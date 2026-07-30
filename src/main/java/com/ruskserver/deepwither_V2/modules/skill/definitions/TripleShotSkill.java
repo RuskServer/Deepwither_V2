@@ -107,7 +107,8 @@ public class TripleShotSkill implements Skill {
 
             @Override
             protected void onHitEntity(LivingEntity target) {
-                damagePipelineManager.processScaledDamage(getCaster(), target, DamageType.RANGED, 0.7, getTags(), getId(), 0L);
+                damagePipelineManager.processScaledDamage(getCaster(), target, DamageType.RANGED, 0.7,
+                        getTags(), getId(), 0L, getCurrentLocation(), 0.5);
                 getCurrentLocation().getWorld().spawnParticle(Particle.CRIT, getCurrentLocation(), 10, 0.15, 0.15, 0.15, 0.1);
                 remove();
             }

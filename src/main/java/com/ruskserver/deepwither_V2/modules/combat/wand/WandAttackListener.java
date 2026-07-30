@@ -174,7 +174,7 @@ public class WandAttackListener implements Listener {
                 for (Entity target : world.getNearbyEntities(loc, 0.8, 0.8, 0.8)) {
                     if (target instanceof LivingEntity livingTarget && target != shooter) {
                         damagePipelineManager.processDamage(shooter, livingTarget, DamageType.MAGIC,
-                                0.0, wand.getTags(), "basic_wand", 0L);
+                                0.0, wand.getTags(), "basic_wand", 0L, loc);
 
                         livingTarget.getWorld().playSound(livingTarget.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 1.0f, 1.2f);
                         hitEffect(livingTarget.getLocation().add(0, 1, 0), world, direction);

@@ -81,7 +81,8 @@ public class SeismicStompSkill implements Skill {
 
         player.getNearbyEntities(4.5, 4.5, 4.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.75, getTags(), getId(), 500L);
+                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.75,
+                        getTags(), getId(), 500L, loc, 1.75);
                 living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 2, false, true));
             }
         });

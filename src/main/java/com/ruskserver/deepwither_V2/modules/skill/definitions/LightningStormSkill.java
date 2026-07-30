@@ -109,7 +109,8 @@ public class LightningStormSkill implements Skill {
                         if (living.getLocation().distance(center) <= 7.0) {
                             living.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, living.getLocation().add(0, 1, 0), 6, 0.2, 0.2, 0.2, 0.05);
                             living.getWorld().playSound(living.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 1.5f);
-                            damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 0.35, getTags(), getId(), 0L);
+                            damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 0.35,
+                                    getTags(), getId(), 0L, null, 0.1);
                         }
                     }
                 });

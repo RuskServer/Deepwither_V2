@@ -85,6 +85,6 @@ public class BowAttackListener implements Listener {
 
         // パイプライン経由でダメージ処理
         damagePipelineManager.processDamage(shooter, target, DamageType.RANGED, 0.0, bow.getTags(),
-                distanceMultiplier, "basic_bow:" + itemId, 0L);
+                distanceMultiplier, "basic_bow:" + itemId, 0L, arrow.getLocation());
     }
 }

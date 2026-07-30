@@ -156,7 +156,8 @@ public class ThunderBlastSkill implements Skill {
                     // ダメージ・鈍足
                     world.getNearbyEntities(location, 5.0, 5.0, 5.0).forEach(entity -> {
                         if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                            damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 4.5, getTags(), getId(), 500L);
+                            damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 4.5,
+                                    getTags(), getId(), 500L, location);
                             living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1, false, true));
                         }
                     });

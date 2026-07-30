@@ -3,9 +3,13 @@ package com.ruskserver.deepwither_V2.modules.mob.definitions;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
+import com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.combat.stagger.StaggerProfile;
+import com.ruskserver.deepwither_V2.modules.combat.stagger.StaggerState;
+import com.ruskserver.deepwither_V2.modules.combat.stagger.StaggerableBoss;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
@@ -40,7 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Component
-public class FrostPilgrimBoss extends CustomMob {
+public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
 
     private static final String MOB_ID = "frost_pilgrim";
 
@@ -51,6 +55,19 @@ public class FrostPilgrimBoss extends CustomMob {
 
     private static final double PHASE_2_THRESHOLD = 0.60;
     private static final double PHASE_3_THRESHOLD = 0.30;
+    private static final StaggerProfile STAGGER_PROFILE = new StaggerProfile(
+            1500.0,
+            70,
+            160,
+            60,
+            6.0,
+            1.2,
+            300.0,
+            1.0,
+            0.85,
+            0.75,
+            0.5
+    );
 
     private static final int ICE_BOLT_COOLDOWN = 60;
     private static final int FROST_NOVA_COOLDOWN = 200;
@@ -116,12 +133,15 @@ public class FrostPilgrimBoss extends CustomMob {
     private boolean blizzardActive = false;
     private int blizzardTicks = 0;
     private Location blizzardCenter = null;
+    private int actionGeneration = 0;
     private static final int BLIZZARD_DURATION = 200;
 
     private int currentPhase = 1;
     private boolean phaseTransitioning = false;
     private int phaseTransitionTicks = 0;
     private BossBar bossBar;
+    private BossBar staggerBar;
+    private final StaggerState staggerState = new StaggerState();
 
     private IntroPhase introPhase = IntroPhase.ACTIVE;
     private int introPhaseTicks = 0;
@@ -181,6 +201,13 @@ public class FrostPilgrimBoss extends CustomMob {
         );
         bossBar.setProgress(1.0);
         bossBar.setVisible(false);
+        staggerBar = Bukkit.createBossBar(
+                "§e§l体勢",
+                BarColor.YELLOW,
+                BarStyle.SEGMENTED_10
+        );
+        staggerBar.setProgress(0.0);
+        staggerBar.setVisible(false);
 
         if (entity.getWorld().getName().startsWith("dungeon_")) {
             initializeDungeonIntro();
@@ -218,6 +245,13 @@ public class FrostPilgrimBoss extends CustomMob {
         }
 
         currentPhase = newPhase;
+        if (staggerState.tick(STAGGER_PROFILE) == StaggerState.TickResult.RECOVERED) {
+            onStaggerRecovered();
+        }
+        if (staggerState.isStaggered()) {
+            entity.setVelocity(new Vector());
+            return;
+        }
 
         if (glacialCharging) {
             tickGlacialChargeMove();
@@ -328,9 +362,17 @@ public class FrostPilgrimBoss extends CustomMob {
     }
 
     private void startPhaseTransition(int newPhase) {
+        cancelCurrentActionForStagger();
+        staggerState.resetWithImmunity(STAGGER_PROFILE.recoveryImmunityTicks());
         phaseTransitioning = true;
         phaseTransitionTicks = 40;
         currentPhase = newPhase;
+        entity.setAI(false);
+        entity.setVelocity(new Vector());
+        if (staggerBar != null) {
+            staggerBar.removeAll();
+            staggerBar.setVisible(false);
+        }
 
         Location loc = getLocation();
         loc.getWorld().playSound(loc, Sound.ENTITY_WITHER_SPAWN, 1.5f, 0.8f);
@@ -368,6 +410,7 @@ public class FrostPilgrimBoss extends CustomMob {
             return;
         }
         phaseTransitioning = false;
+        entity.setAI(true);
         Location loc = getLocation();
         loc.getWorld().playSound(loc, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1.6f,
                 currentPhase == 3 ? 0.45f : 0.65f);
@@ -473,13 +516,17 @@ public class FrostPilgrimBoss extends CustomMob {
     private void castIcePillar(Player target) {
         Location targetLoc = target.getLocation();
         World world = targetLoc.getWorld();
+        int castGeneration = actionGeneration;
 
         TrailCircleHelper.spawnCircle(targetLoc.clone().add(0, 0.1, 0), 1.5, ICE_WHITE, 30, 24);
         world.playSound(targetLoc, Sound.BLOCK_SNOW_BREAK, 0.8f, 0.5f);
         world.playSound(targetLoc, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.8f, 1.4f);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!entity.isValid()) return;
+            if (!entity.isValid() || castGeneration != actionGeneration
+                    || phaseTransitioning || staggerState.isStaggered()) {
+                return;
+            }
             Location pillarBase = targetLoc.clone();
             world.spawnParticle(Particle.SNOWFLAKE, pillarBase.clone().add(0, 2.5, 0), 70, 1.5, 2.5, 1.5, 0.2);
             world.spawnParticle(Particle.DUST, pillarBase.clone().add(0, 2.0, 0), 45, 1.5, 2, 1.5, 0,
@@ -608,6 +655,94 @@ public class FrostPilgrimBoss extends CustomMob {
     public void onDamaged(LivingEntity attacker, org.bukkit.event.entity.EntityDamageByEntityEvent event) {
         if (introPhase != IntroPhase.ACTIVE) {
             event.setCancelled(true);
+        }
+    }
+
+    @Override
+    public StaggerProfile getStaggerProfile() {
+        return STAGGER_PROFILE;
+    }
+
+    @Override
+    public StaggerState getStaggerState() {
+        return staggerState;
+    }
+
+    @Override
+    public boolean canReceiveStagger(DamageContext context) {
+        if (introPhase != IntroPhase.ACTIVE || phaseTransitioning || isDead() || getHealth() <= 0.0) {
+            return false;
+        }
+
+        double hpRatio = getMaxHealth() <= 0.0 ? 0.0 : getHealth() / getMaxHealth();
+        int healthPhase = hpRatio <= PHASE_3_THRESHOLD ? 3 : hpRatio <= PHASE_2_THRESHOLD ? 2 : 1;
+        return healthPhase <= currentPhase;
+    }
+
+    @Override
+    public void onStaggerStarted() {
+        cancelCurrentActionForStagger();
+        entity.setAI(false);
+        entity.setVelocity(new Vector());
+
+        Location loc = getLocation();
+        loc.getWorld().playSound(loc, Sound.ITEM_SHIELD_BREAK, 1.8f, 0.65f);
+        loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, 1.6f, 0.45f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_DAMAGE, 1.1f, 0.7f);
+        loc.getWorld().spawnParticle(
+                Particle.BLOCK, loc.clone().add(0, 1.0, 0),
+                55, 0.8, 1.0, 0.8, 0.15,
+                org.bukkit.Material.PACKED_ICE.createBlockData()
+        );
+        loc.getWorld().spawnParticle(
+                Particle.DUST, loc.clone().add(0, 1.0, 0),
+                35, 0.9, 0.9, 0.9, 0.0,
+                new Particle.DustOptions(ICE_WHITE, 1.4f)
+        );
+        TrailCircleHelper.spawnExpandingShockwave(
+                plugin, loc.clone().add(0, 0.15, 0),
+                0.5, 4.5, ICE_PALE, 8, 24
+        );
+    }
+
+    @Override
+    public void onStaggerRecovered() {
+        if (introPhase != IntroPhase.ACTIVE || phaseTransitioning || isDead()) {
+            return;
+        }
+
+        entity.setAI(true);
+        entity.setVelocity(new Vector());
+        frostNovaCooldown = Math.max(frostNovaCooldown, 60);
+        icePillarCooldown = Math.max(icePillarCooldown, 60);
+        glacialChargeCooldown = Math.max(glacialChargeCooldown, 60);
+        blizzardCooldown = Math.max(blizzardCooldown, 100);
+
+        Location loc = getLocation();
+        loc.getWorld().playSound(loc, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.4f, 0.7f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_STRAY_AMBIENT, 1.0f, 0.85f);
+        loc.getWorld().spawnParticle(
+                Particle.DUST, loc.clone().add(0, 1.0, 0),
+                28, 0.7, 0.9, 0.7, 0.0,
+                new Particle.DustOptions(ICE_BLUE, 1.2f)
+        );
+    }
+
+    private void cancelCurrentActionForStagger() {
+        actionGeneration++;
+        windingFrostNova = false;
+        frostNovaWindup = 0;
+        windingGlacialCharge = false;
+        glacialChargeWindup = 0;
+        glacialChargeTarget = null;
+        glacialCharging = false;
+        glacialChargeTicks = 0;
+        glacialChargeDirection = null;
+        blizzardActive = false;
+        blizzardTicks = 0;
+        blizzardCenter = null;
+        if (entity != null) {
+            entity.setVelocity(new Vector());
         }
     }
 
@@ -1088,23 +1223,72 @@ public class FrostPilgrimBoss extends CustomMob {
         bossBar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
         bossBar.setTitle(bossBarTitle());
 
+        boolean showStagger = updateStaggerBar();
         Location bossLocation = getLocation();
         double visibleRangeSquared = 56.0 * 56.0;
         for (Player viewer : List.copyOf(bossBar.getPlayers())) {
-            if (!viewer.isOnline()
-                    || !viewer.getWorld().equals(entity.getWorld())
-                    || viewer.getLocation().distanceSquared(bossLocation) > visibleRangeSquared) {
+            if (!canViewBossBars(viewer, bossLocation, visibleRangeSquared)) {
                 bossBar.removePlayer(viewer);
+            }
+        }
+        if (staggerBar != null) {
+            for (Player viewer : List.copyOf(staggerBar.getPlayers())) {
+                if (!showStagger || !canViewBossBars(viewer, bossLocation, visibleRangeSquared)) {
+                    staggerBar.removePlayer(viewer);
+                }
             }
         }
 
         for (Player viewer : entity.getWorld().getPlayers()) {
-            if (!viewer.isDead()
-                    && viewer.getLocation().distanceSquared(bossLocation) <= visibleRangeSquared
-                    && !bossBar.getPlayers().contains(viewer)) {
+            if (!canViewBossBars(viewer, bossLocation, visibleRangeSquared)) {
+                continue;
+            }
+            if (!bossBar.getPlayers().contains(viewer)) {
                 bossBar.addPlayer(viewer);
             }
+            if (showStagger && staggerBar != null && !staggerBar.getPlayers().contains(viewer)) {
+                staggerBar.addPlayer(viewer);
+            }
         }
+    }
+
+    private boolean updateStaggerBar() {
+        if (staggerBar == null) {
+            return false;
+        }
+
+        boolean visible = introPhase == IntroPhase.ACTIVE
+                && !phaseTransitioning
+                && (staggerState.getCurrent() > 0.0 || staggerState.isStaggered());
+        staggerBar.setVisible(visible);
+        if (!visible) {
+            return false;
+        }
+
+        if (staggerState.isStaggered()) {
+            double remaining = staggerState.getStaggerTicksRemaining()
+                    / (double) STAGGER_PROFILE.staggerDurationTicks();
+            staggerBar.setProgress(Math.max(0.0, Math.min(1.0, remaining)));
+            staggerBar.setColor(BarColor.WHITE);
+            staggerBar.setTitle(String.format(
+                    "§f§l✦ 体勢崩壊 §7— §c%.1f秒",
+                    staggerState.getStaggerTicksRemaining() / 20.0
+            ));
+            return true;
+        }
+
+        double progress = staggerState.getCurrent() / STAGGER_PROFILE.maxStagger();
+        staggerBar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
+        staggerBar.setColor(progress >= 0.8 ? BarColor.RED : BarColor.YELLOW);
+        staggerBar.setTitle(progress >= 0.8 ? "§c§l体勢 §7— §f崩壊寸前" : "§e§l体勢");
+        return true;
+    }
+
+    private boolean canViewBossBars(Player viewer, Location bossLocation, double visibleRangeSquared) {
+        return viewer.isOnline()
+                && !viewer.isDead()
+                && viewer.getWorld().equals(entity.getWorld())
+                && viewer.getLocation().distanceSquared(bossLocation) <= visibleRangeSquared;
     }
 
     private String bossBarTitle() {
@@ -1116,12 +1300,16 @@ public class FrostPilgrimBoss extends CustomMob {
     }
 
     private void removeBossBar() {
-        if (bossBar == null) {
-            return;
+        if (bossBar != null) {
+            bossBar.removeAll();
+            bossBar.setVisible(false);
+            bossBar = null;
         }
-        bossBar.removeAll();
-        bossBar.setVisible(false);
-        bossBar = null;
+        if (staggerBar != null) {
+            staggerBar.removeAll();
+            staggerBar.setVisible(false);
+            staggerBar = null;
+        }
     }
 
     private boolean isDead() {

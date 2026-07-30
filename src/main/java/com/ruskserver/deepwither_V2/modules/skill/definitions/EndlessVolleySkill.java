@@ -124,7 +124,8 @@ public class EndlessVolleySkill implements Skill {
 
             @Override
             protected void onHitEntity(LivingEntity target) {
-                damagePipelineManager.processScaledDamage(getCaster(), target, DamageType.RANGED, 0.5, getTags(), getId(), 0L);
+                damagePipelineManager.processScaledDamage(getCaster(), target, DamageType.RANGED, 0.5,
+                        getTags(), getId(), 0L, getCurrentLocation(), 0.35);
                 getCurrentLocation().getWorld().spawnParticle(Particle.CRIT, getCurrentLocation(), 8, 0.12, 0.12, 0.12, 0.08);
                 remove();
             }

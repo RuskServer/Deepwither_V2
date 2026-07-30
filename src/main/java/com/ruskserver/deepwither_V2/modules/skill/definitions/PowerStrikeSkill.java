@@ -79,7 +79,8 @@ public class PowerStrikeSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 15, 0.3, 0.3, 0.3, 0.2);
         loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
 
-        damagePipelineManager.processScaledDamage(player, target, DamageType.PHYSICAL, 2.0, getTags(), getId(), 500L);
+        damagePipelineManager.processScaledDamage(player, target, DamageType.PHYSICAL, 2.0,
+                getTags(), getId(), 500L, null, 2.0);
 
         return CastResult.success();
     }

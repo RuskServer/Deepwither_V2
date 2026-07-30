@@ -1,10 +1,10 @@
 package com.ruskserver.deepwither_V2.modules.combat.damage;
 
+import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.List;
 
 /**
  * ダメージ計算パイプライン内を流れるコンテキストデータ。
@@ -18,7 +18,9 @@ public class DamageContext {
     
     private double damage;
     private double distanceMultiplier = 1.0;
+    private double staggerMultiplier = 1.0;
     private boolean isCritical = false;
+    private Location impactLocation;
 
     public DamageContext(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage) {
         this.attacker = attacker;
@@ -63,12 +65,28 @@ public class DamageContext {
         this.distanceMultiplier = Math.max(0.01, distanceMultiplier);
     }
 
+    public double getStaggerMultiplier() {
+        return staggerMultiplier;
+    }
+
+    public void setStaggerMultiplier(double staggerMultiplier) {
+        this.staggerMultiplier = Math.max(0.0, staggerMultiplier);
+    }
+
     public boolean isCritical() {
         return isCritical;
     }
 
     public void setCritical(boolean critical) {
         isCritical = critical;
+    }
+
+    public Location getImpactLocation() {
+        return impactLocation == null ? null : impactLocation.clone();
+    }
+
+    public void setImpactLocation(Location impactLocation) {
+        this.impactLocation = impactLocation == null ? null : impactLocation.clone();
     }
 
     /**
@@ -92,5 +110,9 @@ public class DamageContext {
      */
     public boolean hasTag(String tag) {
         return this.tags.contains(tag);
+    }
+
+    public Set<String> getTags() {
+        return Set.copyOf(tags);
     }
 }

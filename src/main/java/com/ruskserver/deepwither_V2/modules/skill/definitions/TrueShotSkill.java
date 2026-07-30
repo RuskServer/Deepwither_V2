@@ -147,7 +147,7 @@ public class TrueShotSkill implements Skill {
             protected void onHitEntity(LivingEntity hitTarget) {
                 if (!hasImpacted) {
                     hasImpacted = true;
-                    finalImpactLocation = hitTarget.getLocation().add(0, 0.5, 0);
+                    finalImpactLocation = getCurrentLocation();
                     createImpactEffects(finalImpactLocation, hitTarget);
                 }
             }
@@ -182,7 +182,7 @@ public class TrueShotSkill implements Skill {
                 if (hitTarget != null) {
                     double atk = statManager.getTotalStat(getCaster(), StatType.RANGED_DAMAGE);
                     damagePipelineManager.processDamage(getCaster(), hitTarget, DamageType.TRUE_DAMAGE,
-                            atk * 4.0, getTags(), getId(), 500L);
+                            atk * 4.0, getTags(), getId(), 500L, impactLoc);
                 }
             }
         };

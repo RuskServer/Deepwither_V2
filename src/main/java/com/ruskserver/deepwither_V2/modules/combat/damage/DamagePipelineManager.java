@@ -9,8 +9,10 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.phases.MartyrdomPhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.SpecialEffectPhase;
 import com.ruskserver.deepwither_V2.modules.skill.definitions.MartyrdomSkill;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
+import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageIndicatorService;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.combat.stagger.BossStaggerService;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectService;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
@@ -25,6 +27,7 @@ import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -59,6 +62,8 @@ public class DamagePipelineManager implements Listener {
     private final MobRegionConfig regionConfig;
     private final TraderService traderService;
     private final DamageFeedbackService feedbackService;
+    private final DamageIndicatorService indicatorService;
+    private final BossStaggerService staggerService;
     private final PartyManager partyManager;
     private final NamespacedKey corpseKey;
     private final List<DamagePhase> pipeline = new ArrayList<>();
@@ -72,6 +77,8 @@ public class DamagePipelineManager implements Listener {
                                  ItemManager itemManager, ItemPDCUtil pdcUtil, SpecialEffectService specialEffectService,
                                  CustomMobManager customMobManager, MobRegionConfig regionConfig,
                                  TraderService traderService, DamageFeedbackService feedbackService,
+                                 DamageIndicatorService indicatorService,
+                                 BossStaggerService staggerService,
                                  PartyManager partyManager, MartyrdomSkill martyrdomSkill,
                                  org.bukkit.plugin.java.JavaPlugin plugin) {
         this.healthManager = healthManager;
@@ -80,6 +87,8 @@ public class DamagePipelineManager implements Listener {
         this.regionConfig = regionConfig;
         this.traderService = traderService;
         this.feedbackService = feedbackService;
+        this.indicatorService = indicatorService;
+        this.staggerService = staggerService;
         this.partyManager = partyManager;
         this.corpseKey = new NamespacedKey(plugin, RevivalManager.CORPSE_TAG);
 
@@ -140,6 +149,9 @@ public class DamagePipelineManager implements Listener {
 
         // パイプラインを通すためのコンテキストを生成
         DamageContext context = new DamageContext(attacker, defender, type, 0.0);
+        if (event.getDamager() instanceof Projectile projectile) {
+            context.setImpactLocation(projectile.getLocation());
+        }
 
         // パイプライン処理を実行
         for (DamagePhase phase : pipeline) {
@@ -153,11 +165,14 @@ public class DamagePipelineManager implements Listener {
             double factor = 1.0 + (attackerMob.getLevel() - 1) * multiplier;
             context.setDamage(context.getDamage() * factor);
         }
+        staggerService.applyStaggeredDamageMultiplier(context);
 
         // 最終ダメージを仮想HPから減算し、フィードバックを再生
         if (context.getDamage() > 0) {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
+            indicatorService.show(context);
+            staggerService.recordResolvedDamage(context);
             
             // 無敵時間を設定 (500ms = 0.5秒)
             applyIFrame(iframeKey, now, DEFAULT_IFRAME_MILLIS);
@@ -285,6 +300,12 @@ public class DamagePipelineManager implements Listener {
         processDamage(attacker, defender, type, initialDamage, tags, 1.0, sourceId, iframeMillis);
     }
 
+    public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage,
+                              java.util.Set<String> tags, String sourceId, long iframeMillis,
+                              Location impactLocation) {
+        processDamage(attacker, defender, type, initialDamage, tags, 1.0, sourceId, iframeMillis, impactLocation);
+    }
+
     /**
      * 攻撃力または魔法攻撃力に対する倍率でスキルダメージを流し込むためのAPI。
      */
@@ -295,8 +316,22 @@ public class DamagePipelineManager implements Listener {
 
     public void processScaledDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double coefficient,
                                     java.util.Set<String> tags, String sourceId, long iframeMillis) {
+        processScaledDamage(attacker, defender, type, coefficient, tags, sourceId, iframeMillis, null);
+    }
+
+    public void processScaledDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double coefficient,
+                                    java.util.Set<String> tags, String sourceId, long iframeMillis,
+                                    Location impactLocation) {
+        processScaledDamage(attacker, defender, type, coefficient, tags, sourceId, iframeMillis,
+                impactLocation, 1.0);
+    }
+
+    public void processScaledDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double coefficient,
+                                    java.util.Set<String> tags, String sourceId, long iframeMillis,
+                                    Location impactLocation, double staggerMultiplier) {
         if (attacker == null) {
-            processDamage(null, defender, type, 0.0, tags, sourceId, iframeMillis);
+            processDamage(null, defender, type, 0.0, tags, 1.0, sourceId, iframeMillis,
+                    impactLocation, staggerMultiplier);
             return;
         }
 
@@ -310,7 +345,8 @@ public class DamagePipelineManager implements Listener {
         }
         double baseDamage = statManager.getTotalStat(attacker, statType);
         double initialDamage = (baseDamage > 0 ? baseDamage : 1.0) * coefficient;
-        processDamage(attacker, defender, type, initialDamage, tags, sourceId, iframeMillis);
+        processDamage(attacker, defender, type, initialDamage, tags, 1.0, sourceId, iframeMillis,
+                impactLocation, staggerMultiplier);
     }
 
     /**
@@ -324,6 +360,21 @@ public class DamagePipelineManager implements Listener {
     public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage,
                               java.util.Set<String> tags, double distanceMultiplier,
                               String sourceId, long iframeMillis) {
+        processDamage(attacker, defender, type, initialDamage, tags, distanceMultiplier,
+                sourceId, iframeMillis, null);
+    }
+
+    public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage,
+                              java.util.Set<String> tags, double distanceMultiplier,
+                              String sourceId, long iframeMillis, Location impactLocation) {
+        processDamage(attacker, defender, type, initialDamage, tags, distanceMultiplier,
+                sourceId, iframeMillis, impactLocation, 1.0);
+    }
+
+    public void processDamage(LivingEntity attacker, LivingEntity defender, DamageType type, double initialDamage,
+                              java.util.Set<String> tags, double distanceMultiplier,
+                              String sourceId, long iframeMillis, Location impactLocation,
+                              double staggerMultiplier) {
         if (isProtectedTrader(defender) || isBlockedPvp(attacker, defender) || isSameParty(attacker, defender)) {
             return;
         }
@@ -345,6 +396,8 @@ public class DamagePipelineManager implements Listener {
 
         DamageContext context = new DamageContext(attacker, defender, type, initialDamage);
         context.setDistanceMultiplier(distanceMultiplier);
+        context.setImpactLocation(impactLocation);
+        context.setStaggerMultiplier(staggerMultiplier);
         if (tags != null) {
             context.addTags(tags);
         }
@@ -359,10 +412,13 @@ public class DamagePipelineManager implements Listener {
             double factor = 1.0 + (attackerMob.getLevel() - 1) * multiplier;
             context.setDamage(context.getDamage() * factor);
         }
+        staggerService.applyStaggeredDamageMultiplier(context);
 
         if (context.getDamage() > 0) {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
+            indicatorService.show(context);
+            staggerService.recordResolvedDamage(context);
 
             // 無敵時間を設定
             applyIFrame(iframeKey, now, iframeMillis);

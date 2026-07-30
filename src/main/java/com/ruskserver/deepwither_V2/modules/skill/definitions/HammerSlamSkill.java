@@ -88,7 +88,8 @@ public class HammerSlamSkill implements Skill {
 
         player.getNearbyEntities(3.5, 3.5, 3.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.5, getTags(), getId(), 500L);
+                damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.5,
+                        getTags(), getId(), 500L, loc, 2.5);
                 living.setVelocity(living.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(1.2).setY(0.4));
             }
         });

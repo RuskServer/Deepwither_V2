@@ -109,7 +109,8 @@ public class MobMagicProjectileService implements Listener, Startable, Stoppable
                 ? Set.of()
                 : Set.of(serializedTags.split(","));
         damageManager.processDamage(
-                caster, target, DamageType.MAGIC, damage, tags, sourceId, 500L);
+                caster, target, DamageType.MAGIC, damage, tags, sourceId, 500L,
+                projectile.getLocation());
         playImpact(projectile);
     }
 

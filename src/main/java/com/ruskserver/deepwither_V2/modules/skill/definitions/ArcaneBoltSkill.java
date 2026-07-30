@@ -114,7 +114,8 @@ public class ArcaneBoltSkill implements Skill {
 
             @Override
             protected void onHitEntity(LivingEntity target) {
-                damagePipelineManager.processScaledDamage(context.getCaster(), target, DamageType.MAGIC, 1.2, getTags(), getId(), 500L);
+                damagePipelineManager.processScaledDamage(context.getCaster(), target, DamageType.MAGIC, 1.2,
+                        getTags(), getId(), 500L, getCurrentLocation());
                 target.getWorld().spawnParticle(Particle.CRIT, getCurrentLocation(), 12, 0.2, 0.2, 0.2, 0.1);
                 remove();
             }
