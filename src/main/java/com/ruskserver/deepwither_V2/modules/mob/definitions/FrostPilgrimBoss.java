@@ -203,7 +203,7 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
         bossBar.setVisible(false);
         staggerBar = Bukkit.createBossBar(
                 "§e§l体勢",
-                BarColor.YELLOW,
+                BarColor.BLUE,
                 BarStyle.SEGMENTED_10
         );
         staggerBar.setProgress(0.0);
@@ -1269,7 +1269,7 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
             double remaining = staggerState.getStaggerTicksRemaining()
                     / (double) STAGGER_PROFILE.staggerDurationTicks();
             staggerBar.setProgress(Math.max(0.0, Math.min(1.0, remaining)));
-            staggerBar.setColor(BarColor.WHITE);
+            staggerBar.setColor(BarColor.BLUE);
             staggerBar.setTitle(String.format(
                     "§f§l✦ 体勢崩壊 §7— §c%.1f秒",
                     staggerState.getStaggerTicksRemaining() / 20.0
@@ -1279,7 +1279,7 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
 
         double progress = staggerState.getCurrent() / STAGGER_PROFILE.maxStagger();
         staggerBar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
-        staggerBar.setColor(progress >= 0.8 ? BarColor.RED : BarColor.YELLOW);
+        staggerBar.setColor(BarColor.BLUE);
         staggerBar.setTitle(progress >= 0.8 ? "§c§l体勢 §7— §f崩壊寸前" : "§e§l体勢");
         return true;
     }
