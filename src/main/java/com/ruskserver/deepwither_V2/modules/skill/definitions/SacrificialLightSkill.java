@@ -78,7 +78,7 @@ public class SacrificialLightSkill implements Skill {
                 caster.getEyeLocation(),
                 caster.getEyeLocation().getDirection(),
                 30, 1.0,
-                e -> e instanceof LivingEntity && !e.equals(caster)
+                e -> e instanceof org.bukkit.entity.Player && !e.equals(caster)
         );
 
         LivingEntity target = ray != null ? (LivingEntity) ray.getHitEntity() : null;

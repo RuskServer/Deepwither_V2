@@ -93,12 +93,12 @@ public class RenewalSkill implements Skill {
 
         BukkitRunnable task = new BukkitRunnable() {
             int tickCount = 0;
-            final int TOTAL_TICKS = 80;
+            final int TOTAL_TICKS = 120;
             final int INTERVAL = 40;
 
             @Override
             public void run() {
-                if (tickCount >= TOTAL_TICKS || target.isDead() || !target.isValid()) {
+                if (tickCount > TOTAL_TICKS || target.isDead() || !target.isValid()) {
                     cancel();
                     activeHoTs.remove(targetId, this);
                     return;

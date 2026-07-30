@@ -5,7 +5,9 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.DamagePhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.ItemAbilityPhase;
+import com.ruskserver.deepwither_V2.modules.combat.damage.phases.MartyrdomPhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.SpecialEffectPhase;
+import com.ruskserver.deepwither_V2.modules.skill.definitions.MartyrdomSkill;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
@@ -70,7 +72,8 @@ public class DamagePipelineManager implements Listener {
                                  ItemManager itemManager, ItemPDCUtil pdcUtil, SpecialEffectService specialEffectService,
                                  CustomMobManager customMobManager, MobRegionConfig regionConfig,
                                  TraderService traderService, DamageFeedbackService feedbackService,
-                                 PartyManager partyManager, org.bukkit.plugin.java.JavaPlugin plugin) {
+                                 PartyManager partyManager, MartyrdomSkill martyrdomSkill,
+                                 org.bukkit.plugin.java.JavaPlugin plugin) {
         this.healthManager = healthManager;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
@@ -93,6 +96,8 @@ public class DamagePipelineManager implements Listener {
         // 5. 属性別ダメージ補正（火・氷などのパッシブ効果）
         pipeline.add(new DamagePhase.ElementModifier(statManager));
         pipeline.add(new SpecialEffectPhase(specialEffectService, healthManager, manaManager));
+        // 6. スキル「殉教」等の味方被ダメージ肩代わり効果の適用
+        pipeline.add(new MartyrdomPhase(martyrdomSkill, healthManager));
     }
 
     /**

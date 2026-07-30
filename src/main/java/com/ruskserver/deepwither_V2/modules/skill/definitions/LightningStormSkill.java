@@ -16,11 +16,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -89,7 +87,7 @@ public class LightningStormSkill implements Skill {
 
             @Override
             public void run() {
-                if (wave >= 3 || !player.isOnline()) {
+                if (wave >= 3 || !player.isValid() || player.isDead()) {
                     cancel();
                     return;
                 }
@@ -110,6 +108,8 @@ public class LightningStormSkill implements Skill {
                     if (entity instanceof LivingEntity living && !entity.equals(player)) {
                         if (living.getLocation().distance(center) <= 7.0) {
                             living.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, living.getLocation().add(0, 1, 0), 6, 0.2, 0.2, 0.2, 0.05);
+                            living.getWorld().playSound(living.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 1.5f);
+                            damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 0.35, getTags(), getId(), 0L);
                         }
                     }
                 });
@@ -117,14 +117,6 @@ public class LightningStormSkill implements Skill {
                 wave++;
             }
         }.runTaskTimer(JavaPlugin.getPlugin(Deepwither_V2.class), 0L, 6L);
-
-        center.getWorld().getNearbyEntities(center, 7.0, 5.0, 7.0).forEach(entity -> {
-            if (entity instanceof LivingEntity living && !entity.equals(player)) {
-                if (living.getLocation().distance(center) <= 7.0) {
-                    damagePipelineManager.processScaledDamage(player, living, DamageType.MAGIC, 1.0, getTags(), getId(), 500L);
-                }
-            }
-        });
 
         return CastResult.success();
     }

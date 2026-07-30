@@ -11,14 +11,12 @@ import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -127,8 +125,10 @@ public class BlizzardSkill implements Skill {
 
                 var world = center.getWorld();
 
-                drawBlockRing(center, 5.0, 30, Material.ICE);
-                drawBlockRing(center, 3.0, 24, Material.ICE);
+                if (ticks % 4 == 0) {
+                    drawBlockRing(center, 5.0, 30, Material.ICE);
+                    drawBlockRing(center, 3.0, 24, Material.ICE);
+                }
 
                 for (int i = 0; i < 2; i++) {
                     double angle = Math.random() * Math.PI * 2;
@@ -143,8 +143,8 @@ public class BlizzardSkill implements Skill {
                 for (Entity entity : targets) {
                     if (entity instanceof LivingEntity target && !entity.equals(caster)) {
                         double distSq = entity.getLocation().distanceSquared(center);
-                        if (distSq >= 1.0 && distSq <= 25.0) {
-                            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 2, 1));
+                        if (distSq <= 25.0) {
+                            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 1));
                         }
                     }
                 }
@@ -153,11 +153,11 @@ public class BlizzardSkill implements Skill {
                     world.playSound(center, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1.0f, 1.0f);
                 }
 
-                if (ticks % 10 == 0 && ticks < 60) {
+                if (ticks % 12 == 0) {
                     for (Entity entity : targets) {
                         if (entity instanceof LivingEntity target && !entity.equals(caster)) {
                             double distSq = entity.getLocation().distanceSquared(center);
-                            if (distSq >= 1.0 && distSq <= 25.0) {
+                            if (distSq <= 25.0) {
                                 damagePipelineManager.processScaledDamage(caster, target, DamageType.MAGIC, 0.6, getTags(), getId(), 0L);
                             }
                         }

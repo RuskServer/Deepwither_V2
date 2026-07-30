@@ -14,6 +14,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -24,13 +25,13 @@ import java.util.UUID;
 @Component
 public class HolyResurrectionSkill implements Skill {
 
-    private final RevivalManager revivalManager;
     private final VirtualHealthManager healthManager;
+    private final RevivalManager revivalManager;
 
     @Inject
-    public HolyResurrectionSkill(RevivalManager revivalManager, VirtualHealthManager healthManager) {
-        this.revivalManager = revivalManager;
+    public HolyResurrectionSkill(VirtualHealthManager healthManager, RevivalManager revivalManager) {
         this.healthManager = healthManager;
+        this.revivalManager = revivalManager;
     }
 
     @Override
@@ -42,8 +43,8 @@ public class HolyResurrectionSkill implements Skill {
     @Override
     public List<String> getDescription() {
         return List.of(
-                "自らの生命力を聖なる力に変え、倒れた仲間を蘇らせる。",
-                "自分の最大HPの50%を消費し、直線方向上最も近い戦闘不能状態の味方を最大HP40%で蘇生する。"
+                "自身のHPを半分捧げ、直線方向上最も近い戦闘不能状態の味方を蘇生する。",
+                "蘇生された味方は最大HPの50%で復活する。"
         );
     }
 
@@ -54,19 +55,19 @@ public class HolyResurrectionSkill implements Skill {
     public SkillCategory getCategory() { return SkillCategory.ACTIVE; }
 
     @Override
-    public SkillTargetType getTargetType() { return SkillTargetType.SELF; }
+    public SkillTargetType getTargetType() { return SkillTargetType.ENTITY; }
 
     @Override
-    public Set<String> getTags() { return Set.of("holy", "support", "resurrect", "hp_cost"); }
+    public Set<String> getTags() { return Set.of("magic", "priest", "support"); }
 
     @Override
     public Set<SkillTag.Role> getRoles() { return Set.of(SkillTag.Role.SUPPORT); }
 
     @Override
-    public Set<SkillTag.Constraint> getConstraints() { return Set.of(SkillTag.Constraint.HIGH_COST, SkillTag.Constraint.LONG_CD); }
+    public Set<SkillTag.Constraint> getConstraints() { return Set.of(SkillTag.Constraint.LONG_CD, SkillTag.Constraint.HIGH_COST); }
 
     @Override
-    public double getManaCost(SkillContext context) { return 30.0; }
+    public double getManaCost(SkillContext context) { return 80.0; }
 
     @Override
     public Duration getCooldown(SkillContext context) { return Duration.ofSeconds(180); }
@@ -85,6 +86,8 @@ public class HolyResurrectionSkill implements Skill {
 
         Player target = null;
         double nearest = Double.MAX_VALUE;
+        Vector casterEyeVec = caster.getEyeLocation().toVector();
+        Vector casterDir = caster.getEyeLocation().getDirection().normalize();
 
         for (Entity entity : caster.getNearbyEntities(20.0, 10.0, 20.0)) {
             if (!(entity instanceof Mannequin mannequin)) continue;
@@ -96,6 +99,12 @@ public class HolyResurrectionSkill implements Skill {
 
             Player downed = Bukkit.getPlayer(profileUuid.get());
             if (downed == null || !revivalManager.isDowned(downed)) continue;
+
+            Vector toTarget = entity.getLocation().toVector().subtract(casterEyeVec);
+            if (toTarget.lengthSquared() > 20.0 * 20.0 || toTarget.lengthSquared() == 0) continue;
+
+            double dot = toTarget.normalize().dot(casterDir);
+            if (dot < 0.75) continue;
 
             double dist = entity.getLocation().distanceSquared(caster.getLocation());
             if (dist < nearest) {
