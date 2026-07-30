@@ -10,6 +10,7 @@ import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.WandItem;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
+import com.ruskserver.deepwither_V2.modules.stat.listener.EquipmentStatListener;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -37,6 +38,7 @@ public class CombatMeleeListener implements Listener {
     private final CombatHitDetectionService hitDetectionService;
     private final DamagePipelineManager damagePipelineManager;
     private final CombatStatsService statsService;
+    private final EquipmentStatListener equipmentStatListener;
 
     @Inject
     public CombatMeleeListener(
@@ -45,7 +47,8 @@ public class CombatMeleeListener implements Listener {
             ItemManager itemManager,
             CombatHitDetectionService hitDetectionService,
             DamagePipelineManager damagePipelineManager,
-            CombatStatsService statsService
+            CombatStatsService statsService,
+            EquipmentStatListener equipmentStatListener
     ) {
         this.statManager = statManager;
         this.pdcUtil = pdcUtil;
@@ -53,6 +56,7 @@ public class CombatMeleeListener implements Listener {
         this.hitDetectionService = hitDetectionService;
         this.damagePipelineManager = damagePipelineManager;
         this.statsService = statsService;
+        this.equipmentStatListener = equipmentStatListener;
     }
 
     @EventHandler
@@ -92,6 +96,7 @@ public class CombatMeleeListener implements Listener {
         CombatWeaponType type = resolveWeaponType(hand);
         if (type == null) return;
 
+        equipmentStatListener.ensureEquipmentStatsCurrent(player);
         long now = System.currentTimeMillis();
         double attackSpeed = statManager.getTotalStat(player, StatType.ATTACK_SPEED);
         if (attackSpeed <= 0) attackSpeed = 1.0;

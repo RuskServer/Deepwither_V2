@@ -6,6 +6,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.stat.AttributeType;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
+import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import com.ruskserver.deepwither_V2.modules.player.provider.CharacterAttributeProvider;
 import com.ruskserver.deepwither_V2.modules.player.provider.CharacterLevelProvider;
@@ -32,10 +33,12 @@ public class StatusDialogService {
 
     private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#,##0.##");
     private static final int BODY_WIDTH = 360;
+    private static final double BASE_CRITICAL_MULTIPLIER_PERCENT = 150.0;
 
     private final CharacterDataRepository characterDataRepository;
     private final CharacterService characterService;
     private final StatManager statManager;
+    private final VirtualHealthManager healthManager;
     private final PlayerManager playerManager;
     private final TraderService traderService;
     private final TraderReputationService reputationService;
@@ -45,12 +48,14 @@ public class StatusDialogService {
             CharacterDataRepository characterDataRepository,
             CharacterService characterService,
             StatManager statManager,
+            VirtualHealthManager healthManager,
             PlayerManager playerManager,
             TraderService traderService,
             TraderReputationService reputationService) {
         this.characterDataRepository = characterDataRepository;
         this.characterService = characterService;
         this.statManager = statManager;
+        this.healthManager = healthManager;
         this.playerManager = playerManager;
         this.traderService = traderService;
         this.reputationService = reputationService;
@@ -154,15 +159,20 @@ public class StatusDialogService {
     }
 
     private Component buildCombatStats(Player player) {
-        double maxHp = statManager.getTotalStat(player, StatType.HEALTH);
+        double currentHp = healthManager.getHealth(player);
+        double maxHp = healthManager.getMaxHealth(player);
         double defense = statManager.getTotalStat(player, StatType.DEFENSE);
         double magicDefense = statManager.getTotalStat(player, StatType.MAGIC_DEFENSE);
+        double criticalChancePercent =
+                statManager.getTotalStat(player, StatType.CRITICAL_CHANCE);
+        double criticalMultiplierPercent = BASE_CRITICAL_MULTIPLIER_PERCENT
+                + statManager.getTotalStat(player, StatType.CRITICAL_DAMAGE);
 
         return sectionTitle("戦闘ステータス")
                 .append(Component.newline())
                 .append(line(
                         "HP",
-                        String.format("%.0f / %.0f", player.getHealth(), maxHp),
+                        String.format("%.0f / %.0f", currentHp, maxHp),
                         NamedTextColor.WHITE
                 ))
                 .append(Component.newline())
@@ -194,14 +204,14 @@ public class StatusDialogService {
                 .append(Component.newline())
                 .append(statLine(
                         "クリティカル率",
-                        statManager.getTotalStat(player, StatType.CRITICAL_CHANCE) * 100.0,
+                        criticalChancePercent,
                         NamedTextColor.GOLD,
                         "%"
                 ))
                 .append(Component.newline())
                 .append(statLine(
                         "クリティカル倍率",
-                        statManager.getTotalStat(player, StatType.CRITICAL_DAMAGE) * 100.0,
+                        criticalMultiplierPercent,
                         NamedTextColor.GOLD,
                         "%"
                 ))

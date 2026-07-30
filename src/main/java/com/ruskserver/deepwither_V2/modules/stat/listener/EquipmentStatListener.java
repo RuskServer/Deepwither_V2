@@ -26,8 +26,11 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -44,6 +47,7 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
     private final ItemManager itemManager;
     private final SpecialEffectService specialEffectService;
     private final Deepwither_V2 plugin;
+    private final Map<UUID, Integer> equipmentFingerprints = new HashMap<>();
 
     @Inject
     public EquipmentStatListener(StatManager statManager, ItemPDCUtil pdcUtil, ItemManager itemManager,
@@ -73,6 +77,7 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
     @Override
     public CompletableFuture<Void> run(PlayerLifecycleContext context) {
         if (context.eventType() == PlayerLifecycleEventType.QUIT) {
+            equipmentFingerprints.remove(context.playerId());
             statManager.removeProfile(context.playerId());
             return CompletableFuture.completedFuture(null);
         }
@@ -117,6 +122,27 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
             statManager.setModifier(player.getUniqueId(), StatType.ATTACK_SPEED,
                     "sp_haste", 0.10, ModifierType.MULTIPLICATIVE);
         }
+        equipmentFingerprints.put(player.getUniqueId(), equipmentFingerprint(player));
+    }
+
+    /**
+     * 遅延イベントより先に攻撃された場合だけ、その場で装備ステータスを同期する。
+     */
+    public void ensureEquipmentStatsCurrent(Player player) {
+        int currentFingerprint = equipmentFingerprint(player);
+        Integer appliedFingerprint = equipmentFingerprints.get(player.getUniqueId());
+        if (appliedFingerprint == null || appliedFingerprint != currentFingerprint) {
+            updateEquipmentStats(player);
+        }
+    }
+
+    private int equipmentFingerprint(Player player) {
+        int result = player.getInventory().getItemInMainHand().hashCode();
+        result = 31 * result + Arrays.hashCode(player.getInventory().getArmorContents());
+        result = 31 * result + Boolean.hashCode(
+                specialEffectService.hasEffect(player, SpecialEffect.HASTE)
+        );
+        return result;
     }
 
     private void removeAllEquipmentModifiers(Player player) {
