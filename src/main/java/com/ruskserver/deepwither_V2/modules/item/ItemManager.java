@@ -4,17 +4,21 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
+import com.ruskserver.deepwither_V2.modules.item.api.PickaxeItem;
 import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierManager;
 import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierRollResult;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectInstance;
 import com.ruskserver.deepwither_V2.core.di.container.DIContainer;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
+import io.papermc.paper.block.BlockPredicate;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Equippable;
+import io.papermc.paper.datacomponent.item.ItemAdventurePredicate;
 import io.papermc.paper.datacomponent.item.ItemArmorTrim;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
+import io.papermc.paper.registry.set.RegistrySet;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -22,6 +26,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
+import org.bukkit.block.BlockType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -99,6 +104,7 @@ public class ItemManager implements Startable {
         if (maxStack > 1) {
             item.setData(io.papermc.paper.datacomponent.DataComponentTypes.MAX_STACK_SIZE, maxStack);
         }
+        applyToolProperties(item, customItem);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             if (customItem.getCustomModelData() != 0) {
@@ -231,7 +237,33 @@ public class ItemManager implements Startable {
         }
 
         item.setItemMeta(meta);
+        applyToolProperties(item, customItem);
         applyArmorAppearance(item, customItem);
+    }
+
+    private void applyToolProperties(ItemStack item, CustomItem customItem) {
+        if (customItem instanceof PickaxeItem pickaxe && pickaxe.getToolDurability() > 0) {
+            item.setData(DataComponentTypes.MAX_DAMAGE, pickaxe.getToolDurability());
+            applyCanBreak(item, pickaxe);
+        }
+    }
+
+    private void applyCanBreak(ItemStack item, PickaxeItem pickaxe) {
+        List<BlockType> mineableBlocks = pickaxe.getMineableBlocks().stream()
+                .map(Material::asBlockType)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        if (mineableBlocks.isEmpty()) {
+            return;
+        }
+
+        BlockPredicate predicate = BlockPredicate.predicate()
+                .blocks(RegistrySet.keySetFromValues(RegistryKey.BLOCK, mineableBlocks))
+                .build();
+        item.setData(
+                DataComponentTypes.CAN_BREAK,
+                ItemAdventurePredicate.itemAdventurePredicate(List.of(predicate))
+        );
     }
 
     private String formatStatValue(StatType type, double value) {

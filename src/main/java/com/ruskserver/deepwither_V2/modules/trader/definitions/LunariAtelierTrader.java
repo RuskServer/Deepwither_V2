@@ -28,6 +28,7 @@ public class LunariAtelierTrader implements TraderDefinition {
         return Arrays.asList(
                 new TraderProduct("healing_potion", 500.0, 0),
                 new TraderProduct("mana_potion", 1000.0, 0),
+                new TraderProduct("lunaris_survey_pickaxe", 1200.0, 0),
                 new TraderProduct("blue_crystal_sword", 4200.0, 0),
                 new TraderProduct("selene_rod", 3500.0, 0),
                 new TraderProduct("anchi_wisdom_helmet", 3000.0, 0),

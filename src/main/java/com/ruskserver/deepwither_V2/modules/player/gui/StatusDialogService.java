@@ -10,6 +10,9 @@ import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.player.PlayerManager;
 import com.ruskserver.deepwither_V2.modules.player.provider.CharacterAttributeProvider;
 import com.ruskserver.deepwither_V2.modules.player.provider.CharacterLevelProvider;
+import com.ruskserver.deepwither_V2.modules.mining.MiningSkillService;
+import com.ruskserver.deepwither_V2.modules.profession.ProfessionService;
+import com.ruskserver.deepwither_V2.modules.profession.ProfessionType;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderReputationService;
 import com.ruskserver.deepwither_V2.modules.trader.service.TraderService;
@@ -42,6 +45,8 @@ public class StatusDialogService {
     private final PlayerManager playerManager;
     private final TraderService traderService;
     private final TraderReputationService reputationService;
+    private final ProfessionService professionService;
+    private final MiningSkillService miningSkillService;
 
     @Inject
     public StatusDialogService(
@@ -51,7 +56,9 @@ public class StatusDialogService {
             VirtualHealthManager healthManager,
             PlayerManager playerManager,
             TraderService traderService,
-            TraderReputationService reputationService) {
+            TraderReputationService reputationService,
+            ProfessionService professionService,
+            MiningSkillService miningSkillService) {
         this.characterDataRepository = characterDataRepository;
         this.characterService = characterService;
         this.statManager = statManager;
@@ -59,6 +66,8 @@ public class StatusDialogService {
         this.playerManager = playerManager;
         this.traderService = traderService;
         this.reputationService = reputationService;
+        this.professionService = professionService;
+        this.miningSkillService = miningSkillService;
     }
 
     public void open(Player player) {
@@ -66,6 +75,7 @@ public class StatusDialogService {
         bodies.add(DialogBody.plainMessage(buildBasicInfo(player), BODY_WIDTH));
         bodies.add(DialogBody.plainMessage(buildAttributes(player), BODY_WIDTH));
         bodies.add(DialogBody.plainMessage(buildCombatStats(player), BODY_WIDTH));
+        bodies.add(DialogBody.plainMessage(buildMiningStatus(player), BODY_WIDTH));
         bodies.add(DialogBody.plainMessage(buildTraderReputation(player), BODY_WIDTH));
 
         Dialog dialog = Dialog.create(factory -> factory.empty()
@@ -244,6 +254,12 @@ public class StatusDialogService {
                     ));
         }
         return content;
+    }
+
+    private Component buildMiningStatus(Player player) {
+        return miningSkillService.buildStatus(
+                professionService.getProgress(player, ProfessionType.MINING)
+        );
     }
 
     private Component sectionTitle(String title) {
