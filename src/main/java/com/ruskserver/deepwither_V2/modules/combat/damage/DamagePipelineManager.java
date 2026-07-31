@@ -10,6 +10,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.phases.SpecialEffectPh
 import com.ruskserver.deepwither_V2.modules.skill.definitions.MartyrdomSkill;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageIndicatorService;
+import com.ruskserver.deepwither_V2.modules.combat.feedback.CriticalHitFeedbackService;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.combat.stagger.BossStaggerService;
@@ -63,6 +64,7 @@ public class DamagePipelineManager implements Listener {
     private final TraderService traderService;
     private final DamageFeedbackService feedbackService;
     private final DamageIndicatorService indicatorService;
+    private final CriticalHitFeedbackService criticalHitFeedbackService;
     private final BossStaggerService staggerService;
     private final PartyManager partyManager;
     private final NamespacedKey corpseKey;
@@ -78,6 +80,7 @@ public class DamagePipelineManager implements Listener {
                                  CustomMobManager customMobManager, MobRegionConfig regionConfig,
                                  TraderService traderService, DamageFeedbackService feedbackService,
                                  DamageIndicatorService indicatorService,
+                                 CriticalHitFeedbackService criticalHitFeedbackService,
                                  BossStaggerService staggerService,
                                  PartyManager partyManager, MartyrdomSkill martyrdomSkill,
                                  org.bukkit.plugin.java.JavaPlugin plugin) {
@@ -88,6 +91,7 @@ public class DamagePipelineManager implements Listener {
         this.traderService = traderService;
         this.feedbackService = feedbackService;
         this.indicatorService = indicatorService;
+        this.criticalHitFeedbackService = criticalHitFeedbackService;
         this.staggerService = staggerService;
         this.partyManager = partyManager;
         this.corpseKey = new NamespacedKey(plugin, RevivalManager.CORPSE_TAG);
@@ -172,6 +176,7 @@ public class DamagePipelineManager implements Listener {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
             indicatorService.show(context);
+            criticalHitFeedbackService.show(context);
             staggerService.recordResolvedDamage(context);
             
             // 無敵時間を設定 (500ms = 0.5秒)
@@ -418,6 +423,7 @@ public class DamagePipelineManager implements Listener {
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
             indicatorService.show(context);
+            criticalHitFeedbackService.show(context);
             staggerService.recordResolvedDamage(context);
 
             // 無敵時間を設定
