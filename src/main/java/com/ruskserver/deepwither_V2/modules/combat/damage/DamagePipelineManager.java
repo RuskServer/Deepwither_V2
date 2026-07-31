@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.DamagePhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.ItemAbilityPhase;
+import com.ruskserver.deepwither_V2.modules.combat.damage.phases.EquipmentSetPhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.MartyrdomPhase;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.SpecialEffectPhase;
 import com.ruskserver.deepwither_V2.modules.skill.definitions.MartyrdomSkill;
@@ -16,6 +17,7 @@ import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.combat.stagger.BossStaggerService;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectService;
+import com.ruskserver.deepwither_V2.modules.item.set.EquipmentSetService;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMobManager;
@@ -67,6 +69,7 @@ public class DamagePipelineManager implements Listener {
     private final CriticalHitFeedbackService criticalHitFeedbackService;
     private final BossStaggerService staggerService;
     private final PartyManager partyManager;
+    private final EquipmentSetService equipmentSetService;
     private final NamespacedKey corpseKey;
     private final List<DamagePhase> pipeline = new ArrayList<>();
 
@@ -83,6 +86,7 @@ public class DamagePipelineManager implements Listener {
                                  CriticalHitFeedbackService criticalHitFeedbackService,
                                  BossStaggerService staggerService,
                                  PartyManager partyManager, MartyrdomSkill martyrdomSkill,
+                                 EquipmentSetService equipmentSetService,
                                  org.bukkit.plugin.java.JavaPlugin plugin) {
         this.healthManager = healthManager;
         this.statManager = statManager;
@@ -94,6 +98,7 @@ public class DamagePipelineManager implements Listener {
         this.criticalHitFeedbackService = criticalHitFeedbackService;
         this.staggerService = staggerService;
         this.partyManager = partyManager;
+        this.equipmentSetService = equipmentSetService;
         this.corpseKey = new NamespacedKey(plugin, RevivalManager.CORPSE_TAG);
 
         // パイプラインのフェーズを順番に登録する
@@ -109,6 +114,7 @@ public class DamagePipelineManager implements Listener {
         // 5. 属性別ダメージ補正（火・氷などのパッシブ効果）
         pipeline.add(new DamagePhase.ElementModifier(statManager));
         pipeline.add(new SpecialEffectPhase(specialEffectService, healthManager, manaManager));
+        pipeline.add(new EquipmentSetPhase(equipmentSetService));
         // 6. スキル「殉教」等の味方被ダメージ肩代わり効果の適用
         pipeline.add(new MartyrdomPhase(martyrdomSkill, healthManager));
     }
@@ -173,6 +179,7 @@ public class DamagePipelineManager implements Listener {
 
         // 最終ダメージを仮想HPから減算し、フィードバックを再生
         if (context.getDamage() > 0) {
+            equipmentSetService.processResolvedAttackerEffects(context);
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
             indicatorService.show(context);
@@ -420,6 +427,7 @@ public class DamagePipelineManager implements Listener {
         staggerService.applyStaggeredDamageMultiplier(context);
 
         if (context.getDamage() > 0) {
+            equipmentSetService.processResolvedAttackerEffects(context);
             customMobManager.recordDamage(defender, attacker);
             healthManager.damage(defender, context.getDamage());
             indicatorService.show(context);

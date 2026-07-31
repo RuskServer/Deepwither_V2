@@ -96,6 +96,13 @@ public interface CustomItem {
     }
 
     /**
+     * @return 装備セットID。セットに属さないアイテムは null。
+     */
+    default String getEquipmentSetId() {
+        return null;
+    }
+
+    /**
      * @return このアイテムの最大スタック数。デフォルトは1（スタック不可）。
      */
     default int getMaxStackSize() {

@@ -76,6 +76,7 @@ public class StatusDialogService {
         bodies.add(DialogBody.plainMessage(buildAttributes(player), BODY_WIDTH));
         bodies.add(DialogBody.plainMessage(buildCombatStats(player), BODY_WIDTH));
         bodies.add(DialogBody.plainMessage(buildMiningStatus(player), BODY_WIDTH));
+        bodies.add(DialogBody.plainMessage(buildCraftingStatus(player), BODY_WIDTH));
         bodies.add(DialogBody.plainMessage(buildTraderReputation(player), BODY_WIDTH));
 
         Dialog dialog = Dialog.create(factory -> factory.empty()
@@ -260,6 +261,19 @@ public class StatusDialogService {
         return miningSkillService.buildStatus(
                 professionService.getProgress(player, ProfessionType.MINING)
         );
+    }
+
+    private Component buildCraftingStatus(Player player) {
+        ProfessionService.ProfessionProgress progress =
+                professionService.getProgress(player, ProfessionType.CRAFTING);
+        String experience = progress.requiredExperience() <= 0L
+                ? "MAX"
+                : progress.currentExperience() + " / " + progress.requiredExperience();
+        return Component.text("◆ 製作職人", NamedTextColor.GOLD, TextDecoration.BOLD)
+                .append(Component.newline())
+                .append(line("レベル", String.valueOf(progress.level()), NamedTextColor.YELLOW))
+                .append(Component.text("  ", NamedTextColor.GRAY))
+                .append(line("EXP", experience, NamedTextColor.WHITE));
     }
 
     private Component sectionTitle(String title) {

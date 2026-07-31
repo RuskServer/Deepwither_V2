@@ -2,7 +2,8 @@ package com.ruskserver.deepwither_V2.modules.profession;
 
 public enum ProfessionType {
     MINING("採掘"),
-    FISHING("釣り");
+    FISHING("釣り"),
+    CRAFTING("製作");
 
     private final String displayName;
 

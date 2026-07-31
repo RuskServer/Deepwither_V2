@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.item.api.PickaxeItem;
 import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierManager;
 import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierRollResult;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectInstance;
+import com.ruskserver.deepwither_V2.modules.item.set.EquipmentSet;
 import com.ruskserver.deepwither_V2.core.di.container.DIContainer;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
@@ -225,6 +226,17 @@ public class ItemManager implements Startable {
                 lore.add(Component.text(" §6・" + effect.getDisplayString())
                         .decoration(TextDecoration.ITALIC, false));
                 lore.add(Component.text("   §7" + effect.getEffect().getDescription())
+                        .decoration(TextDecoration.ITALIC, false));
+            }
+        }
+
+        EquipmentSet equipmentSet = EquipmentSet.fromId(customItem.getEquipmentSetId());
+        if (equipmentSet != null) {
+            lore.add(Component.empty());
+            lore.add(Component.text("-------- " + equipmentSet.getDisplayName() + " --------", NamedTextColor.DARK_GREEN)
+                    .decoration(TextDecoration.ITALIC, false));
+            for (String description : equipmentSet.getBonusDescriptions()) {
+                lore.add(Component.text(description, NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false));
             }
         }

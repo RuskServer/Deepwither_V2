@@ -13,6 +13,8 @@ import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffect;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectService;
+import com.ruskserver.deepwither_V2.modules.item.set.EquipmentSet;
+import com.ruskserver.deepwither_V2.modules.item.set.EquipmentSetService;
 import com.ruskserver.deepwither_V2.modules.stat.ModifierType;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import org.bukkit.Bukkit;
@@ -46,16 +48,19 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
     private final ItemPDCUtil pdcUtil;
     private final ItemManager itemManager;
     private final SpecialEffectService specialEffectService;
+    private final EquipmentSetService equipmentSetService;
     private final Deepwither_V2 plugin;
     private final Map<UUID, Integer> equipmentFingerprints = new HashMap<>();
 
     @Inject
     public EquipmentStatListener(StatManager statManager, ItemPDCUtil pdcUtil, ItemManager itemManager,
-                                 SpecialEffectService specialEffectService, Deepwither_V2 plugin) {
+                                 SpecialEffectService specialEffectService,
+                                 EquipmentSetService equipmentSetService, Deepwither_V2 plugin) {
         this.statManager = statManager;
         this.pdcUtil = pdcUtil;
         this.itemManager = itemManager;
         this.specialEffectService = specialEffectService;
+        this.equipmentSetService = equipmentSetService;
         this.plugin = plugin;
     }
 
@@ -122,6 +127,10 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
             statManager.setModifier(player.getUniqueId(), StatType.ATTACK_SPEED,
                     "sp_haste", 0.10, ModifierType.MULTIPLICATIVE);
         }
+        if (equipmentSetService.countPieces(player, EquipmentSet.GHOUL_DEFENDER) >= 2) {
+            statManager.setModifier(player.getUniqueId(), StatType.PHYSICAL_DAMAGE_REDUCTION,
+                    EquipmentSetService.DEFENDER_TWO_PIECE_SOURCE, 0.06, ModifierType.ADDITIVE);
+        }
         equipmentFingerprints.put(player.getUniqueId(), equipmentFingerprint(player));
     }
 
@@ -147,6 +156,8 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
 
     private void removeAllEquipmentModifiers(Player player) {
         statManager.removeModifier(player.getUniqueId(), StatType.ATTACK_SPEED, "sp_haste");
+        statManager.removeModifier(player.getUniqueId(), StatType.PHYSICAL_DAMAGE_REDUCTION,
+                EquipmentSetService.DEFENDER_TWO_PIECE_SOURCE);
         for (StatType type : StatType.values()) {
             statManager.removeModifier(player.getUniqueId(), type, "equip_mainhand_base");
             statManager.removeModifier(player.getUniqueId(), type, "equip_mainhand_mod");

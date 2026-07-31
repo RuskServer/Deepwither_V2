@@ -59,4 +59,9 @@ public class GhoulVisceraItem implements CustomItem {
     public int getCustomModelData() {
         return 2;
     }
+
+    @Override
+    public int getMaxStackSize() {
+        return 64;
+    }
 }

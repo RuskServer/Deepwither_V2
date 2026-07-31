@@ -59,4 +59,9 @@ public class GhoulRemnantItem implements CustomItem {
     public int getCustomModelData() {
         return 1;
     }
+
+    @Override
+    public int getMaxStackSize() {
+        return 64;
+    }
 }
