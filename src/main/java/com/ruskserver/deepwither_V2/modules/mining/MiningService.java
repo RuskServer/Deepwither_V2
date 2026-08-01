@@ -97,6 +97,10 @@ public class MiningService implements Startable, Stoppable {
         return oreRegistry.contains(material);
     }
 
+    public boolean isDepletedOre(Block block) {
+        return depletedOres.containsKey(BlockPosition.of(block));
+    }
+
     public boolean handleMiningAttempt(Player player, Block block) {
         OreDefinition definition = oreRegistry.get(block.getType());
         PickaxeItem pickaxe = resolvePickaxe(player);
@@ -133,7 +137,11 @@ public class MiningService implements Startable, Stoppable {
     }
 
     public void protectFromExplosion(List<Block> blocks) {
-        blocks.removeIf(block -> oreRegistry.contains(block.getType()));
+        blocks.removeIf(block -> oreRegistry.contains(block.getType()) || isDepletedOre(block));
+    }
+
+    public boolean movesDepletedOre(List<Block> blocks) {
+        return blocks.stream().anyMatch(this::isDepletedOre);
     }
 
     public void handleChunkLoad(World world, int chunkX, int chunkZ) {
@@ -184,7 +192,7 @@ public class MiningService implements Startable, Stoppable {
             block.getWorld().dropItemNaturally(dropLocation, drop);
         }
 
-        block.setType(Material.AIR, false);
+        block.setType(Material.STONE, false);
         professionService.addExperience(player, ProfessionType.MINING, state.definition.professionExperience());
         DepletedOre depleted = new DepletedOre(
                 state.position.worldId,
@@ -319,9 +327,7 @@ public class MiningService implements Startable, Stoppable {
             task.cancel();
         }
         Block block = world.getBlockAt(ore.x(), ore.y(), ore.z());
-        if (block.getType().isAir()) {
-            block.setType(ore.material(), false);
-        }
+        block.setType(ore.material(), false);
         depletedOres.remove(position);
         respawnRepository.delete(ore);
     }

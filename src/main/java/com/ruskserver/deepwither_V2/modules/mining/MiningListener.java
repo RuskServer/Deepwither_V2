@@ -7,6 +7,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
@@ -23,6 +26,10 @@ public class MiningListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
+        if (miningService.isDepletedOre(event.getBlock())) {
+            event.setCancelled(true);
+            return;
+        }
         if (!miningService.isTrackedOre(event.getBlock().getType())) {
             return;
         }
@@ -38,6 +45,27 @@ public class MiningListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
         miningService.protectFromExplosion(event.blockList());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        if (miningService.movesDepletedOre(event.getBlocks())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        if (miningService.movesDepletedOre(event.getBlocks())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityChangeBlock(EntityChangeBlockEvent event) {
+        if (miningService.isDepletedOre(event.getBlock())) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
