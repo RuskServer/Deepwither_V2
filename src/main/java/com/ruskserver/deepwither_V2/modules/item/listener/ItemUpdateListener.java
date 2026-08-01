@@ -7,6 +7,7 @@ import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleEventTy
 import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecyclePhase;
 import com.ruskserver.deepwither_V2.core.lifecycle.player.PlayerLifecycleTask;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
+import com.ruskserver.deepwither_V2.modules.gui.GuiInventoryHolder;
 import com.ruskserver.deepwither_V2.modules.trader.gui.TraderInventoryHolder;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -44,6 +45,8 @@ public class ItemUpdateListener implements Listener, PlayerLifecycleTask {
 
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
+        // GuiService配下のGUIは画面固有の追記Loreを持つためスキップ
+        if (event.getInventory().getHolder() instanceof GuiInventoryHolder) return;
         // トレーダーGUIは独自のLoreを持つためスキップ
         if (event.getInventory().getHolder() instanceof TraderInventoryHolder) return;
 

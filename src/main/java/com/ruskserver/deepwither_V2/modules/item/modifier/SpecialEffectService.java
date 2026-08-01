@@ -33,6 +33,7 @@ public class SpecialEffectService {
 
     private boolean hasEffect(ItemStack item, SpecialEffect target) {
         if (item == null || item.isEmpty()) return false;
+        if (pdcUtil.isBroken(item)) return false;
         return pdcUtil.getSpecialEffects(item).stream()
                 .anyMatch(effect -> effect.getEffect() == target);
     }

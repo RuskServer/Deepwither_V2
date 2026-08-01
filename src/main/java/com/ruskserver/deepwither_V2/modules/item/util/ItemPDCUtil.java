@@ -26,6 +26,8 @@ public class ItemPDCUtil {
     private final NamespacedKey addedStatKey;
     private final NamespacedKey specialEffectKey;
     private final NamespacedKey statFormatVersionKey;
+    private final NamespacedKey itemInstanceIdKey;
+    private final NamespacedKey brokenKey;
 
     @Inject
     public ItemPDCUtil(Deepwither_V2 plugin) {
@@ -34,6 +36,8 @@ public class ItemPDCUtil {
         this.addedStatKey = new NamespacedKey(plugin, "custom_item_added_stats");
         this.specialEffectKey = new NamespacedKey(plugin, "custom_item_special_effects");
         this.statFormatVersionKey = new NamespacedKey(plugin, "custom_item_stat_format_version");
+        this.itemInstanceIdKey = new NamespacedKey(plugin, "custom_item_instance_id");
+        this.brokenKey = new NamespacedKey(plugin, "custom_item_broken");
     }
 
     public void setItemId(ItemStack item, String id) {
@@ -46,6 +50,48 @@ public class ItemPDCUtil {
     public String getItemId(ItemStack item) {
         if (item == null || item.getItemMeta() == null) return null;
         return item.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+    }
+
+    public UUID ensureItemInstanceId(ItemStack item) {
+        UUID current = getItemInstanceId(item);
+        if (current != null) return current;
+        if (item == null || item.getItemMeta() == null) return null;
+        UUID created = UUID.randomUUID();
+        ItemMeta meta = item.getItemMeta();
+        meta.getPersistentDataContainer().set(
+                itemInstanceIdKey, PersistentDataType.STRING, created.toString());
+        item.setItemMeta(meta);
+        return created;
+    }
+
+    public UUID getItemInstanceId(ItemStack item) {
+        if (item == null || item.getItemMeta() == null) return null;
+        String raw = item.getItemMeta().getPersistentDataContainer()
+                .get(itemInstanceIdKey, PersistentDataType.STRING);
+        if (raw == null) return null;
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    public boolean isBroken(ItemStack item) {
+        if (item == null || item.getItemMeta() == null) return false;
+        Byte value = item.getItemMeta().getPersistentDataContainer()
+                .get(brokenKey, PersistentDataType.BYTE);
+        return value != null && value != 0;
+    }
+
+    public void setBroken(ItemStack item, boolean broken) {
+        if (item == null || item.getItemMeta() == null) return;
+        ItemMeta meta = item.getItemMeta();
+        if (broken) {
+            meta.getPersistentDataContainer().set(brokenKey, PersistentDataType.BYTE, (byte) 1);
+        } else {
+            meta.getPersistentDataContainer().remove(brokenKey);
+        }
+        item.setItemMeta(meta);
     }
 
     public void setModifiers(ItemStack item, ModifierRollResult result) {

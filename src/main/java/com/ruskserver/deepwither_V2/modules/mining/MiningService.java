@@ -7,6 +7,7 @@ import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.PickaxeItem;
+import com.ruskserver.deepwither_V2.modules.item.durability.EquipmentDurabilityService;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.mining.definition.OreDefinition;
 import com.ruskserver.deepwither_V2.modules.mining.definition.OreDrop;
@@ -27,7 +28,6 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -49,6 +49,7 @@ public class MiningService implements Startable, Stoppable {
     private final ProfessionService professionService;
     private final ItemManager itemManager;
     private final ItemPDCUtil itemPDCUtil;
+    private final EquipmentDurabilityService durabilityService;
     private final MiningRespawnRepository respawnRepository;
 
     private final Map<BlockPosition, OreState> activeStates = new HashMap<>();
@@ -63,6 +64,7 @@ public class MiningService implements Startable, Stoppable {
             ProfessionService professionService,
             ItemManager itemManager,
             ItemPDCUtil itemPDCUtil,
+            EquipmentDurabilityService durabilityService,
             MiningRespawnRepository respawnRepository) {
         this.plugin = plugin;
         this.oreRegistry = oreRegistry;
@@ -70,6 +72,7 @@ public class MiningService implements Startable, Stoppable {
         this.professionService = professionService;
         this.itemManager = itemManager;
         this.itemPDCUtil = itemPDCUtil;
+        this.durabilityService = durabilityService;
         this.respawnRepository = respawnRepository;
     }
 
@@ -118,7 +121,7 @@ public class MiningService implements Startable, Stoppable {
         state.remainingDurability = Math.max(0, state.remainingDurability - strike.damage());
         ensureDisplay(block, state);
         updateDisplay(state);
-        player.damageItemStack(EquipmentSlot.HAND, 1);
+        durabilityService.damageItem(player, player.getInventory().getItemInMainHand(), 1);
 
         if (state.remainingDurability <= 0) {
             playBreakFeedback(block, strike.critical());
@@ -160,6 +163,9 @@ public class MiningService implements Startable, Stoppable {
             return null;
         }
         CustomItem customItem = itemManager.getCustomItem(itemId);
+        if (!durabilityService.canUse(player, item, true)) {
+            return null;
+        }
         return customItem instanceof PickaxeItem pickaxe ? pickaxe : null;
     }
 
@@ -248,7 +254,7 @@ public class MiningService implements Startable, Stoppable {
             BlockPosition position = BlockPosition.of(candidate);
             OreState state = new OreState(position, candidate.getType(), definition, 0);
             playBreakFeedback(candidate, false);
-            player.damageItemStack(EquipmentSlot.HAND, 1);
+            durabilityService.damageItem(player, player.getInventory().getItemInMainHand(), 1);
             completeMining(player, candidate, state, profile, pickaxe, false);
             broken++;
         }

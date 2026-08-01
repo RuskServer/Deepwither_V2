@@ -17,6 +17,7 @@ import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.combat.stagger.BossStaggerService;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectService;
+import com.ruskserver.deepwither_V2.modules.item.durability.EquipmentDurabilityService;
 import com.ruskserver.deepwither_V2.modules.item.set.EquipmentSetService;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.mob.framework.CustomMob;
@@ -70,6 +71,7 @@ public class DamagePipelineManager implements Listener {
     private final BossStaggerService staggerService;
     private final PartyManager partyManager;
     private final EquipmentSetService equipmentSetService;
+    private final EquipmentDurabilityService durabilityService;
     private final NamespacedKey corpseKey;
     private final List<DamagePhase> pipeline = new ArrayList<>();
 
@@ -87,6 +89,7 @@ public class DamagePipelineManager implements Listener {
                                  BossStaggerService staggerService,
                                  PartyManager partyManager, MartyrdomSkill martyrdomSkill,
                                  EquipmentSetService equipmentSetService,
+                                 EquipmentDurabilityService durabilityService,
                                  org.bukkit.plugin.java.JavaPlugin plugin) {
         this.healthManager = healthManager;
         this.statManager = statManager;
@@ -99,6 +102,7 @@ public class DamagePipelineManager implements Listener {
         this.staggerService = staggerService;
         this.partyManager = partyManager;
         this.equipmentSetService = equipmentSetService;
+        this.durabilityService = durabilityService;
         this.corpseKey = new NamespacedKey(plugin, RevivalManager.CORPSE_TAG);
 
         // パイプラインのフェーズを順番に登録する
@@ -181,7 +185,11 @@ public class DamagePipelineManager implements Listener {
         if (context.getDamage() > 0) {
             equipmentSetService.processResolvedAttackerEffects(context);
             customMobManager.recordDamage(defender, attacker);
+            double healthBefore = defender instanceof Player ? healthManager.getHealth(defender) : -1.0;
             healthManager.damage(defender, context.getDamage());
+            if (defender instanceof Player player && healthManager.getHealth(defender) < healthBefore) {
+                durabilityService.damageArmor(player);
+            }
             indicatorService.show(context);
             criticalHitFeedbackService.show(context);
             staggerService.recordResolvedDamage(context);
@@ -429,7 +437,11 @@ public class DamagePipelineManager implements Listener {
         if (context.getDamage() > 0) {
             equipmentSetService.processResolvedAttackerEffects(context);
             customMobManager.recordDamage(defender, attacker);
+            double healthBefore = defender instanceof Player ? healthManager.getHealth(defender) : -1.0;
             healthManager.damage(defender, context.getDamage());
+            if (defender instanceof Player player && healthManager.getHealth(defender) < healthBefore) {
+                durabilityService.damageArmor(player);
+            }
             indicatorService.show(context);
             criticalHitFeedbackService.show(context);
             staggerService.recordResolvedDamage(context);

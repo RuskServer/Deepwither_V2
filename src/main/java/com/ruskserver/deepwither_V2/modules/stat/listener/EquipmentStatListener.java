@@ -185,6 +185,7 @@ public class EquipmentStatListener implements Listener, PlayerLifecycleTask {
     }
 
     private void applyItemStats(Player player, ItemStack item, String baseSourceId, String modSourceId) {
+        if (pdcUtil.isBroken(item)) return;
         String customId = pdcUtil.getItemId(item);
         if (customId == null) return;
 

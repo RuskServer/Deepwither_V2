@@ -10,6 +10,7 @@ import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.WandItem;
+import com.ruskserver.deepwither_V2.modules.item.durability.EquipmentDurabilityService;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
@@ -52,17 +53,19 @@ public class WandAttackListener implements Listener {
     private final ManaManager manaManager;
     private final DamagePipelineManager damagePipelineManager;
     private final Deepwither_V2 plugin;
+    private final EquipmentDurabilityService durabilityService;
 
     @Inject
     public WandAttackListener(ItemManager itemManager, ItemPDCUtil pdcUtil, StatManager statManager,
                               ManaManager manaManager, DamagePipelineManager damagePipelineManager,
-                              Deepwither_V2 plugin) {
+                              Deepwither_V2 plugin, EquipmentDurabilityService durabilityService) {
         this.itemManager = itemManager;
         this.pdcUtil = pdcUtil;
         this.statManager = statManager;
         this.manaManager = manaManager;
         this.damagePipelineManager = damagePipelineManager;
         this.plugin = plugin;
+        this.durabilityService = durabilityService;
     }
 
     @EventHandler
@@ -87,6 +90,10 @@ public class WandAttackListener implements Listener {
         // アイテム定義を取得し、それが魔法の杖(WandItem)であるか判定
         CustomItem customItem = itemManager.getCustomItem(customId);
         if (!(customItem instanceof WandItem wand)) return;
+        if (!durabilityService.canUse(player, itemStack, true)) {
+            event.setCancelled(true);
+            return;
+        }
 
         // ブロック破壊イベントなどをキャンセル
         event.setCancelled(true);
@@ -118,6 +125,7 @@ public class WandAttackListener implements Listener {
 
         // クールダウン更新
         cooldowns.put(player.getUniqueId(), now);
+        durabilityService.damageItem(player, itemStack, 1);
 
         // --- 魔法弾の発射 ---
         shootMagicMissile(player, wand);

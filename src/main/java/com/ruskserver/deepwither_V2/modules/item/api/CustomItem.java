@@ -110,6 +110,13 @@ public interface CustomItem {
     }
 
     /**
+     * 最大耐久値の個別指定。-1ならレアリティと装備種別から自動決定し、0なら耐久対象外。
+     */
+    default int getMaxDurability() {
+        return -1;
+    }
+
+    /**
      * 手に持って右クリック・左クリック等をした際に呼ばれるフックメソッド。
      */
     default void onInteract(org.bukkit.event.player.PlayerInteractEvent event) {}

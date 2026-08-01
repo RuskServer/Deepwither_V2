@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.BowItem;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
+import com.ruskserver.deepwither_V2.modules.item.durability.EquipmentDurabilityService;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -29,17 +30,20 @@ public class BowAttackListener implements Listener {
     private final ItemManager itemManager;
     private final ItemPDCUtil pdcUtil;
     private final DamagePipelineManager damagePipelineManager;
+    private final EquipmentDurabilityService durabilityService;
 
     @Inject
     public BowAttackListener(Deepwither_V2 plugin, ItemManager itemManager, ItemPDCUtil pdcUtil,
-                             DamagePipelineManager damagePipelineManager) {
+                             DamagePipelineManager damagePipelineManager,
+                             EquipmentDurabilityService durabilityService) {
         this.bowItemKey = new NamespacedKey(plugin, "bow_item_id");
         this.itemManager = itemManager;
         this.pdcUtil = pdcUtil;
         this.damagePipelineManager = damagePipelineManager;
+        this.durabilityService = durabilityService;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBowShoot(EntityShootBowEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
         ItemStack bow = event.getBow();
@@ -49,6 +53,10 @@ public class BowAttackListener implements Listener {
         if (itemId == null) return;
         CustomItem customItem = itemManager.getCustomItem(itemId);
         if (!(customItem instanceof BowItem bowItem)) return;
+        if (!durabilityService.canUse((Player) event.getEntity(), bow, true)) {
+            event.setCancelled(true);
+            return;
+        }
 
         if (event.getProjectile() instanceof AbstractArrow arrow) {
             arrow.getPersistentDataContainer().set(bowItemKey, PersistentDataType.STRING, itemId);
@@ -57,6 +65,7 @@ public class BowAttackListener implements Listener {
                 arrow.setVelocity(arrow.getVelocity().multiply(velocityMult));
             }
         }
+        durabilityService.damageItem((Player) event.getEntity(), bow, 1);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

@@ -50,6 +50,7 @@ public class ItemAbilityPhase implements DamagePhase {
 
         for (ItemStack item : items) {
             if (item == null || item.isEmpty()) continue;
+            if (pdcUtil.isBroken(item)) continue;
 
             String customId = pdcUtil.getItemId(item);
             if (customId == null) continue;

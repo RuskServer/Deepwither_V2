@@ -89,6 +89,11 @@ public class CraftingRecipeListGui implements GuiView {
                     Component.text("ページ " + page + " / " + totalPages, NamedTextColor.GRAY)
             ));
         }
+        inventory.setItem(48, CraftingGuiSupport.button(
+                Material.ANVIL,
+                Component.text("装備修理", NamedTextColor.GREEN, TextDecoration.BOLD),
+                Component.text("損傷・破損した装備を修理します", NamedTextColor.GRAY)
+        ));
         inventory.setItem(49, createProfessionIcon(player));
         inventory.setItem(50, CraftingGuiSupport.button(
                 Material.CHEST,
@@ -118,6 +123,12 @@ public class CraftingRecipeListGui implements GuiView {
         }
         if (context.slot() == 50) {
             context.open(CraftingQueueGui.ID, GuiContext.builder().put(NPC_KEY, npcId).build());
+            return;
+        }
+        if (context.slot() == 48) {
+            context.open(CraftingRepairListGui.ID, GuiContext.builder()
+                    .put(NPC_KEY, npcId)
+                    .build());
             return;
         }
         if (context.slot() == 53) {

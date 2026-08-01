@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.WandItem;
+import com.ruskserver.deepwither_V2.modules.item.durability.EquipmentDurabilityService;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import com.ruskserver.deepwither_V2.modules.stat.listener.EquipmentStatListener;
@@ -39,6 +40,7 @@ public class CombatMeleeListener implements Listener {
     private final DamagePipelineManager damagePipelineManager;
     private final CombatStatsService statsService;
     private final EquipmentStatListener equipmentStatListener;
+    private final EquipmentDurabilityService durabilityService;
 
     @Inject
     public CombatMeleeListener(
@@ -48,7 +50,8 @@ public class CombatMeleeListener implements Listener {
             CombatHitDetectionService hitDetectionService,
             DamagePipelineManager damagePipelineManager,
             CombatStatsService statsService,
-            EquipmentStatListener equipmentStatListener
+            EquipmentStatListener equipmentStatListener,
+            EquipmentDurabilityService durabilityService
     ) {
         this.statManager = statManager;
         this.pdcUtil = pdcUtil;
@@ -57,6 +60,7 @@ public class CombatMeleeListener implements Listener {
         this.damagePipelineManager = damagePipelineManager;
         this.statsService = statsService;
         this.equipmentStatListener = equipmentStatListener;
+        this.durabilityService = durabilityService;
     }
 
     @EventHandler
@@ -76,6 +80,7 @@ public class CombatMeleeListener implements Listener {
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand == null || hand.isEmpty()) return;
         if (isWand(hand)) return;
+        if (!durabilityService.canUse(player, hand, true)) return;
 
         event.setDamage(0);
 
@@ -92,6 +97,7 @@ public class CombatMeleeListener implements Listener {
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand == null || hand.isEmpty()) return;
         if (isWand(hand)) return;
+        if (!durabilityService.canUse(player, hand, true)) return;
 
         CombatWeaponType type = resolveWeaponType(hand);
         if (type == null) return;
@@ -118,6 +124,7 @@ public class CombatMeleeListener implements Listener {
             statsService.recordHit(player, type, Math.max(0.0, statManager.getTotalStat(player, StatType.ATTACK_DAMAGE)));
             playHitSound(target);
         }
+        durabilityService.damageItem(player, hand, 1);
     }
 
     private boolean isWand(ItemStack itemStack) {

@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.PickaxeItem;
+import com.ruskserver.deepwither_V2.modules.item.durability.ItemDurabilityPolicy;
 import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierManager;
 import com.ruskserver.deepwither_V2.modules.item.modifier.ModifierRollResult;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectInstance;
@@ -32,6 +33,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
@@ -101,6 +103,7 @@ public class ItemManager implements Startable {
         }
 
         ItemStack item = new ItemStack(customItem.getMaterial());
+        applyDurabilityProperties(item, customItem);
         int maxStack = customItem.getMaxStackSize();
         if (maxStack > 1) {
             item.setData(io.papermc.paper.datacomponent.DataComponentTypes.MAX_STACK_SIZE, maxStack);
@@ -129,6 +132,9 @@ public class ItemManager implements Startable {
         // PDCにデータを書き込む
         pdcUtil.setItemId(item, itemId);
         pdcUtil.setModifiers(item, rollResult);
+        if (ItemDurabilityPolicy.getMaxDurability(customItem) > 0) {
+            pdcUtil.ensureItemInstanceId(item);
+        }
 
         // Lore等を適用する
         updateItemMeta(item);
@@ -149,6 +155,11 @@ public class ItemManager implements Startable {
 
         CustomItem customItem = registry.get(id);
         if (customItem == null) return; // 未定義・削除済みのアイテム定義
+
+        applyDurabilityProperties(item, customItem);
+        if (ItemDurabilityPolicy.getMaxDurability(customItem) > 0) {
+            pdcUtil.ensureItemInstanceId(item);
+        }
 
         Map<StatType, Double> modifiers = pdcUtil.getModifiers(item);
         Map<StatType, Double> addedStats = pdcUtil.getAddedStats(item);
@@ -230,6 +241,21 @@ public class ItemManager implements Startable {
             }
         }
 
+        int maxDurability = ItemDurabilityPolicy.getMaxDurability(customItem);
+        if (maxDurability > 0) {
+            int damage = meta instanceof Damageable damageable ? damageable.getDamage() : 0;
+            boolean broken = pdcUtil.isBroken(item);
+            int remaining = broken ? 0 : Math.max(0, maxDurability - damage);
+            lore.add(Component.empty());
+            if (broken) {
+                lore.add(Component.text("破損中 - 合成屋で修理できます", NamedTextColor.RED, TextDecoration.BOLD)
+                        .decoration(TextDecoration.ITALIC, false));
+            }
+            lore.add(Component.text("耐久値: " + remaining + " / " + maxDurability,
+                            broken ? NamedTextColor.RED : NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
+        }
+
         EquipmentSet equipmentSet = EquipmentSet.fromId(customItem.getEquipmentSetId());
         if (equipmentSet != null) {
             lore.add(Component.empty());
@@ -255,9 +281,22 @@ public class ItemManager implements Startable {
 
     private void applyToolProperties(ItemStack item, CustomItem customItem) {
         if (customItem instanceof PickaxeItem pickaxe && pickaxe.getToolDurability() > 0) {
-            item.setData(DataComponentTypes.MAX_DAMAGE, pickaxe.getToolDurability());
             applyCanBreak(item, pickaxe);
         }
+    }
+
+    private void applyDurabilityProperties(ItemStack item, CustomItem customItem) {
+        int maxDurability = ItemDurabilityPolicy.getMaxDurability(customItem);
+        if (maxDurability <= 0) return;
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta instanceof Damageable damageable && damageable.getDamage() >= maxDurability) {
+            damageable.setDamage(maxDurability - 1);
+            item.setItemMeta(meta);
+            pdcUtil.setBroken(item, true);
+        }
+        item.setData(DataComponentTypes.MAX_STACK_SIZE, 1);
+        item.setData(DataComponentTypes.MAX_DAMAGE, maxDurability);
     }
 
     private void applyCanBreak(ItemStack item, PickaxeItem pickaxe) {

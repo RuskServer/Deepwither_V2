@@ -64,6 +64,7 @@ public class EquipmentSetService implements Listener, Stoppable {
         Set<String> equippedIds = new HashSet<>();
         for (ItemStack item : player.getInventory().getArmorContents()) {
             if (item == null || item.isEmpty()) continue;
+            if (pdcUtil.isBroken(item)) continue;
             String itemId = pdcUtil.getItemId(item);
             if (set.getItemIds().contains(itemId)) {
                 equippedIds.add(itemId);
