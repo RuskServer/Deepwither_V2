@@ -1,5 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.crafting;
 
+import java.util.Map;
 import java.util.UUID;
 
 public class CraftingJob {
@@ -10,6 +11,7 @@ public class CraftingJob {
     private int resultAmount;
     private long completionTimeMillis;
     private long professionExperience;
+    private Map<String, Integer> additionalResults;
 
     public CraftingJob() {
     }
@@ -21,12 +23,24 @@ public class CraftingJob {
             int resultAmount,
             long completionTimeMillis,
             long professionExperience) {
+        this(jobId, recipeId, resultItemId, resultAmount, completionTimeMillis, professionExperience, Map.of());
+    }
+
+    public CraftingJob(
+            UUID jobId,
+            String recipeId,
+            String resultItemId,
+            int resultAmount,
+            long completionTimeMillis,
+            long professionExperience,
+            Map<String, Integer> additionalResults) {
         this.jobId = jobId;
         this.recipeId = recipeId;
         this.resultItemId = resultItemId;
         this.resultAmount = resultAmount;
         this.completionTimeMillis = completionTimeMillis;
         this.professionExperience = professionExperience;
+        this.additionalResults = additionalResults == null ? Map.of() : Map.copyOf(additionalResults);
     }
 
     public UUID getJobId() {
@@ -51,6 +65,10 @@ public class CraftingJob {
 
     public long getProfessionExperience() {
         return professionExperience;
+    }
+
+    public Map<String, Integer> getAdditionalResults() {
+        return additionalResults == null ? Map.of() : Map.copyOf(additionalResults);
     }
 
     public boolean isFinished() {

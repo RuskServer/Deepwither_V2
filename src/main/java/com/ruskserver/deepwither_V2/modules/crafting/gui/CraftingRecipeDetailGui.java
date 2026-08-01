@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.crafting.gui;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.crafting.api.CraftingRecipe;
 import com.ruskserver.deepwither_V2.modules.crafting.service.CraftingRegistry;
+import com.ruskserver.deepwither_V2.modules.crafting.service.CraftingChainPlanner;
 import com.ruskserver.deepwither_V2.modules.crafting.service.CraftingService;
 import com.ruskserver.deepwither_V2.modules.gui.GuiClickContext;
 import com.ruskserver.deepwither_V2.modules.gui.GuiContext;
@@ -89,6 +90,8 @@ public class CraftingRecipeDetailGui implements GuiView {
 
         inventory.setItem(18, backButton());
         inventory.setItem(22, createStartButton(recipe, availability));
+        inventory.setItem(24, createChainCraftButton(context.player(), recipe,
+                context.context().getString(CraftingRecipeListGui.NPC_KEY)));
         inventory.setItem(26, CraftingGuiSupport.button(
                 Material.CHEST,
                 Component.text("製作キュー", NamedTextColor.AQUA),
@@ -110,6 +113,20 @@ public class CraftingRecipeDetailGui implements GuiView {
                     .build());
             return;
         }
+        if (context.slot() == 24) {
+            CraftingChainPlanner.CraftingChainPlan plan = craftingService.getChainPlan(
+                    context.player(), context.context().getString(RECIPE_KEY), npcId);
+            if (plan.intermediateCraftCount() <= 0) {
+                context.player().sendMessage(Component.text("このレシピには製作可能な中間素材がありません。", NamedTextColor.YELLOW));
+                return;
+            }
+            context.open(CraftingChainConfirmGui.ID, GuiContext.builder()
+                    .put(CraftingRecipeListGui.NPC_KEY, npcId)
+                    .put(CraftingRecipeListGui.PAGE_KEY, page)
+                    .put(RECIPE_KEY, context.context().getString(RECIPE_KEY))
+                    .build());
+            return;
+        }
         if (context.slot() != 22) {
             return;
         }
@@ -121,9 +138,7 @@ public class CraftingRecipeDetailGui implements GuiView {
         if (result == CraftingService.StartResult.SUCCESS) {
             context.player().playSound(context.player().getLocation(), Sound.BLOCK_ANVIL_USE, 0.8f, 1.1f);
             context.player().sendMessage(Component.text("製作を開始しました。", NamedTextColor.GREEN));
-            context.open(CraftingQueueGui.ID, GuiContext.builder()
-                    .put(CraftingRecipeListGui.NPC_KEY, npcId)
-                    .build());
+            context.open(CraftingRecipeListGui.ID, CraftingRecipeListGui.listContext(npcId, page));
             return;
         }
         context.player().playSound(context.player().getLocation(), Sound.ENTITY_VILLAGER_NO, 0.8f, 1.0f);
@@ -178,6 +193,26 @@ public class CraftingRecipeDetailGui implements GuiView {
                         availability.canStart() ? NamedTextColor.GREEN : NamedTextColor.RED,
                         TextDecoration.BOLD),
                 lore.toArray(Component[]::new)
+        );
+    }
+
+    private ItemStack createChainCraftButton(Player player, CraftingRecipe recipe, String npcId) {
+        CraftingChainPlanner.CraftingChainPlan plan = craftingService.getChainPlan(player, recipe.getId(), npcId);
+        if (plan.intermediateCraftCount() <= 0) {
+            return CraftingGuiSupport.button(
+                    Material.GRAY_DYE,
+                    Component.text("中間素材込み一括製作", NamedTextColor.GRAY, TextDecoration.BOLD),
+                    Component.text("製作可能な中間素材はありません。", NamedTextColor.DARK_GRAY)
+            );
+        }
+        return CraftingGuiSupport.button(
+                plan.canStart() ? Material.SMITHING_TABLE : Material.RED_STAINED_GLASS_PANE,
+                Component.text("中間素材込み一括製作",
+                        plan.canStart() ? NamedTextColor.AQUA : NamedTextColor.RED,
+                        TextDecoration.BOLD),
+                Component.text("中間工程: " + plan.intermediateCraftCount() + "回", NamedTextColor.YELLOW),
+                Component.text("合計時間: " + CraftingGuiSupport.formatDuration(plan.totalTime()), NamedTextColor.GRAY),
+                Component.text("クリックして原材料を確認", NamedTextColor.AQUA)
         );
     }
 

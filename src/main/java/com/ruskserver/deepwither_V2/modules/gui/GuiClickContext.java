@@ -66,4 +66,8 @@ public final class GuiClickContext {
     public void refresh() {
         guiService.refreshLater(player());
     }
+
+    public void rerender() {
+        guiService.rerenderIfOpen(player(), view.getId());
+    }
 }

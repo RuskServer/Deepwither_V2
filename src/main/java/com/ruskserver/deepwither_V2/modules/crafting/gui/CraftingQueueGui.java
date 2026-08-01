@@ -26,7 +26,7 @@ import java.util.UUID;
 public class CraftingQueueGui implements GuiView {
 
     public static final String ID = "crafting_queue";
-    private static final int JOB_SLOT_LIMIT = 45;
+    private static final int JOB_SLOT_LIMIT = CraftingService.MAX_QUEUE_SIZE;
 
     private final CraftingService craftingService;
     private final ItemManager itemManager;
@@ -50,7 +50,7 @@ public class CraftingQueueGui implements GuiView {
 
     @Override
     public int getSize(Player player, GuiContext context) {
-        return 54;
+        return 27;
     }
 
     @Override
@@ -61,27 +61,44 @@ public class CraftingQueueGui implements GuiView {
         for (int index = 0; index < Math.min(jobs.size(), JOB_SLOT_LIMIT); index++) {
             inventory.setItem(index, createJobIcon(jobs.get(index)));
         }
-        inventory.setItem(45, CraftingGuiSupport.button(
+        if (jobs.isEmpty()) {
+            inventory.setItem(4, CraftingGuiSupport.button(
+                    Material.CLOCK,
+                    Component.text("製作キューは空です", NamedTextColor.GRAY),
+                    Component.text("レシピ一覧から製作を開始できます。", NamedTextColor.DARK_GRAY)
+            ));
+        }
+        inventory.setItem(18, CraftingGuiSupport.button(
                 Material.ARROW,
                 Component.text("レシピ一覧へ戻る", NamedTextColor.YELLOW)
         ));
-        inventory.setItem(49, CraftingGuiSupport.button(
-                Material.CLOCK,
-                Component.text("表示を更新", NamedTextColor.AQUA),
-                Component.text("クリックして残り時間を更新", NamedTextColor.GRAY)
+        long finished = jobs.stream().filter(CraftingJob::isFinished).count();
+        inventory.setItem(22, CraftingGuiSupport.button(
+                finished > 0 ? Material.HOPPER : Material.GRAY_DYE,
+                Component.text("完成品をすべて受け取る",
+                        finished > 0 ? NamedTextColor.GREEN : NamedTextColor.GRAY,
+                        TextDecoration.BOLD),
+                Component.text("受取可能: " + finished + "件", NamedTextColor.YELLOW)
+        ));
+        inventory.setItem(26, CraftingGuiSupport.button(
+                Material.CHEST,
+                Component.text("キュー状況", NamedTextColor.AQUA, TextDecoration.BOLD),
+                Component.text("完成: " + finished + "件", NamedTextColor.GREEN),
+                Component.text("製作中: " + (jobs.size() - finished) + "件", NamedTextColor.YELLOW),
+                Component.text("使用中: " + jobs.size() + " / " + CraftingService.MAX_QUEUE_SIZE, NamedTextColor.GRAY)
         ));
     }
 
     @Override
     public void onClick(GuiClickContext context) {
         String npcId = context.context().getString(CraftingRecipeListGui.NPC_KEY);
-        if (context.slot() == 45) {
+        if (context.slot() == 18) {
             context.open(CraftingRecipeListGui.ID, CraftingRecipeListGui.listContext(npcId, 0));
             return;
         }
-        if (context.slot() == 49) {
-            context.player().playSound(context.player().getLocation(), Sound.UI_BUTTON_CLICK, 0.8f, 1.2f);
-            context.refresh();
+        if (context.slot() == 22) {
+            claimAllFinished(context);
+            context.rerender();
             return;
         }
         if (context.slot() < 0 || context.slot() >= JOB_SLOT_LIMIT) {
@@ -103,7 +120,31 @@ public class CraftingQueueGui implements GuiView {
         } else {
             context.player().sendMessage(Component.text("完成品を受け取れませんでした。", NamedTextColor.RED));
         }
-        context.refresh();
+        context.rerender();
+    }
+
+    private void claimAllFinished(GuiClickContext context) {
+        CraftingService.ClaimAllResult result = craftingService.claimAllFinished(context.player());
+        if (result.noActiveCharacter()) {
+            context.player().sendMessage(Component.text("有効なキャラクターが選択されていません。", NamedTextColor.RED));
+            return;
+        }
+        if (result.claimedCount() > 0) {
+            context.player().playSound(context.player().getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.9f, 1.3f);
+            context.player().sendMessage(Component.text(
+                    "完成品を" + result.claimedCount() + "件受け取りました。", NamedTextColor.GOLD));
+        } else {
+            context.player().playSound(context.player().getLocation(), Sound.ENTITY_VILLAGER_NO, 0.7f, 1.0f);
+            context.player().sendMessage(Component.text("受け取れる完成品がありません。", NamedTextColor.YELLOW));
+        }
+        if (result.inventoryBlockedCount() > 0) {
+            context.player().sendMessage(Component.text(
+                    "インベントリ不足で" + result.inventoryBlockedCount() + "件を残しました。", NamedTextColor.RED));
+        }
+        if (result.invalidResultCount() > 0) {
+            context.player().sendMessage(Component.text(
+                    "結果アイテムを生成できない製作が" + result.invalidResultCount() + "件あります。", NamedTextColor.RED));
+        }
     }
 
     private List<CraftingJob> orderedJobs(Player player) {
@@ -124,8 +165,19 @@ public class CraftingQueueGui implements GuiView {
             lore.add(Component.text("製作中", NamedTextColor.YELLOW, TextDecoration.BOLD));
             lore.add(Component.text("残り: " + CraftingGuiSupport.formatRemaining(job.getCompletionTimeMillis()), NamedTextColor.GRAY));
         }
+        if (!job.getAdditionalResults().isEmpty()) {
+            lore.add(Component.empty());
+            lore.add(Component.text("完成時に返却される余剰素材:", NamedTextColor.AQUA));
+            job.getAdditionalResults().forEach((itemId, amount) -> lore.add(
+                    Component.text("- " + displayName(itemId) + " x" + amount, NamedTextColor.GRAY)));
+        }
         ItemStack item = CraftingGuiSupport.customItem(itemManager, job.getResultItemId());
         item.setAmount(Math.min(item.getMaxStackSize(), Math.max(1, job.getResultAmount())));
         return CraftingGuiSupport.appendLore(item, lore);
+    }
+
+    private String displayName(String itemId) {
+        var definition = itemManager.getCustomItem(itemId);
+        return definition == null ? itemId : definition.getDisplayName();
     }
 }

@@ -68,6 +68,19 @@ public class CraftingRegistry implements Startable {
                 .anyMatch(recipe -> recipe.getCraftingNpcId().equalsIgnoreCase(npcId));
     }
 
+    public List<CraftingRecipe> getProducingRecipes(String resultItemId, String npcId) {
+        return getProducingRecipes(resultItemId).stream()
+                .filter(recipe -> recipe.getCraftingNpcId().equalsIgnoreCase(npcId))
+                .toList();
+    }
+
+    public List<CraftingRecipe> getProducingRecipes(String resultItemId) {
+        return recipes.values().stream()
+                .filter(recipe -> recipe.getResultItemId().equals(resultItemId))
+                .sorted(Comparator.comparing(CraftingRecipe::getId))
+                .toList();
+    }
+
     public Collection<CraftingRecipe> getAll() {
         return List.copyOf(recipes.values());
     }

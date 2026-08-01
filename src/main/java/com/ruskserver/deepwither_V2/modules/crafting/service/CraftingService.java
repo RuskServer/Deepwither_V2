@@ -34,6 +34,7 @@ public class CraftingService {
     private final CharacterDataRepository characterDataRepository;
     private final CharacterService characterService;
     private final CraftingRegistry registry;
+    private final CraftingChainPlanner chainPlanner;
     private final ProfessionService professionService;
     private final ItemManager itemManager;
     private final ItemPDCUtil itemPDCUtil;
@@ -43,12 +44,14 @@ public class CraftingService {
             CharacterDataRepository characterDataRepository,
             CharacterService characterService,
             CraftingRegistry registry,
+            CraftingChainPlanner chainPlanner,
             ProfessionService professionService,
             ItemManager itemManager,
             ItemPDCUtil itemPDCUtil) {
         this.characterDataRepository = characterDataRepository;
         this.characterService = characterService;
         this.registry = registry;
+        this.chainPlanner = chainPlanner;
         this.professionService = professionService;
         this.itemManager = itemManager;
         this.itemPDCUtil = itemPDCUtil;
@@ -126,6 +129,59 @@ public class CraftingService {
         return StartResult.SUCCESS;
     }
 
+    public CraftingChainPlanner.CraftingChainPlan getChainPlan(Player player, String recipeId, String npcId) {
+        CraftingRecipe recipe = registry.get(recipeId);
+        if (recipe == null || itemManager.getCustomItem(recipe.getResultItemId()) == null) {
+            return CraftingChainPlanner.CraftingChainPlan.invalid("このレシピは現在利用できません。");
+        }
+        return chainPlanner.plan(player, recipe, npcId);
+    }
+
+    public ChainStartResult startChainCrafting(Player player, String recipeId, String npcId) {
+        CraftingRecipe recipe = registry.get(recipeId);
+        if (recipe == null || itemManager.getCustomItem(recipe.getResultItemId()) == null) {
+            return ChainStartResult.INVALID_RECIPE;
+        }
+        Optional<CraftingContext> contextOptional = getContext(player);
+        if (contextOptional.isEmpty()) {
+            return ChainStartResult.NO_ACTIVE_CHARACTER;
+        }
+        if (getJobs(player).size() >= MAX_QUEUE_SIZE) {
+            return ChainStartResult.QUEUE_FULL;
+        }
+
+        CraftingChainPlanner.CraftingChainPlan plan = chainPlanner.plan(player, recipe, npcId);
+        if (plan.intermediateCraftCount() <= 0) {
+            return ChainStartResult.NO_INTERMEDIATE_STEPS;
+        }
+        if (!plan.errors().isEmpty()) {
+            return ChainStartResult.INVALID_PLAN;
+        }
+        if (!plan.missingMaterials().isEmpty()) {
+            return ChainStartResult.MISSING_INGREDIENTS;
+        }
+
+        long completionTime;
+        try {
+            completionTime = Math.addExact(System.currentTimeMillis(), plan.totalTime().toMillis());
+        } catch (ArithmeticException exception) {
+            return ChainStartResult.INVALID_PLAN;
+        }
+        consumeIngredients(player, plan.inventoryConsumption());
+        CraftingContext context = contextOptional.get();
+        context.craftingData().addJob(new CraftingJob(
+                UUID.randomUUID(),
+                recipe.getId(),
+                recipe.getResultItemId(),
+                recipe.getResultAmount(),
+                completionTime,
+                plan.totalExperience(),
+                plan.bonusResults()
+        ));
+        save(context);
+        return ChainStartResult.SUCCESS;
+    }
+
     public ClaimResult claim(Player player, UUID jobId) {
         Optional<CraftingContext> contextOptional = getContext(player);
         if (contextOptional.isEmpty()) {
@@ -159,6 +215,51 @@ public class CraftingService {
         }
         professionService.addExperience(player, ProfessionType.CRAFTING, job.getProfessionExperience());
         return ClaimResult.SUCCESS;
+    }
+
+    public ClaimAllResult claimAllFinished(Player player) {
+        Optional<CraftingContext> contextOptional = getContext(player);
+        if (contextOptional.isEmpty()) {
+            return new ClaimAllResult(0, 0, 0, true);
+        }
+
+        CraftingContext context = contextOptional.get();
+        List<CraftingJob> claimedJobs = new ArrayList<>();
+        List<ItemStack> claimedItems = new ArrayList<>();
+        int inventoryBlocked = 0;
+        int invalidResults = 0;
+
+        for (CraftingJob job : List.copyOf(context.craftingData().getJobs())) {
+            if (!job.isFinished()) continue;
+            List<ItemStack> results = createResultStacks(job);
+            if (results.isEmpty()) {
+                invalidResults++;
+                continue;
+            }
+            List<ItemStack> combined = new ArrayList<>(claimedItems);
+            combined.addAll(results);
+            if (!canFit(player, combined)) {
+                inventoryBlocked++;
+                continue;
+            }
+            claimedJobs.add(job);
+            claimedItems.addAll(results);
+        }
+
+        if (!claimedJobs.isEmpty()) {
+            long totalExperience = 0L;
+            for (CraftingJob job : claimedJobs) {
+                context.craftingData().removeJob(job.getJobId());
+                totalExperience += job.getProfessionExperience();
+            }
+            save(context);
+            for (ItemStack result : claimedItems) {
+                player.getInventory().addItem(result).values()
+                        .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
+            }
+            professionService.addExperience(player, ProfessionType.CRAFTING, totalExperience);
+        }
+        return new ClaimAllResult(claimedJobs.size(), inventoryBlocked, invalidResults, false);
     }
 
     private Optional<CraftingContext> getContext(Player player) {
@@ -202,23 +303,33 @@ public class CraftingService {
     }
 
     private List<ItemStack> createResultStacks(CraftingJob job) {
-        CustomItem definition = itemManager.getCustomItem(job.getResultItemId());
-        if (definition == null || job.getResultAmount() <= 0) {
+        List<ItemStack> results = new ArrayList<>();
+        if (!appendResultStacks(results, job.getResultItemId(), job.getResultAmount())) {
             return List.of();
         }
-        List<ItemStack> results = new ArrayList<>();
-        int remaining = job.getResultAmount();
-        while (remaining > 0) {
-            ItemStack stack = itemManager.generate(job.getResultItemId());
-            if (stack == null || stack.getType().isAir()) {
+        for (Map.Entry<String, Integer> additional : job.getAdditionalResults().entrySet()) {
+            if (!appendResultStacks(results, additional.getKey(), additional.getValue())) {
                 return List.of();
             }
-            int amount = Math.min(stack.getMaxStackSize(), remaining);
-            stack.setAmount(amount);
-            results.add(stack);
-            remaining -= amount;
         }
         return results;
+    }
+
+    private boolean appendResultStacks(List<ItemStack> results, String itemId, int amount) {
+        CustomItem definition = itemManager.getCustomItem(itemId);
+        if (definition == null || amount <= 0) return false;
+        int remaining = amount;
+        while (remaining > 0) {
+            ItemStack stack = itemManager.generate(itemId);
+            if (stack == null || stack.getType().isAir()) {
+                return false;
+            }
+            int stackAmount = Math.min(stack.getMaxStackSize(), remaining);
+            stack.setAmount(stackAmount);
+            results.add(stack);
+            remaining -= stackAmount;
+        }
+        return true;
     }
 
     private boolean canFit(Player player, List<ItemStack> additions) {
@@ -282,6 +393,23 @@ public class CraftingService {
         NOT_FINISHED,
         INVALID_RESULT,
         INVENTORY_FULL
+    }
+
+    public enum ChainStartResult {
+        SUCCESS,
+        INVALID_RECIPE,
+        NO_ACTIVE_CHARACTER,
+        QUEUE_FULL,
+        NO_INTERMEDIATE_STEPS,
+        MISSING_INGREDIENTS,
+        INVALID_PLAN
+    }
+
+    public record ClaimAllResult(
+            int claimedCount,
+            int inventoryBlockedCount,
+            int invalidResultCount,
+            boolean noActiveCharacter) {
     }
 
     private record CraftingContext(CharacterData characterData, CraftingData craftingData) {

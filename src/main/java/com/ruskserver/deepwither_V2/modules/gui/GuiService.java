@@ -110,6 +110,26 @@ public class GuiService implements Startable, Stoppable {
         open(player, session.getCurrentGuiId(), session.getCurrentContext(), false);
     }
 
+    public boolean rerenderIfOpen(Player player, String guiId) {
+        GuiSession session = sessions.get(player.getUniqueId());
+        if (session == null || !guiId.equals(session.getCurrentGuiId())) return false;
+
+        Inventory inventory = player.getOpenInventory().getTopInventory();
+        if (!(inventory.getHolder() instanceof GuiInventoryHolder holder)
+                || !player.getUniqueId().equals(holder.getPlayerId())
+                || !guiId.equals(holder.getGuiId())
+                || !holder.getSessionToken().equals(session.getSessionToken())) {
+            return false;
+        }
+
+        GuiView view = views.get(guiId);
+        if (view == null) return false;
+        inventory.clear();
+        view.render(new GuiRenderContext(this, player, inventory, session.getCurrentContext()));
+        session.touch();
+        return true;
+    }
+
     public void back(Player player) {
         GuiSession session = sessions.get(player.getUniqueId());
         if (session == null) {
