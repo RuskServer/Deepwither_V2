@@ -72,6 +72,13 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     private final Map<UUID, Location> pendingRespawnLocations = new HashMap<>();
     /** ボスエンティティと、それが属するインスタンス・赤石マーカー座標の対応 */
     private final Map<UUID, BossContext> activeBosses = new HashMap<>();
+    /** ボス部屋配置後にプレイヤー接近を待つ保留中スポーン情報 */
+    private static final double BOSS_TRIGGER_RADIUS = 14.0; // たたきつけ攻撃範囲(6.0m) + 8.0m = 14.0m
+    private static final double BOSS_TRIGGER_RADIUS_SQUARED = BOSS_TRIGGER_RADIUS * BOSS_TRIGGER_RADIUS; // 196.0
+
+    private record PendingBossSpawn(String instanceId, BlockVector3 bossPosition, double triggerRadiusSquared) {}
+    private final Map<String, PendingBossSpawn> pendingBossSpawns = new HashMap<>();
+
     private final AtomicInteger instanceCounter = new AtomicInteger(0);
 
     private int tickTaskId = -1;
@@ -187,6 +194,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         returnLocations.clear();
         pendingRespawnLocations.clear();
         activeBosses.clear();
+        pendingBossSpawns.clear();
     }
 
     // ========================================================================
@@ -413,9 +421,38 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
                 continue;
             }
 
+            // 保留中ボスの接近検知チェック
+            checkPendingBossSpawns(instance);
+
             // 逐次生成: プレイヤーが未接続ドアに近づいたら次のルームを生成
             if (instance.hasPendingDoors()) {
                 tryTriggerGeneration(instance);
+            }
+        }
+    }
+
+    private void checkPendingBossSpawns(DungeonInstance instance) {
+        PendingBossSpawn pending = pendingBossSpawns.get(instance.getInstanceId());
+        if (pending == null) return;
+
+        World world = instance.getWorld();
+        if (world == null) return;
+
+        BlockVector3 bossPos = pending.bossPosition();
+        Location bossLoc = new Location(world, bossPos.x() + 0.5, bossPos.y(), bossPos.z() + 0.5);
+
+        for (UUID participantId : instance.getParticipants()) {
+            Player player = plugin.getServer().getPlayer(participantId);
+            if (player == null || !player.isOnline() || !player.getWorld().equals(world)) {
+                continue;
+            }
+
+            if (player.getLocation().distanceSquared(bossLoc) <= pending.triggerRadiusSquared()) {
+                pendingBossSpawns.remove(instance.getInstanceId());
+                log.info("[DungeonInstanceManager] プレイヤー接近検知 (" + player.getName()
+                        + ") -> ボススポーン実行: " + instance.getInstanceId() + " at " + bossPos);
+                spawnTrackedBoss(instance, bossPos);
+                break;
             }
         }
     }
@@ -534,7 +571,16 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
                 for (DoorConnection remainingDoor : instance.drainPendingDoors()) {
                     generator.sealDoor(instance.getWorld(), remainingDoor);
                 }
-                spawnTrackedBoss(instance, result.placementResult().bossSpawnWorldPos());
+                BlockVector3 bossPos = result.placementResult().bossSpawnWorldPos();
+                if (bossPos != null) {
+                    pendingBossSpawns.put(instance.getInstanceId(),
+                            new PendingBossSpawn(instance.getInstanceId(), bossPos, BOSS_TRIGGER_RADIUS_SQUARED));
+                    log.info("[DungeonInstanceManager] ボス部屋配置完了。接近トリガー待機中: " + instance.getInstanceId()
+                            + " at " + bossPos + " (半径 " + BOSS_TRIGGER_RADIUS + "m)");
+                } else {
+                    log.severe("[DungeonInstanceManager] ボスルームにREDSTONE_BLOCKマーカーがありません: "
+                            + instance.getDefinition().bossRoomSchematic());
+                }
             }
             lootService.placeChests(instance.getWorld(), result.placementResult().lootWorldPositions(), instance.getDefinition().lootTableId(), instance.getModifierContext());
 
@@ -626,6 +672,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
     private void removeBossTracking(String instanceId) {
         activeBosses.entrySet().removeIf(entry -> entry.getValue().instanceId().equals(instanceId));
+        pendingBossSpawns.remove(instanceId);
     }
 
     private void teleportBack(UUID playerId) {
