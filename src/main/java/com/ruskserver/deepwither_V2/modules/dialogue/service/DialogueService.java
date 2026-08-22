@@ -15,9 +15,11 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 public class DialogueService implements Startable, Stoppable {
 
     private static final int AUTO_ADVANCE_DELAY_TICKS = 10;
+    private static final double MAX_DISTANCE_SQUARED = 36.0; // 6ブロック離れたら自動離脱
     private static final Component DIVIDER = MiniMessage.miniMessage()
             .deserialize("<gradient:#ffffff:#38b6ff><st>                                                </st></gradient>");
 
@@ -38,6 +41,7 @@ public class DialogueService implements Startable, Stoppable {
     private final DIContainer container;
     private final Map<UUID, DialogueSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, DialogueGraph> npcDialogues = new ConcurrentHashMap<>();
+    private BukkitTask distanceCheckTask;
 
     @Inject
     public DialogueService(JavaPlugin plugin, DIContainer container) {
@@ -59,15 +63,49 @@ public class DialogueService implements Startable, Stoppable {
             }
         }
         logger.info("[DialogueService] 会話システムを開始しました (" + npcDialogues.size() + " 件の会話定義)");
+
+        // 一定距離離脱チェックタスク（10tick毎）
+        distanceCheckTask = Bukkit.getScheduler().runTaskTimer(plugin, this::checkDistance, 10L, 10L);
     }
 
     @Override
     public void stop() {
+        if (distanceCheckTask != null) {
+            distanceCheckTask.cancel();
+            distanceCheckTask = null;
+        }
         for (DialogueSession session : sessions.values()) {
             session.completeWithCancellation();
         }
         sessions.clear();
         logger.info("[DialogueService] 会話システムを停止しました");
+    }
+
+    private void checkDistance() {
+        for (Iterator<Map.Entry<UUID, DialogueSession>> it = sessions.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<UUID, DialogueSession> entry = it.next();
+            DialogueSession session = entry.getValue();
+            Player player = session.player();
+
+            if (player == null || !player.isOnline() || player.isDead()) {
+                session.completeWithCancellation();
+                it.remove();
+                continue;
+            }
+
+            Location startLoc = session.startLocation();
+            Location currentLoc = player.getLocation();
+
+            if (!Objects.equals(startLoc.getWorld(), currentLoc.getWorld())
+                    || startLoc.distanceSquared(currentLoc) > MAX_DISTANCE_SQUARED) {
+                player.sendActionBar(Component.empty());
+                player.sendMessage(Component.text("§7(会話から離れました)"));
+                session.completeWithCancellation();
+                Bukkit.getPluginManager().callEvent(new DialogueEndEvent(player,
+                        new DialogueResult(session.graph().id(), session.currentNodeId(), null, Map.copyOf(session.flags()))));
+                it.remove();
+            }
+        }
     }
 
     public void registerDialogue(String npcName, DialogueGraph graph) {
@@ -152,6 +190,7 @@ public class DialogueService implements Startable, Stoppable {
         }
 
         if (ctx.isEnded()) {
+            player.sendActionBar(Component.empty());
             session.complete(currentNode.id(), chosen.text());
             Bukkit.getPluginManager().callEvent(new DialogueEndEvent(player, new DialogueResult(
                     session.graph().id(), currentNode.id(), chosen.text(), Map.copyOf(session.flags()))));
@@ -163,6 +202,7 @@ public class DialogueService implements Startable, Stoppable {
 
         String nextNodeId = chosen.nextNodeId();
         if (nextNodeId == null) {
+            player.sendActionBar(Component.empty());
             DialogueResult r = new DialogueResult(session.graph().id(), currentNode.id(), chosen.text(), Map.copyOf(session.flags()));
             session.complete(currentNode.id(), chosen.text());
             Bukkit.getPluginManager().callEvent(new DialogueEndEvent(player, r));
@@ -172,6 +212,7 @@ public class DialogueService implements Startable, Stoppable {
 
         DialogueNode nextNode = session.graph().node(nextNodeId);
         if (nextNode == null) {
+            player.sendActionBar(Component.empty());
             DialogueResult r = new DialogueResult(session.graph().id(), currentNode.id(), chosen.text(), Map.copyOf(session.flags()));
             session.complete(currentNode.id(), chosen.text());
             Bukkit.getPluginManager().callEvent(new DialogueEndEvent(player, r));
@@ -210,6 +251,7 @@ public class DialogueService implements Startable, Stoppable {
     public void endDialogue(Player player) {
         DialogueSession session = sessions.get(player.getUniqueId());
         if (session != null && !session.isEnded()) {
+            player.sendActionBar(Component.empty());
             DialogueResult r = new DialogueResult(session.graph().id(), session.currentNodeId(), null, Map.copyOf(session.flags()));
             session.completeWithCancellation();
             Bukkit.getPluginManager().callEvent(new DialogueEndEvent(player, r));
@@ -245,6 +287,7 @@ public class DialogueService implements Startable, Stoppable {
         }
 
         if (ctx.isEnded()) {
+            player.sendActionBar(Component.empty());
             DialogueResult result = new DialogueResult(session.graph().id(), node.id(), null, Map.copyOf(session.flags()));
             session.complete(node.id(), null);
             Bukkit.getPluginManager().callEvent(new DialogueEndEvent(player, result));
@@ -256,6 +299,7 @@ public class DialogueService implements Startable, Stoppable {
 
         if (available.isEmpty()) {
             // 選択肢がない終端ノードの場合
+            player.sendActionBar(Component.empty());
             player.sendMessage(DIVIDER);
             if (!node.text().equals("/skip/")) {
                 player.sendMessage(Component.text(node.text(), NamedTextColor.WHITE));
@@ -285,6 +329,7 @@ public class DialogueService implements Startable, Stoppable {
                     }
 
                     if (actionCtx.isEnded()) {
+                        player.sendActionBar(Component.empty());
                         DialogueResult r = new DialogueResult(s.graph().id(), node.id(), only.text(), Map.copyOf(s.flags()));
                         s.complete(node.id(), only.text());
                         Bukkit.getPluginManager().callEvent(new DialogueEndEvent(player, r));

@@ -51,14 +51,13 @@ public class PartyManager implements Startable, Stoppable, Listener {
 
     @Override
     public void start() {
+        voiceManager.start();
         logger.info("[PartyManager] パーティーシステムを開始しました");
     }
 
     @Override
     public void stop() {
-        for (Party party : parties.values()) {
-            voiceManager.deleteVoiceChannel(party);
-        }
+        voiceManager.stop();
         parties.clear();
         playerPartyMap.clear();
         pendingInvites.clear();

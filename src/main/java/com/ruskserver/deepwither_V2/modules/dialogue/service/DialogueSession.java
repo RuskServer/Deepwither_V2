@@ -3,6 +3,7 @@ package com.ruskserver.deepwither_V2.modules.dialogue.service;
 import com.ruskserver.deepwither_V2.modules.dialogue.api.DialogueChoice;
 import com.ruskserver.deepwither_V2.modules.dialogue.api.DialogueGraph;
 import com.ruskserver.deepwither_V2.modules.dialogue.api.DialogueResult;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,6 +20,7 @@ public class DialogueSession {
     private final CompletableFuture<DialogueResult> future;
     private final Map<String, String> flags;
     private final List<String> visitedNodes;
+    private final Location startLocation;
     private String currentNodeId;
     private boolean awaitingInput;
     private boolean ended;
@@ -31,6 +33,7 @@ public class DialogueSession {
         this.future = future;
         this.flags = new HashMap<>();
         this.visitedNodes = new ArrayList<>();
+        this.startLocation = player.getLocation().clone();
         this.currentNodeId = graph.startNodeId();
         this.awaitingInput = false;
         this.ended = false;
@@ -52,6 +55,10 @@ public class DialogueSession {
 
     public Map<String, String> flags() {
         return flags;
+    }
+
+    public Location startLocation() {
+        return startLocation;
     }
 
     public String currentNodeId() {
