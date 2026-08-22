@@ -6,7 +6,7 @@ import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
 import com.ruskserver.deepwither_V2.modules.quest.api.Quest;
 import com.ruskserver.deepwither_V2.modules.quest.api.QuestObjective;
 import com.ruskserver.deepwither_V2.modules.quest.api.QuestState;
-import com.ruskserver.deepwither_V2.modules.quest.provider.QuestProgressProvider.QuestProgress;
+import com.ruskserver.deepwither_V2.modules.quest.definitions.DailyCollectionQuest;
 import com.ruskserver.deepwither_V2.modules.quest.service.QuestService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -26,7 +26,6 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @com.ruskserver.deepwither_V2.core.di.annotations.Component
 public class QuestGUI implements Listener {
@@ -49,12 +48,12 @@ public class QuestGUI implements Listener {
             return;
         }
 
-        QuestProgress progress = questService.getProgress(player.getUniqueId());
+        QuestState state = questService.getState(player.getUniqueId(), DailyCollectionQuest.ID);
 
-        if (progress.isEmpty() || progress.state() == QuestState.TURNED_IN) {
+        if (state == QuestState.NOT_STARTED || state == QuestState.COMPLETED || state == QuestState.TURNED_IN) {
             openAcceptGui(player, remaining);
-        } else if (progress.state() == QuestState.ACCEPTED) {
-            if (questService.checkCompletion(player)) {
+        } else if (state == QuestState.ACCEPTED) {
+            if (questService.checkCompletion(player, DailyCollectionQuest.ID)) {
                 openCompleteGui(player);
             } else {
                 openProgressGui(player);
@@ -63,10 +62,10 @@ public class QuestGUI implements Listener {
     }
 
     private void openAcceptGui(Player player, int remaining) {
-        Quest quest = questService.getQuest("daily_collection");
+        Quest quest = questService.getQuest(DailyCollectionQuest.ID);
         if (quest == null) return;
 
-        QuestHolder holder = new QuestHolder("daily_collection");
+        QuestHolder holder = new QuestHolder(DailyCollectionQuest.ID);
         Inventory gui = Bukkit.createInventory(holder, 27, Component.text("§2村長の依頼"));
         holder.setInventory(gui);
 
@@ -79,19 +78,16 @@ public class QuestGUI implements Listener {
     }
 
     private void openProgressGui(Player player) {
-        QuestProgress progress = questService.getProgress(player.getUniqueId());
-        Quest quest = questService.getCurrentQuest(player);
+        Quest quest = questService.getQuest(DailyCollectionQuest.ID);
         if (quest == null) return;
 
-        Map<String, Integer> counts = questService.getCurrentCounts(player);
-
-        QuestHolder holder = new QuestHolder(progress.questId());
+        QuestHolder holder = new QuestHolder(DailyCollectionQuest.ID);
         Inventory gui = Bukkit.createInventory(holder, 27, Component.text("§eクエスト進捗"));
         holder.setInventory(gui);
 
         int slot = 10;
         for (QuestObjective obj : quest.getObjectives()) {
-            int has = counts.getOrDefault(obj.getItemId(), 0);
+            int has = questService.countItem(player, obj.getItemId());
             boolean done = has >= obj.getRequiredAmount();
             gui.setItem(slot++, createObjectiveDisplay(obj, has, done));
         }
@@ -101,7 +97,7 @@ public class QuestGUI implements Listener {
     }
 
     private void openCompleteGui(Player player) {
-        QuestHolder holder = new QuestHolder("daily_collection");
+        QuestHolder holder = new QuestHolder(DailyCollectionQuest.ID);
         Inventory gui = Bukkit.createInventory(holder, 27, Component.text("§aクエスト完了"));
         holder.setInventory(gui);
 
@@ -209,11 +205,11 @@ public class QuestGUI implements Listener {
 
         switch (action) {
             case "accept" -> {
-                questService.acceptQuest(player, "daily_collection");
+                questService.acceptQuest(player, DailyCollectionQuest.ID);
                 player.closeInventory();
             }
             case "turn_in" -> {
-                questService.turnInQuest(player);
+                questService.turnInQuest(player, DailyCollectionQuest.ID);
                 player.closeInventory();
             }
             case "close" -> player.closeInventory();

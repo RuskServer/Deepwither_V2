@@ -9,25 +9,21 @@ import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.modules.dungeon.portal.DungeonPortalManager;
 import com.ruskserver.deepwither_V2.modules.dungeon.portal.PortalLocation;
 import com.ruskserver.deepwither_V2.modules.dungeon.portal.PortalLocationRepository;
+import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.util.ItemPDCUtil;
-import com.ruskserver.deepwither_V2.modules.quest.api.Quest;
-import com.ruskserver.deepwither_V2.modules.quest.api.QuestObjective;
-import com.ruskserver.deepwither_V2.modules.quest.api.QuestReward;
-import com.ruskserver.deepwither_V2.modules.quest.api.QuestState;
-import com.ruskserver.deepwither_V2.modules.quest.definitions.DailyCollectionQuest;
+import com.ruskserver.deepwither_V2.modules.quest.api.*;
 import com.ruskserver.deepwither_V2.modules.quest.provider.QuestProgressProvider;
+import com.ruskserver.deepwither_V2.modules.quest.provider.QuestProgressProvider.QuestEntry;
 import com.ruskserver.deepwither_V2.modules.quest.provider.QuestProgressProvider.QuestProgress;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
@@ -42,6 +38,7 @@ public class QuestService implements Startable {
     private final DungeonPortalManager dungeonPortalManager;
     private final PortalLocationRepository portalLocationRepo;
     private final ItemPDCUtil pdcUtil;
+    private final ItemManager itemManager;
 
     private static final int MAX_DAILY_COMPLETIONS = 5;
 
@@ -53,7 +50,8 @@ public class QuestService implements Startable {
                         QuestProgressProvider progressProvider,
                         DungeonPortalManager dungeonPortalManager,
                         PortalLocationRepository portalLocationRepo,
-                        ItemPDCUtil pdcUtil) {
+                        ItemPDCUtil pdcUtil,
+                        ItemManager itemManager) {
         this.plugin = plugin;
         this.log = plugin.getLogger();
         this.container = container;
@@ -62,6 +60,7 @@ public class QuestService implements Startable {
         this.dungeonPortalManager = dungeonPortalManager;
         this.portalLocationRepo = portalLocationRepo;
         this.pdcUtil = pdcUtil;
+        this.itemManager = itemManager;
     }
 
     @Override
@@ -84,13 +83,30 @@ public class QuestService implements Startable {
 
     public QuestProgress getProgress(UUID playerId) {
         PlayerData data = playerDataRepo.get(playerId).orElse(null);
-        if (data == null) return new QuestProgress(null, null, 0, "", 0);
+        if (data == null) return QuestProgress.empty();
         return data.get(QuestProgressProvider.KEY);
     }
 
+    public QuestState getState(UUID playerId, String questId) {
+        QuestProgress progress = getProgress(playerId);
+        return progress.getState(questId);
+    }
+
+    public boolean isAccepted(UUID playerId, String questId) {
+        return getState(playerId, questId) == QuestState.ACCEPTED;
+    }
+
+    public boolean isCompleted(UUID playerId, String questId) {
+        QuestState state = getState(playerId, questId);
+        return state == QuestState.COMPLETED || state == QuestState.TURNED_IN;
+    }
+
+    // 後方互換性用
     public boolean isAccepted(UUID playerId) {
         QuestProgress progress = getProgress(playerId);
-        return !progress.isEmpty() && progress.state() == QuestState.ACCEPTED;
+        if (progress.entries() == null) return false;
+        return progress.entries().values().stream()
+                .anyMatch(e -> e.state() == QuestState.ACCEPTED);
     }
 
     public int getRemainingDailyCompletions(UUID playerId) {
@@ -101,119 +117,209 @@ public class QuestService implements Startable {
         return Math.max(0, MAX_DAILY_COMPLETIONS - progress.dailyCompletions());
     }
 
+    public List<Quest> getAcceptedQuests(Player player) {
+        UUID uuid = player.getUniqueId();
+        QuestProgress progress = getProgress(uuid);
+        if (progress.entries() == null) return List.of();
+
+        List<Quest> result = new ArrayList<>();
+        for (QuestEntry entry : progress.entries().values()) {
+            if (entry.state() == QuestState.ACCEPTED) {
+                Quest quest = registry.get(entry.questId());
+                if (quest != null) {
+                    result.add(quest);
+                }
+            }
+        }
+        return result;
+    }
+
     public boolean acceptQuest(Player player, String questId) {
         UUID uuid = player.getUniqueId();
-        if (isAccepted(uuid)) {
-            player.sendMessage(Component.text("既にクエストを受注しています。", NamedTextColor.RED));
-            return false;
-        }
-
-        int remaining = getRemainingDailyCompletions(uuid);
-        if (remaining <= 0) {
-            player.sendMessage(Component.text("今日のクエスト受注可能回数（" + MAX_DAILY_COMPLETIONS + "回）に達しました。", NamedTextColor.RED));
-            return false;
-        }
-
         Quest quest = registry.get(questId);
         if (quest == null) {
             player.sendMessage(Component.text("クエストが見つかりません。", NamedTextColor.RED));
             return false;
         }
 
+        QuestState currentState = getState(uuid, questId);
+        if (currentState == QuestState.ACCEPTED) {
+            player.sendMessage(Component.text("既にこのクエストを受注しています。", NamedTextColor.RED));
+            return false;
+        }
+
+        if (!quest.isRepeatable() && (currentState == QuestState.COMPLETED || currentState == QuestState.TURNED_IN)) {
+            player.sendMessage(Component.text("このクエストは既に完了しています。", NamedTextColor.RED));
+            return false;
+        }
+
+        if (quest.getCategory() == QuestCategory.DAILY) {
+            int remaining = getRemainingDailyCompletions(uuid);
+            if (remaining <= 0) {
+                player.sendMessage(Component.text("今日のデイリークエスト受注上限に達しました。", NamedTextColor.RED));
+                return false;
+            }
+        }
+
         String today = LocalDate.now().toString();
         QuestProgress currentProgress = getProgress(uuid);
         int previousCompletions = today.equals(currentProgress.lastResetDate()) ? currentProgress.dailyCompletions() : 0;
-        QuestProgress progress = new QuestProgress(questId, QuestState.ACCEPTED, System.currentTimeMillis(), today, previousCompletions);
-        PlayerData data = playerDataRepo.get(uuid).orElse(null);
-        if (data == null) return false;
-        data.set(QuestProgressProvider.KEY, progress);
-        playerDataRepo.save(uuid, data);
 
-        player.sendMessage(Component.text("§aクエスト「" + questId + "」を受注しました！"));
-        player.sendMessage(Component.text("§7残り受注可能回数: " + (remaining - 1) + "/" + MAX_DAILY_COMPLETIONS));
-        return true;
-    }
+        QuestEntry newEntry = new QuestEntry(questId, QuestState.ACCEPTED, Map.of(), System.currentTimeMillis(), 0L);
+        QuestProgress newProgress = currentProgress.withEntry(newEntry).withDaily(today, previousCompletions);
 
-    public boolean checkCompletion(Player player) {
-        UUID uuid = player.getUniqueId();
-        QuestProgress progress = getProgress(uuid);
-        if (progress.isEmpty() || progress.state() != QuestState.ACCEPTED) return false;
-
-        Quest quest = registry.get(progress.questId());
-        if (quest == null) return false;
-
-        for (QuestObjective obj : quest.getObjectives()) {
-            int has = countItem(player, obj.getItemId());
-            if (has < obj.getRequiredAmount()) return false;
-        }
-        return true;
-    }
-
-    public boolean turnInQuest(Player player) {
-        UUID uuid = player.getUniqueId();
-        QuestProgress progress = getProgress(uuid);
-        if (progress.isEmpty() || progress.state() != QuestState.ACCEPTED) {
-            player.sendMessage(Component.text("完了できるクエストがありません。", NamedTextColor.RED));
-            return false;
-        }
-
-        if (!checkCompletion(player)) {
-            player.sendMessage(Component.text("まだ必要なアイテムが揃っていません。", NamedTextColor.RED));
-            return false;
-        }
-
-        Quest quest = registry.get(progress.questId());
-        if (quest == null) return false;
-
-        for (QuestObjective obj : quest.getObjectives()) {
-            removeItem(player, obj.getItemId(), obj.getRequiredAmount());
-        }
-
-        for (QuestReward reward : quest.getRewards()) {
-            grantReward(player, reward);
-        }
-
-        String today = LocalDate.now().toString();
-        int newCount = today.equals(progress.lastResetDate()) ? progress.dailyCompletions() + 1 : 1;
-        QuestProgress newProgress = new QuestProgress(progress.questId(), QuestState.TURNED_IN,
-                progress.acceptedAt(), today, newCount);
         PlayerData data = playerDataRepo.get(uuid).orElse(null);
         if (data == null) return false;
         data.set(QuestProgressProvider.KEY, newProgress);
         playerDataRepo.save(uuid, data);
 
-        int remaining = MAX_DAILY_COMPLETIONS - newCount;
-        player.sendMessage(Component.text("§aクエストを完了しました！ ダンジョン地図を入手しました。"));
-        if (remaining > 0) {
-            player.sendMessage(Component.text("§7今日あと" + remaining + "回受注できます。"));
-        } else {
-            player.sendMessage(Component.text("§e今日の受注可能回数を使い切りました。"));
+        player.sendMessage(Component.text("§aクエスト「" + quest.getTitle() + "」を受注しました！"));
+        return true;
+    }
+
+    public boolean checkCompletion(Player player, String questId) {
+        Quest quest = registry.get(questId);
+        if (quest == null) return false;
+
+        UUID uuid = player.getUniqueId();
+        QuestProgress progress = getProgress(uuid);
+        QuestEntry entry = progress.getEntry(questId);
+        if (entry == null || entry.state() != QuestState.ACCEPTED) return false;
+
+        for (QuestObjective obj : quest.getObjectives()) {
+            int count;
+            if (obj.getType() == ObjectiveType.COLLECT_ITEM && obj.getItemId() != null) {
+                count = countItem(player, obj.getItemId());
+            } else {
+                count = entry.getCounter(obj.getProgressKey());
+            }
+            if (!obj.isCompleted(count, player)) {
+                return false;
+            }
         }
         return true;
     }
 
-    public Map<String, Integer> getCurrentCounts(Player player) {
+    // 後方互換用
+    public boolean checkCompletion(Player player) {
+        Quest quest = getCurrentQuest(player);
+        if (quest == null) return false;
+        return checkCompletion(player, quest.getId());
+    }
+
+    public boolean turnInQuest(Player player, String questId) {
+        Quest quest = registry.get(questId);
+        if (quest == null) return false;
+
         UUID uuid = player.getUniqueId();
         QuestProgress progress = getProgress(uuid);
-        if (progress.isEmpty()) return Map.of();
+        QuestEntry entry = progress.getEntry(questId);
+        if (entry == null || entry.state() != QuestState.ACCEPTED) {
+            player.sendMessage(Component.text("完了できるクエストがありません。", NamedTextColor.RED));
+            return false;
+        }
 
-        Quest quest = registry.get(progress.questId());
+        if (!checkCompletion(player, questId)) {
+            player.sendMessage(Component.text("まだ目標を達成していません。", NamedTextColor.RED));
+            return false;
+        }
+
+        // 収集アイテムの消費
+        for (QuestObjective obj : quest.getObjectives()) {
+            if (obj.getType() == ObjectiveType.COLLECT_ITEM && obj.getItemId() != null) {
+                removeItem(player, obj.getItemId(), obj.getRequiredAmount());
+            }
+        }
+
+        // 報酬の付与
+        for (QuestReward reward : quest.getRewards()) {
+            grantReward(player, reward);
+        }
+
+        String today = LocalDate.now().toString();
+        int newCompletions = today.equals(progress.lastResetDate()) ? progress.dailyCompletions() : 0;
+        if (quest.getCategory() == QuestCategory.DAILY) {
+            newCompletions++;
+        }
+
+        QuestEntry updatedEntry = entry.withState(QuestState.COMPLETED);
+        QuestProgress newProgress = progress.withEntry(updatedEntry).withDaily(today, newCompletions);
+
+        PlayerData data = playerDataRepo.get(uuid).orElse(null);
+        if (data == null) return false;
+        data.set(QuestProgressProvider.KEY, newProgress);
+        playerDataRepo.save(uuid, data);
+
+        player.sendMessage(Component.text("§aクエスト「" + quest.getTitle() + "」を完了しました！"));
+        return true;
+    }
+
+    // 後方互換用
+    public boolean turnInQuest(Player player) {
+        Quest quest = getCurrentQuest(player);
+        if (quest == null) return false;
+        return turnInQuest(player, quest.getId());
+    }
+
+    public void incrementProgress(Player player, String progressKey, int amount) {
+        UUID uuid = player.getUniqueId();
+        QuestProgress progress = getProgress(uuid);
+        if (progress.entries() == null || progress.entries().isEmpty()) return;
+
+        boolean modified = false;
+        QuestProgress updatedProgress = progress;
+
+        for (QuestEntry entry : progress.entries().values()) {
+            if (entry.state() != QuestState.ACCEPTED) continue;
+
+            Quest quest = registry.get(entry.questId());
+            if (quest == null) continue;
+
+            for (QuestObjective obj : quest.getObjectives()) {
+                if (obj.getProgressKey().equals(progressKey)) {
+                    int current = entry.getCounter(progressKey);
+                    if (current < obj.getRequiredAmount()) {
+                        QuestEntry newEntry = entry.withIncrementedCounter(progressKey, amount);
+                        updatedProgress = updatedProgress.withEntry(newEntry);
+                        modified = true;
+
+                        int newCount = current + amount;
+                        if (newCount >= obj.getRequiredAmount()) {
+                            player.sendMessage(Component.text("§a【目標達成】 " + quest.getTitle() + ": " + obj.getDescription()));
+                        }
+                    }
+                }
+            }
+        }
+
+        if (modified) {
+            PlayerData data = playerDataRepo.get(uuid).orElse(null);
+            if (data != null) {
+                data.set(QuestProgressProvider.KEY, updatedProgress);
+                playerDataRepo.save(uuid, data);
+            }
+        }
+    }
+
+    public Quest getCurrentQuest(Player player) {
+        List<Quest> accepted = getAcceptedQuests(player);
+        return accepted.isEmpty() ? null : accepted.get(0);
+    }
+
+    public Map<String, Integer> getCurrentCounts(Player player) {
+        Quest quest = getCurrentQuest(player);
         if (quest == null) return Map.of();
 
         Map<String, Integer> counts = new HashMap<>();
         for (QuestObjective obj : quest.getObjectives()) {
-            counts.put(obj.getItemId(), countItem(player, obj.getItemId()));
+            if (obj.getItemId() != null) {
+                counts.put(obj.getItemId(), countItem(player, obj.getItemId()));
+            }
         }
         return counts;
     }
 
-    public Quest getCurrentQuest(Player player) {
-        QuestProgress progress = getProgress(player.getUniqueId());
-        if (progress.isEmpty()) return null;
-        return registry.get(progress.questId());
-    }
-
-    private int countItem(Player player, String itemId) {
+    public int countItem(Player player, String itemId) {
         int count = 0;
         for (ItemStack item : player.getInventory().getContents()) {
             if (item == null) continue;
@@ -225,7 +331,7 @@ public class QuestService implements Startable {
         return count;
     }
 
-    private void removeItem(Player player, String itemId, int amount) {
+    public void removeItem(Player player, String itemId, int amount) {
         int remaining = amount;
         var contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length && remaining > 0; i++) {
@@ -244,21 +350,44 @@ public class QuestService implements Startable {
     }
 
     private void grantReward(Player player, QuestReward reward) {
-        String dungeonId = reward.getDungeonId();
-        List<PortalLocation> portals = portalLocationRepo.findByDungeonId(dungeonId);
-        if (portals.isEmpty()) {
-            log.warning("[QuestService] ダンジョン '" + dungeonId + "' に対応するポータルが見つかりません。");
-            player.sendMessage(Component.text("ダンジョンポータルが設定されていません。運営にお問い合わせください。", NamedTextColor.RED));
-            return;
+        // ダンジョン地図報酬
+        if (reward.getDungeonId() != null) {
+            String dungeonId = reward.getDungeonId();
+            List<PortalLocation> portals = portalLocationRepo.findByDungeonId(dungeonId);
+            if (portals.isEmpty()) {
+                log.warning("[QuestService] ダンジョン '" + dungeonId + "' に対応するポータルが見つかりません。");
+                player.sendMessage(Component.text("ダンジョンポータルが設定されていません。", NamedTextColor.RED));
+            } else {
+                PortalLocation chosen = portals.get(ThreadLocalRandom.current().nextInt(portals.size()));
+                ItemStack map = dungeonPortalManager.createMapItem(dungeonId, chosen);
+                if (map != null) {
+                    giveOrDrop(player, map);
+                }
+            }
         }
 
-        PortalLocation chosen = portals.get(ThreadLocalRandom.current().nextInt(portals.size()));
-        ItemStack map = dungeonPortalManager.createMapItem(dungeonId, chosen);
-        if (map == null) return;
+        // アイテム報酬
+        if (reward.getItemId() != null) {
+            ItemStack item = itemManager.generate(reward.getItemId());
+            if (item != null) {
+                if (reward.getAmount() > 1) {
+                    item.setAmount(reward.getAmount());
+                }
+                giveOrDrop(player, item);
+                player.sendMessage(Component.text("§a報酬を獲得しました: " + reward.getDescription()));
+            }
+        }
 
-        var result = player.getInventory().addItem(map);
-        if (!result.isEmpty()) {
-            player.getWorld().dropItem(player.getLocation(), map);
+        // 独自grant呼び出し
+        reward.grant(player);
+    }
+
+    public void giveOrDrop(Player player, ItemStack item) {
+        var leftover = player.getInventory().addItem(item);
+        if (!leftover.isEmpty()) {
+            for (ItemStack drop : leftover.values()) {
+                player.getWorld().dropItem(player.getLocation(), drop);
+            }
         }
     }
 }

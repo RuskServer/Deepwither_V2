@@ -4,6 +4,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.quest.gui.QuestGUI;
 import net.citizensnpcs.api.event.NPCRightClickEvent;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -24,7 +25,11 @@ public class QuestNPCListener implements Listener {
         String npcName = event.getNPC().getName();
         if (!TARGET_NPC_NAME.equals(npcName)) return;
 
-        event.setCancelled(true);
-        questGui.openQuestGui(event.getClicker());
+        Player player = event.getClicker();
+        // スニーク時のみダイレクトにデイリークエストGUIを開く（通常クリックは対話システムへ）
+        if (player.isSneaking()) {
+            event.setCancelled(true);
+            questGui.openQuestGui(player);
+        }
     }
 }
