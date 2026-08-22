@@ -96,26 +96,8 @@ public class DungeonPortalManager implements Startable {
             pdc.set(dungeonModifiersKey, PersistentDataType.STRING, modCtx.toIdString());
         }
 
-        List<Component> lore = meta.lore();
-        if (lore == null) lore = new ArrayList<>();
-
-        String dungeonDisplay = getDungeonDisplayName(dungeonId);
-        lore.add(Component.empty());
-        lore.add(Component.text("§7ダンジョン: §f" + dungeonDisplay).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
-        lore.add(Component.text("§7座標: §eX=" + (int) portal.x() + " §eZ=" + (int) portal.z())
-                .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
-
-        for (DungeonModifier mod : modCtx.modifiers()) {
-            lore.add(Component.empty());
-            lore.add(Component.text("§7モディファイアー: ")
-                    .append(Component.text(mod.displayName(), mod.color())
-                            .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)));
-            lore.add(Component.text("  " + mod.description(), NamedTextColor.GRAY)
-                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
-        }
-
-        meta.lore(lore);
         item.setItemMeta(meta);
+        itemManager.updateItemMeta(item);
         return item;
     }
 
@@ -241,15 +223,5 @@ public class DungeonPortalManager implements Startable {
         player.spawnParticle(Particle.END_ROD,
                 portal.x() + offsetX, portal.y() + 1, portal.z() + offsetZ,
                 0, 0, 0, 0, 0.01);
-    }
-
-    private String getDungeonDisplayName(String dungeonId) {
-        return switch (dungeonId) {
-            case "eternal_ice" -> "§b永久氷河";
-            case "simple" -> "§a簡易遺跡";
-            case "branch" -> "§6分岐迷宮";
-            case "raid" -> "§c襲撃拠点";
-            default -> dungeonId;
-        };
     }
 }

@@ -132,4 +132,13 @@ public interface CustomItem {
      * このメソッド内で context.setDamage(0) などを呼ぶことで、攻撃をブロックするパッシブなどが作れます。
      */
     default void onDefend(com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext context) {}
+
+    /**
+     * ItemStackのメタデータ更新時（Lore再構築時）にアイテム固有のカスタムLoreを追加するフック。
+     *
+     * @param item 対象のItemStack
+     * @param meta 対象のItemMeta
+     * @param lore 追加先のLoreリスト
+     */
+    default void appendCustomLore(ItemStack item, org.bukkit.inventory.meta.ItemMeta meta, List<Component> lore) {}
 }

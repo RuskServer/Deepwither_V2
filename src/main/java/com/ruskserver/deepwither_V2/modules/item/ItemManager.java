@@ -267,6 +267,9 @@ public class ItemManager implements Startable {
             }
         }
 
+        // アイテム固有のカスタムLore（ダンジョンマップ情報など）を追加
+        customItem.appendCustomLore(item, meta, lore);
+
         meta.lore(lore);
 
         // CustomModelDataも最新化

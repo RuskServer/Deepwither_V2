@@ -61,12 +61,13 @@ public class EquipmentSetService implements Listener, Stoppable {
     }
 
     public int countPieces(Player player, EquipmentSet set) {
+        if (player == null || set == null) return 0;
         Set<String> equippedIds = new HashSet<>();
         for (ItemStack item : player.getInventory().getArmorContents()) {
             if (item == null || item.isEmpty()) continue;
             if (pdcUtil.isBroken(item)) continue;
             String itemId = pdcUtil.getItemId(item);
-            if (set.getItemIds().contains(itemId)) {
+            if (itemId != null && set.getItemIds().contains(itemId)) {
                 equippedIds.add(itemId);
             }
         }
