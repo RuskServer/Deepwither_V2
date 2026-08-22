@@ -5,7 +5,11 @@ import com.ruskserver.deepwither_V2.modules.dialogue.api.DialogueGraph;
 import com.ruskserver.deepwither_V2.modules.dialogue.api.DialogueResult;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class DialogueSession {
@@ -18,6 +22,8 @@ public class DialogueSession {
     private String currentNodeId;
     private boolean awaitingInput;
     private boolean ended;
+    private int selectedIndex;
+    private List<DialogueChoice> cachedChoices;
 
     public DialogueSession(Player player, DialogueGraph graph, CompletableFuture<DialogueResult> future) {
         this.player = player;
@@ -28,6 +34,8 @@ public class DialogueSession {
         this.currentNodeId = graph.startNodeId();
         this.awaitingInput = false;
         this.ended = false;
+        this.selectedIndex = 0;
+        this.cachedChoices = List.of();
     }
 
     public Player player() {
@@ -67,6 +75,22 @@ public class DialogueSession {
 
     public boolean isEnded() {
         return ended;
+    }
+
+    public int selectedIndex() {
+        return selectedIndex;
+    }
+
+    public void setSelectedIndex(int index) {
+        this.selectedIndex = index;
+    }
+
+    public List<DialogueChoice> cachedChoices() {
+        return cachedChoices;
+    }
+
+    public void setCachedChoices(List<DialogueChoice> choices) {
+        this.cachedChoices = choices != null ? choices : List.of();
     }
 
     public void complete(@Nullable String endNodeId, @Nullable String selectedChoiceText) {

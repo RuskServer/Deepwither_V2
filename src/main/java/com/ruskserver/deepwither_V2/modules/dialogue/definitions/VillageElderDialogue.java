@@ -1,5 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.dialogue.definitions;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.dialogue.api.Dialogue;
@@ -8,20 +9,23 @@ import com.ruskserver.deepwither_V2.modules.dialogue.api.SpeakerType;
 import com.ruskserver.deepwither_V2.modules.quest.definitions.BeginningOfJourneyQuest;
 import com.ruskserver.deepwither_V2.modules.quest.gui.QuestGUI;
 import com.ruskserver.deepwither_V2.modules.quest.service.QuestService;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.UUID;
+import java.util.List;
 
 @Component
 public class VillageElderDialogue implements Dialogue {
 
     private final QuestService questService;
     private final QuestGUI questGui;
+    private final Deepwither_V2 plugin;
 
     @Inject
-    public VillageElderDialogue(QuestService questService, QuestGUI questGui) {
+    public VillageElderDialogue(QuestService questService, QuestGUI questGui, Deepwither_V2 plugin) {
         this.questService = questService;
         this.questGui = questGui;
+        this.plugin = plugin;
     }
 
     @Override
@@ -30,31 +34,30 @@ public class VillageElderDialogue implements Dialogue {
     }
 
     @Override
+    public List<String> getNpcNames() {
+        return List.of("村長", "VillageElder");
+    }
+
+    @Override
     public DialogueGraph getGraph() {
         return DialogueGraph.builder("village_elder_main")
-                // 開始・ルーターノード
+                // 開始ノード（話しかけた瞬間に全メニューを表示）
                 .node("start", SpeakerType.NPC, "やあ、よく来たね。まあのんびりしていきなよ。")
-                    .choice("話しかける", "route_check")
-                .end()
-
-                .node("route_check", SpeakerType.NPC, "/skip/")
                     // 完了報告可能
                     .choice("【報告】砦のグールを討伐してきた", "turn_in_node",
                             ctx -> questService.isAccepted(ctx.player().getUniqueId(), BeginningOfJourneyQuest.ID)
                                     && questService.checkCompletion(ctx.player(), BeginningOfJourneyQuest.ID))
                     // 討伐中
-                    .choice("砦のグール討伐の進捗について", "in_progress_node",
+                    .choice("【進捗確認】砦のグール討伐について", "in_progress_node",
                             ctx -> questService.isAccepted(ctx.player().getUniqueId(), BeginningOfJourneyQuest.ID)
                                     && !questService.checkCompletion(ctx.player(), BeginningOfJourneyQuest.ID))
                     // メイン未受注
-                    .choice("何か手伝えることはある？", "intro_story",
+                    .choice("【メイン】依頼「旅の始まり」について聞く", "intro_story",
                             ctx -> !questService.isAccepted(ctx.player().getUniqueId(), BeginningOfJourneyQuest.ID)
                                     && !questService.isCompleted(ctx.player().getUniqueId(), BeginningOfJourneyQuest.ID))
-                    // 完了済み通常メニュー
-                    .choice("世界の様子について聞く", "world_lore",
-                            ctx -> questService.isCompleted(ctx.player().getUniqueId(), BeginningOfJourneyQuest.ID))
-                    .choice("素材収集の依頼（デイリー）を受けたい", "open_daily",
-                            ctx -> questService.isCompleted(ctx.player().getUniqueId(), BeginningOfJourneyQuest.ID))
+                    // 通常時いつでも選択可能なメニュー
+                    .choice("ダンジョン地図の収集依頼（デイリー）を受けたい", "open_daily")
+                    .choice("世界の様子について聞く", "world_lore")
                     .choice("用はない", "goodbye")
                 .end()
 
@@ -101,7 +104,7 @@ public class VillageElderDialogue implements Dialogue {
                     .choice("ありがとう！", "post_complete_talk")
                 .end()
 
-                .node("post_complete_talk", SpeakerType.NPC, "腕も立つみたいだし、これからは日々の素材集め（デイリー依頼）も頼むよ。またいつでも声かけてね。")
+                .node("post_complete_talk", SpeakerType.NPC, "腕も立つみたいだし、これからは日々の素材集め（ダンジョン地図依頼）も頼むよ。またいつでも声かけてね。")
                     .choice("わかった", "goodbye")
                 .end()
 
@@ -118,11 +121,11 @@ public class VillageElderDialogue implements Dialogue {
                 .end()
 
                 // デイリーGUIオープン
-                .node("open_daily", SpeakerType.NPC, "日課の素材集めかい？リストを開くから確認してみてね。")
+                .node("open_daily", SpeakerType.NPC, "ダンジョン地図が手に入る収集依頼かい？リストを開くから確認してみてね。")
                     .action(ctx -> {
                         Player player = ctx.player();
                         ctx.endDialogue();
-                        questGui.openQuestGui(player);
+                        Bukkit.getScheduler().runTask(plugin, () -> questGui.openQuestGui(player));
                     })
                 .end()
 

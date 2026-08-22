@@ -1,5 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.dialogue.definitions;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.crafting.gui.CraftingRecipeListGui;
@@ -12,9 +13,11 @@ import com.ruskserver.deepwither_V2.modules.gui.GuiService;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.quest.definitions.MiningSmithingTutorialQuest;
 import com.ruskserver.deepwither_V2.modules.quest.service.QuestService;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -23,12 +26,14 @@ public class BlacksmithDialogue implements Dialogue {
     private final QuestService questService;
     private final ItemManager itemManager;
     private final GuiService guiService;
+    private final Deepwither_V2 plugin;
 
     @Inject
-    public BlacksmithDialogue(QuestService questService, ItemManager itemManager, GuiService guiService) {
+    public BlacksmithDialogue(QuestService questService, ItemManager itemManager, GuiService guiService, Deepwither_V2 plugin) {
         this.questService = questService;
         this.itemManager = itemManager;
         this.guiService = guiService;
+        this.plugin = plugin;
     }
 
     @Override
@@ -37,30 +42,29 @@ public class BlacksmithDialogue implements Dialogue {
     }
 
     @Override
+    public List<String> getNpcNames() {
+        return List.of("鍛冶屋", "合成屋");
+    }
+
+    @Override
     public DialogueGraph getGraph() {
         return DialogueGraph.builder("blacksmith_tutorial")
-                .node("start", SpeakerType.NPC, "お、新顔じゃん。いらっしゃーい。")
-                    .choice("話しかける", "route_check")
-                .end()
-
-                .node("route_check", SpeakerType.NPC, "/skip/")
+                .node("start", SpeakerType.NPC, "お、いらっしゃーい。何にする？")
                     // 報告可能
                     .choice("【報告】中古の鉄ピッケルが完成した！", "turn_in_node",
                             ctx -> questService.isAccepted(ctx.player().getUniqueId(), MiningSmithingTutorialQuest.ID)
                                     && questService.checkCompletion(ctx.player(), MiningSmithingTutorialQuest.ID))
                     // 進行中
-                    .choice("採掘と鍛冶の進捗について", "in_progress_node",
+                    .choice("【進捗確認】チュートリアルの手順をもう一度", "in_progress_node",
                             ctx -> questService.isAccepted(ctx.player().getUniqueId(), MiningSmithingTutorialQuest.ID)
                                     && !questService.checkCompletion(ctx.player(), MiningSmithingTutorialQuest.ID))
                     // 未受注
-                    .choice("何か仕事はある？", "intro_tutorial",
+                    .choice("【チュートリアル】採掘と装備製作を教えてほしい", "intro_tutorial",
                             ctx -> !questService.isAccepted(ctx.player().getUniqueId(), MiningSmithingTutorialQuest.ID)
                                     && !questService.isCompleted(ctx.player().getUniqueId(), MiningSmithingTutorialQuest.ID))
-                    // 完了後メニュー
-                    .choice("アイテム製作（レシピ一覧）を開く", "open_craft_gui",
-                            ctx -> questService.isCompleted(ctx.player().getUniqueId(), MiningSmithingTutorialQuest.ID))
-                    .choice("装備を修理したい", "open_repair_gui",
-                            ctx -> questService.isCompleted(ctx.player().getUniqueId(), MiningSmithingTutorialQuest.ID))
+                    // 常時メニュー
+                    .choice("製作レシピ一覧を開く", "open_craft_gui")
+                    .choice("装備を修理したい", "open_repair_gui")
                     .choice("用はない", "goodbye")
                 .end()
 
@@ -119,8 +123,10 @@ public class BlacksmithDialogue implements Dialogue {
                     .action(ctx -> {
                         Player player = ctx.player();
                         ctx.endDialogue();
-                        GuiContext context = new GuiContext(Map.of(CraftingRecipeListGui.NPC_KEY, "鍛冶屋"));
-                        guiService.open(player, CraftingRecipeListGui.ID, context);
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            GuiContext context = new GuiContext(Map.of(CraftingRecipeListGui.NPC_KEY, "合成屋"));
+                            guiService.open(player, CraftingRecipeListGui.ID, context);
+                        });
                     })
                 .end()
 
@@ -128,7 +134,9 @@ public class BlacksmithDialogue implements Dialogue {
                     .action(ctx -> {
                         Player player = ctx.player();
                         ctx.endDialogue();
-                        guiService.open(player, CraftingRepairListGui.ID, GuiContext.EMPTY);
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            guiService.open(player, CraftingRepairListGui.ID, GuiContext.EMPTY);
+                        });
                     })
                 .end()
 

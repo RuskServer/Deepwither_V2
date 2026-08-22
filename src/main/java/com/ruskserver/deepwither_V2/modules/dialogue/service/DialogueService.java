@@ -10,11 +10,12 @@ import com.ruskserver.deepwither_V2.modules.dialogue.event.DialogueChoiceEvent;
 import com.ruskserver.deepwither_V2.modules.dialogue.event.DialogueEndEvent;
 import com.ruskserver.deepwither_V2.modules.dialogue.event.DialogueStartEvent;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +30,8 @@ import java.util.stream.Collectors;
 public class DialogueService implements Startable, Stoppable {
 
     private static final int AUTO_ADVANCE_DELAY_TICKS = 10;
+    private static final Component DIVIDER = MiniMessage.miniMessage()
+            .deserialize("<gradient:#ffffff:#38b6ff><st>                                                </st></gradient>");
 
     private final Logger logger;
     private final JavaPlugin plugin;
@@ -47,8 +50,12 @@ public class DialogueService implements Startable, Stoppable {
     public void start() {
         for (Object instance : container.getAllInstances()) {
             if (instance instanceof Dialogue dialogue) {
-                registerDialogue(dialogue.getNpcName(), dialogue.getGraph());
-                logger.info("[DialogueService] 会話定義を登録: " + dialogue.getNpcName() + " → " + dialogue.getGraph().id());
+                for (String npcName : dialogue.getNpcNames()) {
+                    if (npcName != null && !npcName.isBlank()) {
+                        registerDialogue(npcName, dialogue.getGraph());
+                        logger.info("[DialogueService] 会話定義を登録: " + npcName + " → " + dialogue.getGraph().id());
+                    }
+                }
             }
         }
         logger.info("[DialogueService] 会話システムを開始しました (" + npcDialogues.size() + " 件の会話定義)");
@@ -128,8 +135,7 @@ public class DialogueService implements Startable, Stoppable {
         DialogueNode currentNode = session.graph().node(session.currentNodeId());
         if (currentNode == null) return;
 
-        List<DialogueChoice> available = filterAvailableChoices(currentNode.choices(),
-                new DialogueContext(player, session.flags()));
+        List<DialogueChoice> available = session.cachedChoices();
         if (index < 0 || index >= available.size()) return;
 
         DialogueChoice chosen = available.get(index);
@@ -177,6 +183,30 @@ public class DialogueService implements Startable, Stoppable {
         showNode(player, nextNode, session);
     }
 
+    public void scrollChoice(Player player, int delta) {
+        DialogueSession session = sessions.get(player.getUniqueId());
+        if (session == null || session.isEnded() || !session.isAwaitingInput()) return;
+
+        List<DialogueChoice> choices = session.cachedChoices();
+        if (choices.size() <= 1) return;
+
+        int newIndex = session.selectedIndex() + delta;
+        int size = choices.size();
+        newIndex = ((newIndex % size) + size) % size;
+
+        session.setSelectedIndex(newIndex);
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.4f, 1.2f);
+        renderChoiceScreen(player, session);
+    }
+
+    public void confirmCurrentChoice(Player player) {
+        DialogueSession session = sessions.get(player.getUniqueId());
+        if (session == null || session.isEnded() || !session.isAwaitingInput()) return;
+
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.5f);
+        selectChoice(player, session.selectedIndex());
+    }
+
     public void endDialogue(Player player) {
         DialogueSession session = sessions.get(player.getUniqueId());
         if (session != null && !session.isEnded()) {
@@ -190,6 +220,11 @@ public class DialogueService implements Startable, Stoppable {
     public boolean isInDialogue(Player player) {
         DialogueSession session = sessions.get(player.getUniqueId());
         return session != null && !session.isEnded();
+    }
+
+    public boolean isAwaitingInput(Player player) {
+        DialogueSession session = sessions.get(player.getUniqueId());
+        return session != null && !session.isEnded() && session.isAwaitingInput();
     }
 
     @Nullable
@@ -217,13 +252,16 @@ public class DialogueService implements Startable, Stoppable {
             return;
         }
 
-        if (!node.text().equals("/skip/")) {
-            sendSpeakerMessage(player, node);
-        }
-
         List<DialogueChoice> available = filterAvailableChoices(node.choices(), ctx);
 
         if (available.isEmpty()) {
+            // 選択肢がない終端ノードの場合
+            player.sendMessage(DIVIDER);
+            if (!node.text().equals("/skip/")) {
+                player.sendMessage(Component.text(node.text(), NamedTextColor.WHITE));
+            }
+            player.sendMessage(DIVIDER);
+
             DialogueResult result = new DialogueResult(session.graph().id(), node.id(), null, Map.copyOf(session.flags()));
             session.complete(node.id(), null);
             Bukkit.getPluginManager().callEvent(new DialogueEndEvent(player, result));
@@ -235,7 +273,7 @@ public class DialogueService implements Startable, Stoppable {
             DialogueChoice only = available.get(0);
             DialogueNode target = only.nextNodeId() != null ? session.graph().node(only.nextNodeId()) : null;
 
-            if (target != null && target.speaker() == SpeakerType.NPC) {
+            if (target != null && target.speaker() == SpeakerType.NPC && node.text().equals("/skip/")) {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     DialogueSession s = sessions.get(player.getUniqueId());
                     if (s == null || s.isEnded() || !s.currentNodeId().equals(node.id())) return;
@@ -261,36 +299,52 @@ public class DialogueService implements Startable, Stoppable {
             }
         }
 
+        session.setSelectedIndex(0);
+        session.setCachedChoices(available);
         session.setAwaitingInput(true);
-        showChoices(player, available);
+        renderChoiceScreen(player, session);
     }
 
-    private void sendSpeakerMessage(Player player, DialogueNode node) {
-        Component prefix;
-        if (node.speaker() == SpeakerType.NPC) {
-            prefix = Component.text("[NPC] ", NamedTextColor.GOLD, TextDecoration.BOLD);
-        } else {
-            prefix = Component.text("[あなた] ", NamedTextColor.AQUA);
+    public void renderChoiceScreen(Player player, DialogueSession session) {
+        DialogueNode currentNode = session.graph().node(session.currentNodeId());
+        if (currentNode == null) return;
+
+        List<DialogueChoice> choices = session.cachedChoices();
+        if (choices.isEmpty()) return;
+
+        int selectedIndex = session.selectedIndex();
+
+        player.sendMessage(DIVIDER);
+        if (!currentNode.text().equals("/skip/")) {
+            player.sendMessage(Component.text(currentNode.text(), NamedTextColor.WHITE));
+            player.sendMessage(Component.empty());
         }
-
-        Component message = prefix.append(Component.text(node.text(), NamedTextColor.WHITE));
-        player.sendMessage(message);
-    }
-
-    private void showChoices(Player player, List<DialogueChoice> choices) {
-        player.sendMessage(Component.text("--- 選択肢 ---", NamedTextColor.GRAY, TextDecoration.ITALIC));
 
         for (int i = 0; i < choices.size(); i++) {
             DialogueChoice choice = choices.get(i);
             final int index = i;
+            boolean isSelected = (i == selectedIndex);
 
-            Component option = Component.text("[" + (i + 1) + "] ", NamedTextColor.GREEN)
-                    .append(Component.text(choice.text(), NamedTextColor.WHITE))
-                    .clickEvent(ClickEvent.callback(s -> selectChoice(player, index)))
-                    .hoverEvent(HoverEvent.showText(
-                            Component.text("クリックして選択", NamedTextColor.YELLOW)));
+            Component line;
+            if (isSelected) {
+                line = Component.text(" §a>>> §f" + choice.text())
+                        .clickEvent(ClickEvent.callback(s -> selectChoice(player, index)))
+                        .hoverEvent(HoverEvent.showText(Component.text("クリックまたは [Fキー] で決定", NamedTextColor.YELLOW)));
+            } else {
+                line = Component.text(" §7    " + choice.text())
+                        .clickEvent(ClickEvent.callback(s -> selectChoice(player, index)))
+                        .hoverEvent(HoverEvent.showText(Component.text("クリックして選択・決定", NamedTextColor.GRAY)));
+            }
+            player.sendMessage(line);
+        }
 
-            player.sendMessage(option);
+        player.sendMessage(Component.empty());
+        player.sendMessage(Component.text(" §8[マウスホイール: 選択 / Fキー: 決定]"));
+        player.sendMessage(DIVIDER);
+
+        // アクションバーにも現在選択中の項目を表示
+        if (selectedIndex >= 0 && selectedIndex < choices.size()) {
+            player.sendActionBar(Component.text("§a>>> §f" + choices.get(selectedIndex).text() + " §8[Fキー: 決定]"));
         }
     }
 

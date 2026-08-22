@@ -60,7 +60,7 @@ public class QuestScoreboardService implements Startable {
         Objective obj = scoreboard.getObjective(OBJECTIVE_NAME);
         if (obj == null) {
             obj = scoreboard.registerNewObjective(OBJECTIVE_NAME, Criteria.DUMMY,
-                    Component.text("【進行中のクエスト】", NamedTextColor.YELLOW, TextDecoration.BOLD));
+                    Component.text("【進行中のクエスト】", NamedTextColor.YELLOW));
             obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         }
 

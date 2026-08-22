@@ -104,7 +104,7 @@ public class QuestGUI implements Listener {
         ItemStack complete = new ItemStack(Material.SUNFLOWER);
         ItemMeta meta = complete.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("§a§l完了報告"));
+            meta.displayName(Component.text("§a完了報告"));
             meta.lore(List.of(
                     Component.text("§7必要アイテムをすべて集めました。"),
                     Component.text("§eクリックで報告し、報酬を受け取る。")
@@ -123,7 +123,7 @@ public class QuestGUI implements Listener {
         ItemMeta meta = info.getItemMeta();
         if (meta == null) return info;
 
-        meta.displayName(Component.text("§b§l村長の収集依頼"));
+        meta.displayName(Component.text("§b村長の収集依頼"));
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("§7村の周辺で手に入る素材を集めてきてほしい。"));
         lore.add(Component.text("§7報酬としてダンジョンへの地図を渡そう。"));
@@ -143,7 +143,7 @@ public class QuestGUI implements Listener {
         ItemStack btn = new ItemStack(Material.LIME_DYE);
         ItemMeta meta = btn.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("§a§l依頼を受ける"));
+            meta.displayName(Component.text("§a依頼を受ける"));
             meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, "accept");
             btn.setItemMeta(meta);
         }

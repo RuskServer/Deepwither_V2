@@ -45,7 +45,7 @@ public class QuestCollectionListener implements Listener {
         if (!isQuestItem) return;
 
         if (questService.checkCompletion(player)) {
-            player.sendMessage(Component.text("§a§l全てのアイテムが揃いました！ 村長に報告しましょう。"));
+            player.sendMessage(Component.text("§a全てのアイテムが揃いました！ 村長に報告しましょう。"));
         }
     }
 }
