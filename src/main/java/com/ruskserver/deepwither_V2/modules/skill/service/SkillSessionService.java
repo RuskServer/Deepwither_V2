@@ -132,7 +132,8 @@ public class SkillSessionService implements Startable, Stoppable {
                 CharacterSkillSlotProvider.SkillSlotData slotData = data.get(CharacterSkillSlotProvider.KEY);
                 if (slotData == null) return;
 
-                Component bar = Component.empty();
+                Component bar = Component.text(manaManager.getCombatStatus(player) + "  ",
+                        manaManager.isInCombat(player) ? NamedTextColor.RED : NamedTextColor.AQUA);
                 for (int i = 0; i < CharacterSkillSlotProvider.SLOT_COUNT; i++) {
                     String skillId = slotData.getSkill(i);
                     if (skillId == null) continue;

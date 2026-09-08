@@ -77,7 +77,7 @@ public class MassHealSkill implements Skill {
         caster.getNearbyEntities(10.0, 10.0, 10.0).forEach(entity -> {
             if (entity instanceof Player ally && !entity.equals(caster)) {
                 double maxHp = healthManager.getMaxHealth(ally);
-                healthManager.heal(ally, maxHp * 0.3);
+                healthManager.heal(caster, ally, maxHp * 0.3);
                 var allyLoc = ally.getLocation().add(0, 1, 0);
                 allyLoc.getWorld().spawnParticle(Particle.HEART, allyLoc, 8, 0.4, 0.4, 0.4, 0);
             }

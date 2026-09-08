@@ -6,7 +6,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
-import com.ruskserver.deepwither_V2.modules.mob.region.MobRegionConfig;
+import com.ruskserver.deepwither_V2.modules.combat.CombatStateService;
 import com.ruskserver.deepwither_V2.modules.stat.StatManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -28,19 +28,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ManaManager implements Startable, Stoppable, Listener {
 
     private static final double DEFAULT_MAX_MANA = 100.0;
-    private static final double REGEN_RATE = 0.02;
-    private static final double SAFE_ZONE_REGEN_RATE = 0.05;
 
     private final Map<UUID, Double> currentManaMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
-    private final MobRegionConfig regionConfig;
+    private final CombatStateService combatState;
     private final Deepwither_V2 plugin;
     private BukkitTask regenTask;
 
     @Inject
-    public ManaManager(StatManager statManager, MobRegionConfig regionConfig, Deepwither_V2 plugin) {
+    public ManaManager(StatManager statManager, CombatStateService combatState, Deepwither_V2 plugin) {
         this.statManager = statManager;
-        this.regionConfig = regionConfig;
+        this.combatState = combatState;
         this.plugin = plugin;
     }
 
@@ -48,14 +46,13 @@ public class ManaManager implements Startable, Stoppable, Listener {
     public void start() {
         regenTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
+                if (player.isDead() || player.getGameMode() == org.bukkit.GameMode.SPECTATOR) continue;
                 double maxMana = getMaxMana(player);
                 if (maxMana <= 0) continue;
 
                 double current = getMana(player);
                 if (current < maxMana) {
-                    double rate = regionConfig.isInSafeZone(player.getLocation()) ? SAFE_ZONE_REGEN_RATE : REGEN_RATE;
-                    double regenAmount = maxMana * rate;
-                    double newMana = Math.min(current + regenAmount, maxMana);
+                    double newMana = ManaRegeneration.regenerate(current, maxMana, isInCombat(player));
                     currentManaMap.put(player.getUniqueId(), newMana);
                 }
             }
@@ -89,6 +86,19 @@ public class ManaManager implements Startable, Stoppable, Listener {
     public double getMaxMana(Player player) {
         double maxMana = statManager.getTotalStat(player, StatType.MAX_MANA);
         return maxMana > 0 ? maxMana : DEFAULT_MAX_MANA;
+    }
+
+    public boolean isInCombat(Player player) {
+        return combatState.isInCombat(player);
+    }
+
+    public double getRegenerationPerSecond(Player player) {
+        return getMaxMana(player) * ManaRegeneration.rate(isInCombat(player));
+    }
+
+    public String getCombatStatus(Player player) {
+        if (isInCombat(player)) return "戦闘中";
+        return getMana(player) < getMaxMana(player) ? "戦闘外回復中" : "戦闘外";
     }
 
     /**

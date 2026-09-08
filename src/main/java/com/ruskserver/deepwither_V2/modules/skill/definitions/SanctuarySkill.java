@@ -111,7 +111,7 @@ public class SanctuarySkill implements Skill {
                     targetCenter.getWorld().getNearbyEntities(targetCenter, 5.0, 5.0, 5.0).forEach(entity -> {
                         if (entity instanceof Player ally) {
                             double maxHp = healthManager.getMaxHealth(ally);
-                            healthManager.heal(ally, maxHp * 0.08);
+                            healthManager.heal(caster, ally, maxHp * 0.08);
                             var allyLoc = ally.getLocation().add(0, 1, 0);
                             allyLoc.getWorld().spawnParticle(Particle.HEART, allyLoc, 3, 0.3, 0.3, 0.3, 0);
                         }

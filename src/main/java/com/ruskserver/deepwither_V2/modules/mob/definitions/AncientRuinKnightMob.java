@@ -218,6 +218,6 @@ public class AncientRuinKnightMob extends CustomMob {
                         a.getLocation().distanceSquared(getLocation()),
                         b.getLocation().distanceSquared(getLocation())))
                 .toList();
-        return nearby.isEmpty() ? null : nearby.get(0);
+        return combatTarget(nearby.isEmpty() ? null : nearby.get(0));
     }
 }

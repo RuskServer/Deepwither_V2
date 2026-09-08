@@ -52,6 +52,8 @@ dependencies {
     implementation("io.github.classgraph:classgraph:4.8.184")
 
     compileOnly("com.discordsrv:discordsrv:1.28.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.0.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.0.0")
 }
 
 
@@ -60,6 +62,10 @@ java {
 }
 
 tasks {
+    test {
+        useJUnitPlatform()
+    }
+
     build {
         dependsOn(shadowJar)
     }

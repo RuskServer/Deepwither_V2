@@ -106,7 +106,7 @@ public class RenewalSkill implements Skill {
 
                 if (tickCount % INTERVAL == 0) {
                     double maxHp = healthManager.getMaxHealth(target);
-                    healthManager.heal(target, maxHp * 0.1);
+                    healthManager.heal(caster, target, maxHp * 0.1);
                     var healLoc = target.getLocation().add(0, 1, 0);
                     healLoc.getWorld().spawnParticle(Particle.HEART, healLoc, 4, 0.3, 0.3, 0.3, 0);
                     healLoc.getWorld().playSound(healLoc, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.4f, 1.8f);

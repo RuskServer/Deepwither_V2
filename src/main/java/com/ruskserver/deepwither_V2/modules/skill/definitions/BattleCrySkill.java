@@ -82,8 +82,10 @@ public class BattleCrySkill implements Skill {
 
         player.getNearbyEntities(8.0, 8.0, 8.0).forEach(entity -> {
             if (entity instanceof Player ally && !ally.equals(player)) {
-                healthManager.heal(ally, healthManager.getMaxHealth(ally) * 0.15);
-                ally.addPotionEffect(new PotionEffect(org.bukkit.potion.PotionEffectType.STRENGTH, 120, 0, false, true));
+                healthManager.heal(player, ally, healthManager.getMaxHealth(ally) * 0.15);
+                if (ally.addPotionEffect(new PotionEffect(org.bukkit.potion.PotionEffectType.STRENGTH, 120, 0, false, true))) {
+                    healthManager.recordSupport(player, ally);
+                }
                 ally.getWorld().spawnParticle(Particle.HEART, ally.getLocation().add(0, 2, 0), 5, 0.3, 0.3, 0.3, 0);
             }
         });

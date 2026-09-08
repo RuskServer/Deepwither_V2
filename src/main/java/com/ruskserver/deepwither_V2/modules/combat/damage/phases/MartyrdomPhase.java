@@ -1,6 +1,8 @@
 package com.ruskserver.deepwither_V2.modules.combat.damage.phases;
 
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext;
+import com.ruskserver.deepwither_V2.modules.combat.CombatStateService;
+import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.skill.definitions.MartyrdomSkill;
 import org.bukkit.Bukkit;
@@ -16,8 +18,10 @@ public class MartyrdomPhase implements DamagePhase {
 
     private final MartyrdomSkill martyrdomSkill;
     private final VirtualHealthManager healthManager;
+    private final CombatStateService combatState;
 
-    public MartyrdomPhase(MartyrdomSkill martyrdomSkill, VirtualHealthManager healthManager) {
+    public MartyrdomPhase(MartyrdomSkill martyrdomSkill, VirtualHealthManager healthManager, CombatStateService combatState) {
+        this.combatState = combatState;
         this.martyrdomSkill = martyrdomSkill;
         this.healthManager = healthManager;
     }
@@ -43,12 +47,18 @@ public class MartyrdomPhase implements DamagePhase {
             Player martyr = Bukkit.getPlayer(martyrId);
             if (martyr == null || !martyr.isOnline() || martyr.isDead()) continue;
 
-            if (martyr.getLocation().distanceSquared(defender.getLocation()) > 7.0 * 7.0) continue;
+            if (!martyr.getWorld().equals(defender.getWorld())
+                    || martyr.getLocation().distanceSquared(defender.getLocation()) > 7.0 * 7.0) continue;
 
             double originalDamage = context.getDamage();
             double redirectedDamage = originalDamage * 0.5;
 
             if (redirectedDamage > 0) {
+                if (context.getType() != DamageType.ENVIRONMENTAL) {
+                    combatState.recordAttack(context.getAttacker(), defender);
+                    combatState.recordSupport(martyr, defender);
+                    combatState.recordAttack(context.getAttacker(), martyr);
+                }
                 context.setDamage(originalDamage * 0.5);
                 healthManager.damage(martyr, redirectedDamage);
                 break;

@@ -121,7 +121,7 @@ public class HolyResurrectionSkill implements Skill {
 
         revivalManager.revive(target);
         double targetMaxHp = healthManager.getMaxHealth(target);
-        healthManager.heal(target, targetMaxHp * 0.4);
+        healthManager.heal(caster, target, targetMaxHp * 0.4);
 
         var casterLoc = caster.getLocation().add(0, 1, 0);
         casterLoc.getWorld().spawnParticle(Particle.END_ROD, casterLoc, 40, 1.0, 1.0, 1.0, 0.15);

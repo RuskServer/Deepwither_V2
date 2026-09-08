@@ -1,6 +1,8 @@
 package com.ruskserver.deepwither_V2.modules.mob.framework;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.combat.CombatStateService;
+import com.ruskserver.deepwither_V2.modules.combat.stagger.StaggerableBoss;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
@@ -48,6 +50,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
 
     private final JavaPlugin plugin;
     private final VirtualHealthManager healthManager;
+    private final CombatStateService combatState;
     private final PlayerManager playerManager;
     private final PartyManager partyManager;
     private final StatManager statManager;
@@ -83,7 +86,8 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
 
     @Inject
     public CustomMobManager(JavaPlugin plugin, VirtualHealthManager healthManager, PlayerManager playerManager,
-                            PartyManager partyManager, StatManager statManager) {
+                            PartyManager partyManager, StatManager statManager, CombatStateService combatState) {
+        this.combatState = combatState;
         this.plugin = plugin;
         this.healthManager = healthManager;
         this.playerManager = playerManager;
@@ -101,6 +105,14 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             this.healthMultiplier = section.getDouble("health_multiplier", 0.03);
             this.damageMultiplier = section.getDouble("damage_multiplier", 0.01);
             this.nameFormat = section.getString("name_format", "&b[Lv.{level}] &r{name} &c{hp}/{max_hp}♥");
+        }
+    }
+
+    public void recordCombatTarget(CustomMob mob, LivingEntity target) {
+        if (target == null) return;
+        combatState.recordActivity(target);
+        if (mob instanceof StaggerableBoss && target instanceof Player player) {
+            combatState.joinEncounter(mob.getEntity(), player);
         }
     }
 
@@ -229,6 +241,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             }
 
             activeMobs.put(entity.getUniqueId(), mobLogic);
+            if (mobLogic instanceof StaggerableBoss) combatState.registerBoss(entity);
             return mobLogic;
         } catch (Exception e) {
             log.severe("[CustomMobManager] モブ初期化に失敗しました (id=" + id + "): " + e.getMessage());
@@ -268,6 +281,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             }
 
             activeMobs.put(entity.getUniqueId(), mobLogic);
+            if (mobLogic instanceof StaggerableBoss) combatState.registerBoss(entity);
         } catch (Exception e) {
             log.severe("[CustomMobManager] エンティティへのバインドに失敗しました (id=" + id + "): " + e.getMessage());
         }
@@ -319,6 +333,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             CustomMob mob = entry.getValue();
             if (locationFilter.test(mob.getLocation())) {
                 UUID entityId = entry.getKey();
+                combatState.endEncounter(entityId);
                 mob.entity.remove();           // エンティティをワールドから削除
                 statManager.removeProfile(entityId);
                 healthManager.cleanup(entityId);  // 仮想HPデータを解放

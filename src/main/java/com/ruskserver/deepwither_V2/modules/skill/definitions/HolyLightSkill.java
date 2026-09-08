@@ -88,7 +88,7 @@ public class HolyLightSkill implements Skill {
             return CastResult.fail(net.kyori.adventure.text.Component.text("対象は既にHPが最大です。", net.kyori.adventure.text.format.NamedTextColor.YELLOW));
         }
 
-        healthManager.heal(target, healAmount);
+        healthManager.heal(caster, target, healAmount);
 
         var loc = target.getLocation().add(0, 1, 0);
         loc.getWorld().spawnParticle(Particle.END_ROD, loc, 15, 0.4, 0.5, 0.4, 0.05);

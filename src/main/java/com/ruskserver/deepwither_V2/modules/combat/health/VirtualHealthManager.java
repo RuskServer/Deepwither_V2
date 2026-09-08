@@ -1,6 +1,7 @@
 package com.ruskserver.deepwither_V2.modules.combat.health;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
+import com.ruskserver.deepwither_V2.modules.combat.CombatStateService;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
@@ -33,9 +34,11 @@ public class VirtualHealthManager implements Listener {
     private final Map<UUID, Double> barrierMap = new ConcurrentHashMap<>();
     private final StatManager statManager;
     private final DamageFeedbackService damageFeedbackService;
+    private final CombatStateService combatState;
 
     @Inject
-    public VirtualHealthManager(StatManager statManager, DamageFeedbackService damageFeedbackService) {
+    public VirtualHealthManager(StatManager statManager, DamageFeedbackService damageFeedbackService, CombatStateService combatState) {
+        this.combatState = combatState;
         this.statManager = statManager;
         this.damageFeedbackService = damageFeedbackService;
     }
@@ -97,6 +100,23 @@ public class VirtualHealthManager implements Listener {
         syncVisualHealth(entity, newHealth, maxHp);
 
         Bukkit.getPluginManager().callEvent(new com.ruskserver.deepwither_V2.modules.combat.health.event.VirtualHealthChangeEvent(entity, current, newHealth, maxHp));
+    }
+
+    public void heal(LivingEntity source, LivingEntity target, double amount) {
+        if (target == null || target.isDead() || amount <= 0) return;
+        double before = getHealth(target);
+        heal(target, amount);
+        if (getHealth(target) > before) combatState.recordSupport(source, target);
+    }
+
+    public void recordSupport(LivingEntity source, LivingEntity target) {
+        combatState.recordSupport(source, target);
+    }
+
+    public void setBarrier(LivingEntity source, LivingEntity target, double amount) {
+        if (target == null || target.isDead() || amount <= 0) return;
+        setBarrier(target, amount);
+        combatState.recordSupport(source, target);
     }
 
     public void setBarrier(LivingEntity entity, double amount) {

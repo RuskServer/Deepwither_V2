@@ -234,9 +234,9 @@ public class VanguardSkeletonMob extends CustomMob {
     }
 
     private LivingEntity getTarget() {
-        return entity.getWorld().getNearbyLivingEntities(entity.getLocation(), 15.0, 8.0, 15.0).stream()
+        return combatTarget(entity.getWorld().getNearbyLivingEntities(entity.getLocation(), 15.0, 8.0, 15.0).stream()
                 .filter(e -> e instanceof Player p && p.getGameMode() != GameMode.SPECTATOR && p.getGameMode() != GameMode.CREATIVE)
-                .findFirst().orElse(null);
+                .findFirst().orElse(null));
     }
 
     @Override

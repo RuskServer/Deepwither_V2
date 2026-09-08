@@ -110,6 +110,11 @@ public abstract class CustomMob {
 
     // --- ユーティリティ ---
 
+    protected <T extends LivingEntity> T combatTarget(T target) {
+        manager.recordCombatTarget(this, target);
+        return target;
+    }
+
     public LivingEntity getEntity() { return entity; }
     public UUID getUniqueId() { return uuid; }
     public String getMobId() { return mobId; }

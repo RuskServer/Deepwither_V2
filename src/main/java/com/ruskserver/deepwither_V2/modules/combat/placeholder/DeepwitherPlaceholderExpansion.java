@@ -52,6 +52,9 @@ public class DeepwitherPlaceholderExpansion extends PlaceholderExpansion {
         return switch (params.toLowerCase(Locale.ROOT)) {
             case "mana_current" -> format(manaManager.getMana(player));
             case "mana_max" -> format(manaManager.getMaxMana(player));
+            case "combat_status" -> manaManager.getCombatStatus(player);
+            case "in_combat" -> Boolean.toString(manaManager.isInCombat(player));
+            case "mana_regen" -> format(manaManager.getRegenerationPerSecond(player));
             case "health_current" -> format(healthManager.getHealth(player));
             case "health_max" -> format(healthManager.getMaxHealth(player));
             case "level" -> String.valueOf(playerManager.getPlayerLevel(player));

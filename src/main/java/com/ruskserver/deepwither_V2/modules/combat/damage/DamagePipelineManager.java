@@ -1,6 +1,7 @@
 package com.ruskserver.deepwither_V2.modules.combat.damage;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
+import com.ruskserver.deepwither_V2.modules.combat.CombatStateService;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.damage.phases.DamagePhase;
@@ -61,6 +62,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DamagePipelineManager implements Listener {
 
     private final VirtualHealthManager healthManager;
+    private final CombatStateService combatState;
     private final StatManager statManager;
     private final CustomMobManager customMobManager;
     private final MobRegionConfig regionConfig;
@@ -90,7 +92,8 @@ public class DamagePipelineManager implements Listener {
                                  PartyManager partyManager, MartyrdomSkill martyrdomSkill,
                                  EquipmentSetService equipmentSetService,
                                  EquipmentDurabilityService durabilityService,
-                                 org.bukkit.plugin.java.JavaPlugin plugin) {
+                                 org.bukkit.plugin.java.JavaPlugin plugin, CombatStateService combatState) {
+        this.combatState = combatState;
         this.healthManager = healthManager;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
@@ -120,7 +123,7 @@ public class DamagePipelineManager implements Listener {
         pipeline.add(new SpecialEffectPhase(specialEffectService, healthManager, manaManager));
         pipeline.add(new EquipmentSetPhase(equipmentSetService));
         // 6. スキル「殉教」等の味方被ダメージ肩代わり効果の適用
-        pipeline.add(new MartyrdomPhase(martyrdomSkill, healthManager));
+        pipeline.add(new MartyrdomPhase(martyrdomSkill, healthManager, combatState));
     }
 
     /**
@@ -183,6 +186,7 @@ public class DamagePipelineManager implements Listener {
 
         // 最終ダメージを仮想HPから減算し、フィードバックを再生
         if (context.getDamage() > 0) {
+            recordCombat(context);
             equipmentSetService.processResolvedAttackerEffects(context);
             customMobManager.recordDamage(defender, attacker);
             double healthBefore = defender instanceof Player ? healthManager.getHealth(defender) : -1.0;
@@ -254,6 +258,14 @@ public class DamagePipelineManager implements Listener {
 
             // 環境ダメージ後も無敵時間を設定
             applyIFrame(iframeKey, now, DEFAULT_IFRAME_MILLIS);
+        }
+    }
+
+    private void recordCombat(DamageContext context) {
+        LivingEntity defender = context.getDefender();
+        if (context.getType() != DamageType.ENVIRONMENTAL && !defender.isDead()
+                && healthManager.getHealth(defender) > 0) {
+            combatState.recordAttack(context.getAttacker(), defender);
         }
     }
 
@@ -435,6 +447,7 @@ public class DamagePipelineManager implements Listener {
         staggerService.applyStaggeredDamageMultiplier(context);
 
         if (context.getDamage() > 0) {
+            recordCombat(context);
             equipmentSetService.processResolvedAttackerEffects(context);
             customMobManager.recordDamage(defender, attacker);
             double healthBefore = defender instanceof Player ? healthManager.getHealth(defender) : -1.0;

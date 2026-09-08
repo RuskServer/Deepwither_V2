@@ -126,10 +126,10 @@ public class HolyNovaSkill implements Skill {
         caster.getWorld().spawnParticle(Particle.END_ROD, center.clone().add(0, 1, 0), 24, 1.2, 0.5, 1.2, 0.04);
         caster.getWorld().playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.35f);
 
-        heal(caster);
+        heal(caster, caster);
         caster.getNearbyEntities(RANGE, RANGE, RANGE).forEach(entity -> {
             if (entity instanceof Player ally) {
-                heal(ally);
+                heal(caster, ally);
             } else if (entity instanceof LivingEntity enemy) {
                 damagePipelineManager.processScaledDamage(
                         caster,
@@ -146,8 +146,8 @@ public class HolyNovaSkill implements Skill {
         return CastResult.success();
     }
 
-    private void heal(Player player) {
-        healthManager.heal(player, healthManager.getMaxHealth(player) * HEAL_RATIO);
+    private void heal(Player caster, Player player) {
+        healthManager.heal(caster, player, healthManager.getMaxHealth(player) * HEAL_RATIO);
         player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 1.4, 0), 4, 0.3, 0.3, 0.3, 0);
     }
 }

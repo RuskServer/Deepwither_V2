@@ -89,7 +89,7 @@ public class SacrificialLightSkill implements Skill {
         healthManager.damage(caster, hpCost);
 
         double targetMaxHp = healthManager.getMaxHealth(target);
-        healthManager.heal(target, targetMaxHp * 0.4);
+        healthManager.heal(caster, target, targetMaxHp * 0.4);
 
         var loc = target.getLocation().add(0, 1, 0);
         loc.getWorld().spawnParticle(Particle.END_ROD, loc, 20, 0.4, 0.5, 0.4, 0.08);

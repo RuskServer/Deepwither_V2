@@ -64,6 +64,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     private final BossSpawnService bossSpawnService;
     private final LootService lootService;
     private final Logger log;
+    private final com.ruskserver.deepwither_V2.modules.combat.CombatStateService combatState;
 
     private final Map<String, DungeonInstance> activeInstances = new HashMap<>();
     private final Map<UUID, String> playerToInstance = new HashMap<>();
@@ -90,7 +91,8 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             DungeonGenerator generator,
             MobSpawnService mobSpawnService,
             BossSpawnService bossSpawnService,
-            LootService lootService
+            LootService lootService,
+            com.ruskserver.deepwither_V2.modules.combat.CombatStateService combatState
     ) {
         this.plugin = plugin;
         this.definitionRegistry = definitionRegistry;
@@ -98,6 +100,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         this.mobSpawnService = mobSpawnService;
         this.bossSpawnService = bossSpawnService;
         this.lootService = lootService;
+        this.combatState = combatState;
         this.log = plugin.getLogger();
     }
 
@@ -374,6 +377,9 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     public void leaveDungeon(UUID playerId) {
         String instanceId = playerToInstance.remove(playerId);
         if (instanceId != null) {
+            activeBosses.forEach((bossId, context) -> {
+                if (context.instanceId().equals(instanceId)) combatState.leaveEncounter(bossId, playerId);
+            });
             DungeonInstance instance = activeInstances.get(instanceId);
             if (instance != null) {
                 instance.removeParticipant(playerId);
@@ -405,6 +411,15 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     // ========================================================================
 
     private void tick() {
+        activeBosses.forEach((bossId, context) -> {
+            Entity boss = plugin.getServer().getEntity(bossId);
+            DungeonInstance instance = activeInstances.get(context.instanceId());
+            if (boss == null || !boss.isValid() || boss.isDead() || instance == null || !instance.isActive()) return;
+            for (UUID playerId : instance.getParticipants()) {
+                Player player = plugin.getServer().getPlayer(playerId);
+                if (player != null) combatState.joinEncounter(boss, player);
+            }
+        });
         for (DungeonInstance instance : new ArrayList<>(activeInstances.values())) {
             if (instance.getState() == DungeonState.CLEARED) {
                 tickExitPortal(instance);
@@ -632,6 +647,10 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
                 boss.getUniqueId(),
                 new BossContext(instance.getInstanceId(), bossPosition)
         );
+        for (UUID playerId : instance.getParticipants()) {
+            Player player = plugin.getServer().getPlayer(playerId);
+            if (player != null) combatState.joinEncounter(boss, player);
+        }
     }
 
     // ========================================================================
@@ -671,6 +690,9 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     }
 
     private void removeBossTracking(String instanceId) {
+        activeBosses.forEach((bossId, context) -> {
+            if (context.instanceId().equals(instanceId)) combatState.endEncounter(bossId);
+        });
         activeBosses.entrySet().removeIf(entry -> entry.getValue().instanceId().equals(instanceId));
         pendingBossSpawns.remove(instanceId);
     }

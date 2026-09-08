@@ -76,7 +76,7 @@ public class GuardianAngelSkill implements Skill {
         caster.getNearbyEntities(10.0, 10.0, 10.0).forEach(entity -> {
             if (entity instanceof Player ally && !entity.equals(caster)) {
                 double maxHp = healthManager.getMaxHealth(ally);
-                healthManager.setBarrier(ally, maxHp * 0.4);
+                healthManager.setBarrier(caster, ally, maxHp * 0.4);
                 var allyLoc = ally.getLocation().add(0, 1, 0);
                 allyLoc.getWorld().spawnParticle(Particle.END_ROD, allyLoc, 15, 0.5, 0.5, 0.5, 0.05);
                 allyLoc.getWorld().playSound(allyLoc, Sound.ITEM_SHIELD_BLOCK, 0.6f, 1.5f);
