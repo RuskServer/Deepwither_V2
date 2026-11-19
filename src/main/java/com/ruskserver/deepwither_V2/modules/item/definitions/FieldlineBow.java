@@ -19,6 +19,8 @@ public class FieldlineBow implements BowItem {
         this.baseStats.put(StatType.RANGED_DAMAGE, 20.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 150.0);
+        this.baseStats.put(StatType.LIGHTNING_DAMAGE, 7.0);
+        this.baseStats.put(StatType.PHYS_TO_LIGHTNING_CONVERSION, 25.0);
     }
 
     @Override

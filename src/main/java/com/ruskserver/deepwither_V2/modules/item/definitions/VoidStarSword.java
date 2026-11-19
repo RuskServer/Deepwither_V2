@@ -20,6 +20,8 @@ public class VoidStarSword implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 6.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 1.5);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 8.0);
+        this.baseStats.put(StatType.PHYS_TO_ABYSS_CONVERSION, 30.0);
     }
 
     @Override

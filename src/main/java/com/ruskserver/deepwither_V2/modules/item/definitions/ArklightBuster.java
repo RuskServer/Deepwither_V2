@@ -59,6 +59,9 @@ public class ArklightBuster implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DAMAGE, 12.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 6.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 160.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 22.0);
+        this.baseStats.put(StatType.INCREASED_ELEMENTAL_DAMAGE, 15.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 15.0);
     }
 
     @Override

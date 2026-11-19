@@ -20,6 +20,9 @@ public class EtherShardHalberd implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 100.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 0.8);
+        this.baseStats.put(StatType.ICE_DAMAGE, 18.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 14.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 10.0);
     }
 
     @Override

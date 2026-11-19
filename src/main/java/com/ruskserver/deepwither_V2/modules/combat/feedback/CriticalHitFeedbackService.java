@@ -2,6 +2,7 @@ package com.ruskserver.deepwither_V2.modules.combat.feedback;
 
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
+import com.ruskserver.deepwither_V2.modules.combat.damage.DamageChannel;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
@@ -102,22 +103,23 @@ public class CriticalHitFeedbackService {
     }
 
     private Color resolveColor(DamageContext context) {
-        if (context.hasTag("FIRE")) {
-            return Color.fromRGB(255, 104, 32);
-        }
-        if (context.hasTag("ICE")) {
-            return Color.fromRGB(105, 225, 255);
-        }
-        if (context.hasTag("LIGHTNING") || context.hasTag("THUNDER")) {
-            return Color.fromRGB(255, 235, 92);
-        }
-        if (context.getType() == DamageType.MAGIC) {
-            return Color.fromRGB(190, 110, 255);
-        }
-        if (context.getType() == DamageType.TRUE_DAMAGE) {
-            return Color.fromRGB(110, 255, 225);
-        }
-        return Color.fromRGB(255, 196, 64);
+        DamageChannel primary = context.resolvePrimaryChannel();
+        return switch (primary) {
+            case FIRE -> Color.fromRGB(255, 104, 32);
+            case ICE -> Color.fromRGB(105, 225, 255);
+            case LIGHTNING -> Color.fromRGB(255, 235, 92);
+            case HOLY -> Color.fromRGB(255, 242, 178);
+            case ABYSS -> Color.fromRGB(180, 92, 255);
+            case TRUE -> Color.fromRGB(110, 255, 225);
+            case PHYSICAL -> {
+                if (context.hasTag("FIRE")) yield Color.fromRGB(255, 104, 32);
+                if (context.hasTag("ICE")) yield Color.fromRGB(105, 225, 255);
+                if (context.hasTag("LIGHTNING") || context.hasTag("THUNDER")) yield Color.fromRGB(255, 235, 92);
+                if (context.getType() == DamageType.MAGIC) yield Color.fromRGB(190, 110, 255);
+                if (context.getType() == DamageType.TRUE_DAMAGE) yield Color.fromRGB(110, 255, 225);
+                yield Color.fromRGB(255, 196, 64);
+            }
+        };
     }
 
     private void trimRecentHits() {

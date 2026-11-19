@@ -26,6 +26,8 @@ public class LunaCraveStaff implements WandItem {
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 130.0);
         this.baseStats.put(StatType.MAX_MANA, 35.0);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 1.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 8.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 25.0);
     }
 
     @Override

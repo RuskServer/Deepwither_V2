@@ -21,6 +21,8 @@ public class AshTacticalDagger implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 180.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         this.baseStats.put(StatType.SPEED, 20.0);
+        this.baseStats.put(StatType.FIRE_DAMAGE, 8.0);
+        this.baseStats.put(StatType.PHYS_TO_FIRE_CONVERSION, 20.0);
     }
 
     @Override

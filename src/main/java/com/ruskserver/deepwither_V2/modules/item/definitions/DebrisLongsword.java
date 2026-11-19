@@ -20,6 +20,7 @@ public class DebrisLongsword implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 150.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 1.2);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 5.0);
     }
 
     @Override

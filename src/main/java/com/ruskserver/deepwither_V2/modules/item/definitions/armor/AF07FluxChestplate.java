@@ -20,6 +20,9 @@ public class AF07FluxChestplate implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 32.0);
         this.baseStats.put(StatType.HEALTH, 25.0);
         this.baseStats.put(StatType.ATTACK_DAMAGE, 5.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 60.0);
+        this.baseStats.put(StatType.LIGHTNING_RESISTANCE, 24.0);
+        this.baseStats.put(StatType.MAGIC_SHIELD_RECHARGE_RATE, 12.0);
     }
 
     @Override

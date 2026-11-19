@@ -21,6 +21,9 @@ public class FrostgraySplitter implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DAMAGE, 10.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 142.0);
+        this.baseStats.put(StatType.ICE_DAMAGE, 26.0);
+        this.baseStats.put(StatType.PHYS_TO_ICE_CONVERSION, 40.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 10.0);
     }
 
     @Override

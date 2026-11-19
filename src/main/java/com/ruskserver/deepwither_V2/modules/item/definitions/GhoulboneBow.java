@@ -20,6 +20,8 @@ public class GhoulboneBow implements BowItem {
         this.baseStats.put(StatType.RANGED_DAMAGE, 22.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 9.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 155.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 6.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 8.0);
     }
 
     @Override

@@ -20,6 +20,9 @@ public class CelestialWeaveRLeggings implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 34.0);
         this.baseStats.put(StatType.DEFENSE, 7.0);
         this.baseStats.put(StatType.SPEED, 8.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 45.0);
+        this.baseStats.put(StatType.MAGIC_SHIELD_RECHARGE_RATE, 12.0);
+        this.baseStats.put(StatType.HOLY_RESISTANCE, 18.0);
     }
 
     @Override

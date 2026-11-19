@@ -17,6 +17,9 @@ public class VoidStarChestplate implements CustomItem {
     public VoidStarChestplate() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 12.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 18.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 35.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 5.0);
     }
 
     @Override

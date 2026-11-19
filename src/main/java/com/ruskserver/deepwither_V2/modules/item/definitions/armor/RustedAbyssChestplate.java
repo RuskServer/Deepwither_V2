@@ -17,6 +17,8 @@ public class RustedAbyssChestplate implements CustomItem {
     public RustedAbyssChestplate() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 12.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 15.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 18.0);
     }
 
     @Override

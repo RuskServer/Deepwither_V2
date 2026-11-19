@@ -21,6 +21,9 @@ public class GravemeltBreaker implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 18.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 6.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
+        this.baseStats.put(StatType.FIRE_DAMAGE, 32.0);
+        this.baseStats.put(StatType.PHYS_TO_FIRE_CONVERSION, 40.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 25.0);
     }
 
     @Override

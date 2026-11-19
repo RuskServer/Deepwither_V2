@@ -17,6 +17,8 @@ public class CorpseEatLeggings implements CustomItem {
     public CorpseEatLeggings() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 10.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 15.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 8.0);
     }
 
     @Override

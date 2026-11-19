@@ -19,6 +19,10 @@ public class RCRubyAegisLeggings implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 18.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 34.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 65.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 25.0);
+        this.baseStats.put(StatType.MAX_ELEMENTAL_RESISTANCE, 3.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 6.0);
     }
 
     @Override

@@ -22,6 +22,9 @@ public class CrystalSwordMk2 implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 1.35);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 7.0);
         this.baseStats.put(StatType.MAGIC_DAMAGE, 30.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 24.0);
+        this.baseStats.put(StatType.LIGHTNING_DAMAGE, 16.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 12.0);
     }
 
     @Override

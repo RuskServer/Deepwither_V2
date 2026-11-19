@@ -20,6 +20,9 @@ public class AF07FluxLeggings implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 24.0);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 8.0);
         this.baseStats.put(StatType.SPEED, 2.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 50.0);
+        this.baseStats.put(StatType.LIGHTNING_RESISTANCE, 20.0);
+        this.baseStats.put(StatType.MAGIC_SHIELD_RECHARGE_RATE, 10.0);
     }
 
     @Override

@@ -19,6 +19,8 @@ public class BorealFrameLeggings implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 33.0);
         this.baseStats.put(StatType.HEALTH, 25.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 15.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 5.0);
     }
 
     @Override

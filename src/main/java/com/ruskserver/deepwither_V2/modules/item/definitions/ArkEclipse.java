@@ -20,6 +20,9 @@ public class ArkEclipse implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 0.5);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 35.0);
+        this.baseStats.put(StatType.PHYS_TO_ABYSS_CONVERSION, 35.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 30.0);
     }
 
     @Override

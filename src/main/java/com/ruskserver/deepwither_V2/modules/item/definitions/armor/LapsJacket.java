@@ -18,6 +18,7 @@ public class LapsJacket implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 12.0);
         this.baseStats.put(StatType.SPEED, 10.0);
+        this.baseStats.put(StatType.EVASION, 12.0);
     }
 
     @Override

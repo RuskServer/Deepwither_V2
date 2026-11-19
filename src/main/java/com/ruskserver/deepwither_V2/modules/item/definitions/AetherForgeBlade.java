@@ -20,6 +20,8 @@ public class AetherForgeBlade implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 10.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 10.0);
     }
 
     @Override

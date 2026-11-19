@@ -17,6 +17,8 @@ public class RustedAbyssHelmet implements CustomItem {
     public RustedAbyssHelmet() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 6.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 10.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 12.0);
     }
 
     @Override

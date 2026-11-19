@@ -17,6 +17,8 @@ public class RustedAbyssLeggings implements CustomItem {
     public RustedAbyssLeggings() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 10.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 12.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 15.0);
     }
 
     @Override

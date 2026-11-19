@@ -19,6 +19,8 @@ public class AF03ConductorLeggings implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 10.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 10.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 28.0);
+        this.baseStats.put(StatType.LIGHTNING_RESISTANCE, 15.0);
     }
 
     @Override

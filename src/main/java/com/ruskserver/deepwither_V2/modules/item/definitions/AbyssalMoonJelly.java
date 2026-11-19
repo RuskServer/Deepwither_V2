@@ -20,6 +20,9 @@ public class AbyssalMoonJelly implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 1.4);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 24.0);
+        this.baseStats.put(StatType.PHYS_TO_ABYSS_CONVERSION, 40.0);
+        this.baseStats.put(StatType.ABYSS_PENETRATION, 10.0);
     }
 
     @Override

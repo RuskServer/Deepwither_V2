@@ -8,6 +8,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
 import com.ruskserver.deepwither_V2.modules.character.CharacterService;
+import com.ruskserver.deepwither_V2.modules.combat.health.MagicShieldManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.event.VirtualHealthChangeEvent;
@@ -59,6 +60,7 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
 
     private final Deepwither_V2 plugin;
     private final VirtualHealthManager healthManager;
+    private final MagicShieldManager magicShieldManager;
     private final ManaManager manaManager;
     private final SkillSessionService skillSessionService;
     private final SkillRegistry skillRegistry;
@@ -75,6 +77,7 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
     public PlayerHudService(
             Deepwither_V2 plugin,
             VirtualHealthManager healthManager,
+            MagicShieldManager magicShieldManager,
             ManaManager manaManager,
             SkillSessionService skillSessionService,
             SkillRegistry skillRegistry,
@@ -86,6 +89,7 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
     ) {
         this.plugin = plugin;
         this.healthManager = healthManager;
+        this.magicShieldManager = magicShieldManager;
         this.manaManager = manaManager;
         this.skillSessionService = skillSessionService;
         this.skillRegistry = skillRegistry;
@@ -171,8 +175,8 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
                 manaManager.getMana(player),
                 manaManager.getMaxMana(player),
                 healthManager.getBarrier(player),
-                0.0,
-                0.0
+                magicShieldManager.getMagicShield(player),
+                magicShieldManager.getMaxMagicShield(player)
         );
         SkillBarSnapshot skillBar = skillSessionService.isInSkillMode(player)
                 ? buildSkillBarSnapshot(player)

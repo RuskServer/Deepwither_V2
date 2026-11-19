@@ -21,6 +21,10 @@ public class FrostwardTestament implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 0.75);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 6.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 130.0);
+        this.baseStats.put(StatType.ICE_DAMAGE, 36.0);
+        this.baseStats.put(StatType.PHYS_TO_ICE_CONVERSION, 50.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 12.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 40.0);
     }
 
     @Override

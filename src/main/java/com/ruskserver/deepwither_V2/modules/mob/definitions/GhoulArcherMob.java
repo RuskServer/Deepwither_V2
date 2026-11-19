@@ -148,6 +148,17 @@ public class GhoulArcherMob extends CustomMob {
         return MELEE_DAMAGE;
     }
 
+    @Override
+    public java.util.Map<com.ruskserver.deepwither_V2.core.stat.StatType, Double> getBaseStats() {
+        return java.util.Map.of(
+                com.ruskserver.deepwither_V2.core.stat.StatType.EVASION, 20.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.ABYSS_DAMAGE, 3.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.ABYSS_RESISTANCE, 15.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.FIRE_RESISTANCE, -20.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.HOLY_RESISTANCE, -25.0
+        );
+    }
+
     /**
      * 射撃の予兆開始。矢を放つ直前に照準先への予告エフェクトを出し、構え時間後に発射する。
      */

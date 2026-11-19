@@ -20,6 +20,8 @@ public class BastionBreaker implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 0.6);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 4.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 130.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 35.0);
+        this.baseStats.put(StatType.INCREASED_DAMAGE, 15.0);
     }
 
     @Override

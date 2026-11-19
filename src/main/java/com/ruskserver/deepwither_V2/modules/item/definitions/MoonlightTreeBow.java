@@ -19,6 +19,9 @@ public class MoonlightTreeBow implements BowItem {
         this.baseStats.put(StatType.RANGED_DAMAGE, 50.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 12.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 150.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 18.0);
+        this.baseStats.put(StatType.ICE_DAMAGE, 12.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 10.0);
     }
 
     @Override

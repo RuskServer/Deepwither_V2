@@ -350,6 +350,18 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
     }
 
     @Override
+    public java.util.Map<StatType, Double> getBaseStats() {
+        return java.util.Map.of(
+                StatType.ICE_RESISTANCE, 65.0,
+                StatType.FIRE_RESISTANCE, -25.0,
+                StatType.LIGHTNING_RESISTANCE, 20.0,
+                StatType.ABYSS_RESISTANCE, 15.0,
+                StatType.MAX_MAGIC_SHIELD, 3000.0,
+                StatType.ELEMENTAL_PENETRATION, 15.0
+        );
+    }
+
+    @Override
     public void onAttack(LivingEntity victim, org.bukkit.event.entity.EntityDamageByEntityEvent event) {
         if (introPhase != IntroPhase.ACTIVE) {
             event.setCancelled(true);

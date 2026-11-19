@@ -20,6 +20,9 @@ public class RubySpear04 implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 100.0);
+        this.baseStats.put(StatType.FIRE_DAMAGE, 18.0);
+        this.baseStats.put(StatType.PHYS_TO_FIRE_CONVERSION, 30.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 15.0);
     }
 
     @Override

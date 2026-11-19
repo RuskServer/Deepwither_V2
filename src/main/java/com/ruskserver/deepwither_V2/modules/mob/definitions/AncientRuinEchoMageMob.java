@@ -144,6 +144,17 @@ public class AncientRuinEchoMageMob extends CustomMob {
         return BASE_MAGIC_DEFENSE;
     }
 
+    @Override
+    public java.util.Map<com.ruskserver.deepwither_V2.core.stat.StatType, Double> getBaseStats() {
+        return java.util.Map.of(
+                com.ruskserver.deepwither_V2.core.stat.StatType.MAX_MAGIC_SHIELD, 120.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.ABYSS_DAMAGE, 6.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.ABYSS_RESISTANCE, 35.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.LIGHTNING_RESISTANCE, 30.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.HOLY_RESISTANCE, -20.0
+        );
+    }
+
     private void startBolt(Player target) {
         castType = CastType.BOLT;
         castTicks = BOLT_WINDUP;

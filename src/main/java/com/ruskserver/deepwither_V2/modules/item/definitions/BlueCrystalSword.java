@@ -30,6 +30,8 @@ public class BlueCrystalSword implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 100.0);
         // 攻撃速度: 1.2
         this.baseStats.put(StatType.ATTACK_SPEED, 1.2);
+        this.baseStats.put(StatType.ICE_DAMAGE, 9.0);
+        this.baseStats.put(StatType.PHYS_TO_ICE_CONVERSION, 25.0);
     }
 
     @Override

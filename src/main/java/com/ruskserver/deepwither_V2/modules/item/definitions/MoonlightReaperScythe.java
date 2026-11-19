@@ -22,6 +22,10 @@ public class MoonlightReaperScythe implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.MAX_MANA, 80.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 1.1);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 32.0);
+        this.baseStats.put(StatType.ELEMENTAL_TO_ABYSS_CONVERSION, 40.0);
+        this.baseStats.put(StatType.ABYSS_PENETRATION, 15.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 50.0);
     }
 
     @Override

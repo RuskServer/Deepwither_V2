@@ -18,6 +18,9 @@ public class RubbleframeSuit implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 35.0);
         this.baseStats.put(StatType.ATTACK_DAMAGE, 10.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 8.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 15.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 9.0);
     }
 
     @Override

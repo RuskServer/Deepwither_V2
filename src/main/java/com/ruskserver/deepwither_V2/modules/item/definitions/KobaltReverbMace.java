@@ -21,6 +21,9 @@ public class KobaltReverbMace implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DAMAGE, 10.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 130.0);
+        this.baseStats.put(StatType.LIGHTNING_DAMAGE, 18.0);
+        this.baseStats.put(StatType.PHYS_TO_LIGHTNING_CONVERSION, 30.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 15.0);
     }
 
     @Override

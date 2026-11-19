@@ -20,6 +20,11 @@ public class AetheriumBulwarkLeggings implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 51.0);
         this.baseStats.put(StatType.HEALTH, 35.0);
         this.baseStats.put(StatType.SPEED, -20.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 8.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 38.0);
+        this.baseStats.put(StatType.HOLY_RESISTANCE, 18.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 10.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 10.0);
     }
 
     @Override

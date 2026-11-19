@@ -2,16 +2,22 @@ package com.ruskserver.deepwither_V2.modules.stat;
 
 /**
  * ステータスモディファイアの計算方法を定義する列挙型。
+ * <p>
+ * 最終値 = AdditiveSum × (1.0 + MultiplicativeSum[Increased]) × Π(1.0 + More_i)
  */
 public enum ModifierType {
     /**
-     * 加算（例: 剣を装備して攻撃力 +20）
-     * 最終ステータスは (Base + AdditiveSum) * (1.0 + MultiplicativeSum) となります。
+     * 基礎加算（例: 剣を装備して攻撃力 +20）
      */
     ADDITIVE,
 
     /**
-     * 乗算（例: バフで攻撃力 +10% -> 値としては 0.1 を指定）
+     * 加算割合増加 / PoE の Increased（例: +10% と +20% が合算されて ×1.30）
      */
-    MULTIPLICATIVE
+    MULTIPLICATIVE,
+
+    /**
+     * 独立乗算 / PoE の More（例: +20% More と +30% More が独立乗算されて 1.20 × 1.30 = ×1.56）
+     */
+    MORE
 }

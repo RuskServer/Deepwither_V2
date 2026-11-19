@@ -21,6 +21,9 @@ public class BlueCrystalMace implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DAMAGE, 15.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 100.0);
+        this.baseStats.put(StatType.ICE_DAMAGE, 22.0);
+        this.baseStats.put(StatType.PHYS_TO_ICE_CONVERSION, 35.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 15.0);
     }
 
     @Override

@@ -19,6 +19,9 @@ public class GlacialFortressLeggings implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 72.0);
         this.baseStats.put(StatType.HEALTH, 50.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 22.0);
+        this.baseStats.put(StatType.MAX_ELEMENTAL_RESISTANCE, 2.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 8.0);
     }
 
     @Override

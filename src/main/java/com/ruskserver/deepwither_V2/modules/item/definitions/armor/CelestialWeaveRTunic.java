@@ -19,6 +19,9 @@ public class CelestialWeaveRTunic implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DAMAGE, 12.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 40.0);
         this.baseStats.put(StatType.DEFENSE, 8.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 54.0);
+        this.baseStats.put(StatType.MAGIC_SHIELD_RECHARGE_RATE, 15.0);
+        this.baseStats.put(StatType.HOLY_RESISTANCE, 21.0);
     }
 
     @Override

@@ -18,6 +18,10 @@ public class RCRubyAegisHood implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 12.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 28.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 52.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 20.0);
+        this.baseStats.put(StatType.MAX_ELEMENTAL_RESISTANCE, 2.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 5.0);
     }
 
     @Override

@@ -20,6 +20,8 @@ public class AetherEdge implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 6.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 8.0);
+        this.baseStats.put(StatType.INCREASED_DAMAGE, 8.0);
     }
 
     @Override

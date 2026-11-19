@@ -145,6 +145,18 @@ public class AncientRuinKnightMob extends CustomMob {
         return BASE_MAGIC_DEFENSE;
     }
 
+    @Override
+    public java.util.Map<com.ruskserver.deepwither_V2.core.stat.StatType, Double> getBaseStats() {
+        return java.util.Map.of(
+                com.ruskserver.deepwither_V2.core.stat.StatType.BLOCK_CHANCE, 25.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.PHYSICAL_DAMAGE_REDUCTION, 0.10,
+                com.ruskserver.deepwither_V2.core.stat.StatType.FIRE_RESISTANCE, 20.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.ICE_RESISTANCE, 20.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.LIGHTNING_RESISTANCE, -20.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.HOLY_RESISTANCE, 25.0
+        );
+    }
+
     private void startHeavySlash(Player target) {
         heavySlashTarget = target;
         heavySlashWindup = HEAVY_SLASH_WINDUP;

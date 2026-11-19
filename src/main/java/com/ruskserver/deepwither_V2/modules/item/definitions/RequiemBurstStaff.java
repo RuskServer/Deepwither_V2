@@ -25,6 +25,9 @@ public class RequiemBurstStaff implements WandItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 7.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 180.0);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 3.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 22.0);
+        this.baseStats.put(StatType.ELEMENTAL_TO_ABYSS_CONVERSION, 45.0);
+        this.baseStats.put(StatType.ABYSS_PENETRATION, 12.0);
     }
 
     @Override

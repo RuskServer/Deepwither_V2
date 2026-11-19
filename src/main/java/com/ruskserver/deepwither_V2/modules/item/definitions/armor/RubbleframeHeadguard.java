@@ -18,6 +18,9 @@ public class RubbleframeHeadguard implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 18.0);
         this.baseStats.put(StatType.ATTACK_DAMAGE, 2.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 5.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 10.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 6.0);
     }
 
     @Override

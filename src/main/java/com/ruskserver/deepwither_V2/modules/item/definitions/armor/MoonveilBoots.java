@@ -19,6 +19,8 @@ public class MoonveilBoots implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 16.0);
         this.baseStats.put(StatType.DEFENSE, 2.0);
         this.baseStats.put(StatType.SPEED, 10.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 18.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 8.0);
     }
 
     @Override

@@ -26,6 +26,8 @@ public class AfSpreadCaster implements WandItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 4.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 160.0);
         this.baseStats.put(StatType.FIRE_DAMAGE, 8.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 6.0);
+        this.baseStats.put(StatType.INCREASED_ELEMENTAL_DAMAGE, 10.0);
     }
 
     @Override

@@ -18,6 +18,8 @@ public class MoonShadowBoots implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 4.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 18.0);
+        this.baseStats.put(StatType.EVASION, 10.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 13.0);
     }
 
     @Override

@@ -19,6 +19,9 @@ public class AF07FluxHelmet implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 16.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 14.0);
         this.baseStats.put(StatType.MAX_MANA, 60.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 40.0);
+        this.baseStats.put(StatType.LIGHTNING_RESISTANCE, 16.0);
+        this.baseStats.put(StatType.MAGIC_SHIELD_RECHARGE_RATE, 8.0);
     }
 
     @Override

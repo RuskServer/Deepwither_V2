@@ -25,6 +25,8 @@ public class AstralResonanceRu implements WandItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 3.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.MAX_MANA, 15.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 8.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 8.0);
     }
 
     @Override

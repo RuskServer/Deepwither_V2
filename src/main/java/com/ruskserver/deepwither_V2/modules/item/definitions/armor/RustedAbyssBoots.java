@@ -17,6 +17,8 @@ public class RustedAbyssBoots implements CustomItem {
     public RustedAbyssBoots() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 6.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 9.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 11.0);
     }
 
     @Override

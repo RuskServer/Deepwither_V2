@@ -22,6 +22,9 @@ public class CorpseTalkBoneStaff implements WandItem {
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 150.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 2.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 16.0);
+        this.baseStats.put(StatType.ELEMENTAL_TO_ABYSS_CONVERSION, 30.0);
+        this.baseStats.put(StatType.ABYSS_PENETRATION, 8.0);
     }
 
     @Override

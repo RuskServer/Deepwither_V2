@@ -321,7 +321,24 @@ public class ItemManager implements Startable {
     }
 
     private String formatStatValue(StatType type, double value) {
-        return type == StatType.SPEED ? String.format("%.1f%%", value) : Double.toString(value);
+        return switch (type) {
+            case SPEED, CRITICAL_CHANCE, CRITICAL_DAMAGE, COOLDOWN_REDUCTION,
+                 EVASION, BLOCK_CHANCE, MAGIC_SHIELD_RECHARGE_RATE,
+                 FIRE_RESISTANCE, ICE_RESISTANCE, LIGHTNING_RESISTANCE,
+                 HOLY_RESISTANCE, ABYSS_RESISTANCE, MAX_ELEMENTAL_RESISTANCE,
+                 ELEMENTAL_PENETRATION, ABYSS_PENETRATION,
+                 PHYS_TO_LIGHTNING_CONVERSION, PHYS_TO_ICE_CONVERSION,
+                 PHYS_TO_FIRE_CONVERSION, PHYS_TO_ABYSS_CONVERSION,
+                 ELEMENTAL_TO_ABYSS_CONVERSION,
+                 INCREASED_DAMAGE, INCREASED_ELEMENTAL_DAMAGE ->
+                    (value == Math.floor(value))
+                            ? String.format("%.0f%%", value)
+                            : String.format("%.1f%%", value);
+            case PHYSICAL_DAMAGE_REDUCTION -> String.format("%.0f%%", value * 100.0);
+            default -> (value == Math.floor(value))
+                    ? String.format("%.0f", value)
+                    : String.format("%.1f", value);
+        };
     }
 
     private void applyArmorAppearance(ItemStack item, CustomItem customItem) {

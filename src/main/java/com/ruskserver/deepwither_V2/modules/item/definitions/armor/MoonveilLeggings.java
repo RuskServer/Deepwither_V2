@@ -19,6 +19,8 @@ public class MoonveilLeggings implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 22.0);
         this.baseStats.put(StatType.DEFENSE, 4.0);
         this.baseStats.put(StatType.SPEED, 5.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 25.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 11.0);
     }
 
     @Override

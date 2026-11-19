@@ -19,6 +19,9 @@ public class AF07FluxBoots implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 14.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 12.0);
         this.baseStats.put(StatType.SPEED, 8.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 36.0);
+        this.baseStats.put(StatType.LIGHTNING_RESISTANCE, 14.0);
+        this.baseStats.put(StatType.MAGIC_SHIELD_RECHARGE_RATE, 7.0);
     }
 
     @Override

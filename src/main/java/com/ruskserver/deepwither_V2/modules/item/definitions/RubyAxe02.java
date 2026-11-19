@@ -20,6 +20,9 @@ public class RubyAxe02 implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 0.85);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
+        this.baseStats.put(StatType.FIRE_DAMAGE, 24.0);
+        this.baseStats.put(StatType.PHYS_TO_FIRE_CONVERSION, 35.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 8.0);
     }
 
     @Override

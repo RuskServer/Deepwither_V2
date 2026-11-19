@@ -19,6 +19,8 @@ public class MoonveilTunic implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 28.0);
         this.baseStats.put(StatType.DEFENSE, 5.0);
         this.baseStats.put(StatType.MAX_MANA, 30.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 30.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 14.0);
     }
 
     @Override

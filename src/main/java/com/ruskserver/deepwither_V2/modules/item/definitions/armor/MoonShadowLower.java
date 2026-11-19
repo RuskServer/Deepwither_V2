@@ -19,6 +19,8 @@ public class MoonShadowLower implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 6.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 24.0);
         this.baseStats.put(StatType.SPEED, 10.0);
+        this.baseStats.put(StatType.EVASION, 14.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 18.0);
     }
 
     @Override

@@ -20,6 +20,9 @@ public class MoonweaveBoots implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 5.0);
         this.baseStats.put(StatType.MAX_MANA, 40.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 25.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 10.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 8.0);
     }
 
     @Override

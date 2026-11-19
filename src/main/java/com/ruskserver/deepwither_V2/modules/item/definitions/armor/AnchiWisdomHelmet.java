@@ -17,6 +17,8 @@ public class AnchiWisdomHelmet implements CustomItem {
     public AnchiWisdomHelmet() {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 6.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 25.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 12.0);
     }
 
     @Override

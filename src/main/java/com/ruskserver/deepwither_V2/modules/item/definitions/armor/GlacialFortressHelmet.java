@@ -19,6 +19,9 @@ public class GlacialFortressHelmet implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 38.0);
         this.baseStats.put(StatType.HEALTH, 50.0);
         this.baseStats.put(StatType.SPEED, -20.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 18.0);
+        this.baseStats.put(StatType.MAX_ELEMENTAL_RESISTANCE, 1.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 6.0);
     }
 
     @Override

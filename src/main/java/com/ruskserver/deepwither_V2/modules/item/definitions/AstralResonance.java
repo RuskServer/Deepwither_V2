@@ -25,6 +25,9 @@ public class AstralResonance implements WandItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 140.0);
         this.baseStats.put(StatType.MAX_MANA, 25.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 10.0);
+        this.baseStats.put(StatType.INCREASED_ELEMENTAL_DAMAGE, 15.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 30.0);
     }
 
     @Override

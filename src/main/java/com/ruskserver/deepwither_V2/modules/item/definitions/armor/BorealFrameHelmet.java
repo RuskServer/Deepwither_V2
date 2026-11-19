@@ -19,6 +19,8 @@ public class BorealFrameHelmet implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 18.0);
         this.baseStats.put(StatType.HEALTH, 30.0);
         this.baseStats.put(StatType.SPEED, -20.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 12.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 4.0);
     }
 
     @Override

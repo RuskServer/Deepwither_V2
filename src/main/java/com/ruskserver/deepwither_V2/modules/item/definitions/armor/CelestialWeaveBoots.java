@@ -20,6 +20,9 @@ public class CelestialWeaveBoots implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 18.0);
         this.baseStats.put(StatType.DEFENSE, 3.0);
         this.baseStats.put(StatType.SPEED, 12.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 32.0);
+        this.baseStats.put(StatType.MAGIC_SHIELD_RECHARGE_RATE, 9.0);
+        this.baseStats.put(StatType.HOLY_RESISTANCE, 13.0);
     }
 
     @Override

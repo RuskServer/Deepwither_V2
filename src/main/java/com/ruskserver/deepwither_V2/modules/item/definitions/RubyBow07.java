@@ -19,6 +19,9 @@ public class RubyBow07 implements BowItem {
         this.baseStats.put(StatType.RANGED_DAMAGE, 62.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 10.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 155.0);
+        this.baseStats.put(StatType.FIRE_DAMAGE, 20.0);
+        this.baseStats.put(StatType.PHYS_TO_FIRE_CONVERSION, 35.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 8.0);
     }
 
     @Override

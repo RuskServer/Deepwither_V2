@@ -20,6 +20,11 @@ public class AetheriumBulwarkBoots implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 28.0);
         this.baseStats.put(StatType.HEALTH, 25.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 5.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 27.0);
+        this.baseStats.put(StatType.HOLY_RESISTANCE, 13.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 7.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 7.0);
     }
 
     @Override

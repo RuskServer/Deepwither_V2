@@ -18,6 +18,9 @@ public class RubbleframeFootactuator implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 20.0);
         this.baseStats.put(StatType.ATTACK_DAMAGE, 3.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 4.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 9.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 5.0);
     }
 
     @Override

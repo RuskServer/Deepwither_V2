@@ -23,6 +23,9 @@ public class FrostAmulet implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 50.0);
         this.baseStats.put(StatType.MAX_MANA, 200.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 25.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 60.0);
+        this.baseStats.put(StatType.ICE_DAMAGE, 12.0);
     }
 
     @Override

@@ -19,6 +19,8 @@ public class MoonShadowUpper implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 8.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 30.0);
         this.baseStats.put(StatType.MAX_MANA, 50.0);
+        this.baseStats.put(StatType.EVASION, 16.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 21.0);
     }
 
     @Override

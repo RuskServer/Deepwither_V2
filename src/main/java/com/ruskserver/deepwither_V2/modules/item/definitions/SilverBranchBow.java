@@ -19,6 +19,7 @@ public class SilverBranchBow implements BowItem {
         this.baseStats.put(StatType.RANGED_DAMAGE, 15.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 150.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 6.0);
     }
 
     @Override

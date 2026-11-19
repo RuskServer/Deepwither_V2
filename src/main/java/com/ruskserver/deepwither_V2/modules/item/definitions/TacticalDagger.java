@@ -20,6 +20,8 @@ public class TacticalDagger implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 180.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 12.0);
+        this.baseStats.put(StatType.EVASION, 6.0);
     }
 
     @Override

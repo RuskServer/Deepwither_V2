@@ -22,6 +22,9 @@ public class RiftValtarLance implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DAMAGE, 10.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 0.5);
         this.baseStats.put(StatType.MAX_MANA, 10.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 28.0);
+        this.baseStats.put(StatType.PHYS_TO_ABYSS_CONVERSION, 40.0);
+        this.baseStats.put(StatType.ABYSS_PENETRATION, 14.0);
     }
 
     @Override

@@ -19,6 +19,8 @@ public class MoonveilHood implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 18.0);
         this.baseStats.put(StatType.DEFENSE, 3.0);
         this.baseStats.put(StatType.MAX_MANA, 20.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 20.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 9.0);
     }
 
     @Override

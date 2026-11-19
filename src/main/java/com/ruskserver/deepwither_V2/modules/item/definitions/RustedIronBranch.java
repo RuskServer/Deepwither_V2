@@ -20,6 +20,8 @@ public class RustedIronBranch implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 0.6);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 12.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 15.0);
     }
 
     @Override

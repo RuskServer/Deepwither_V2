@@ -20,6 +20,8 @@ public class VariantSpear implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 100.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 0.7);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 20.0);
+        this.baseStats.put(StatType.INCREASED_DAMAGE, 10.0);
     }
 
     @Override

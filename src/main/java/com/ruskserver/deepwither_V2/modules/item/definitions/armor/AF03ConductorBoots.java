@@ -20,6 +20,8 @@ public class AF03ConductorBoots implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 6.0);
         this.baseStats.put(StatType.MAX_MANA, 40.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 20.0);
+        this.baseStats.put(StatType.LIGHTNING_RESISTANCE, 11.0);
     }
 
     @Override

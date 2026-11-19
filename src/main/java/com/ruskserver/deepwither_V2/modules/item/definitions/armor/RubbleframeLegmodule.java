@@ -18,6 +18,9 @@ public class RubbleframeLegmodule implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 25.0);
         this.baseStats.put(StatType.ATTACK_DAMAGE, 4.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 6.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 12.0);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 8.0);
     }
 
     @Override

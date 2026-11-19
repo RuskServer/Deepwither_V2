@@ -20,6 +20,9 @@ public class GravemindMachete implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 0.65);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 20.0);
+        this.baseStats.put(StatType.PHYS_TO_ABYSS_CONVERSION, 35.0);
+        this.baseStats.put(StatType.ABYSS_PENETRATION, 10.0);
     }
 
     @Override

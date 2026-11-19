@@ -19,6 +19,9 @@ public class EventHorizonBow implements BowItem {
         this.baseStats.put(StatType.RANGED_DAMAGE, 95.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 18.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 250.0);
+        this.baseStats.put(StatType.ABYSS_DAMAGE, 36.0);
+        this.baseStats.put(StatType.PHYS_TO_ABYSS_CONVERSION, 50.0);
+        this.baseStats.put(StatType.ABYSS_PENETRATION, 18.0);
     }
 
     @Override

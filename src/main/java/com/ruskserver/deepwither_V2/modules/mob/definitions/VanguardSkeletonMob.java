@@ -253,4 +253,14 @@ public class VanguardSkeletonMob extends CustomMob {
     public double getBaseMagicDefense() {
         return BASE_MAGIC_DEFENSE;
     }
+
+    @Override
+    public java.util.Map<com.ruskserver.deepwither_V2.core.stat.StatType, Double> getBaseStats() {
+        return java.util.Map.of(
+                com.ruskserver.deepwither_V2.core.stat.StatType.BLOCK_CHANCE, 18.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.ICE_RESISTANCE, 25.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.FIRE_RESISTANCE, -15.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.HOLY_RESISTANCE, -25.0
+        );
+    }
 }

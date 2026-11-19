@@ -13,6 +13,7 @@ import com.ruskserver.deepwither_V2.modules.skill.definitions.MartyrdomSkill;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageFeedbackService;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.DamageIndicatorService;
 import com.ruskserver.deepwither_V2.modules.combat.feedback.CriticalHitFeedbackService;
+import com.ruskserver.deepwither_V2.modules.combat.health.MagicShieldManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.combat.stagger.BossStaggerService;
@@ -62,6 +63,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DamagePipelineManager implements Listener {
 
     private final VirtualHealthManager healthManager;
+    private final MagicShieldManager magicShieldManager;
     private final CombatStateService combatState;
     private final StatManager statManager;
     private final CustomMobManager customMobManager;
@@ -76,13 +78,15 @@ public class DamagePipelineManager implements Listener {
     private final EquipmentDurabilityService durabilityService;
     private final NamespacedKey corpseKey;
     private final List<DamagePhase> pipeline = new ArrayList<>();
+    private final DamageMath.EvasionEntropyTracker evasionEntropyTracker = new DamageMath.EvasionEntropyTracker();
 
     // 各エンティティの次回の攻撃可能時刻を管理 (無敵時間システム)
     private static final long DEFAULT_IFRAME_MILLIS = 500L;
     private final Map<DamageIFrameKey, Long> nextDamageTimeMap = new ConcurrentHashMap<>();
 
     @Inject
-    public DamagePipelineManager(VirtualHealthManager healthManager, ManaManager manaManager, StatManager statManager,
+    public DamagePipelineManager(VirtualHealthManager healthManager, MagicShieldManager magicShieldManager,
+                                 ManaManager manaManager, StatManager statManager,
                                  ItemManager itemManager, ItemPDCUtil pdcUtil, SpecialEffectService specialEffectService,
                                  CustomMobManager customMobManager, MobRegionConfig regionConfig,
                                  TraderService traderService, DamageFeedbackService feedbackService,
@@ -95,6 +99,7 @@ public class DamagePipelineManager implements Listener {
                                  org.bukkit.plugin.java.JavaPlugin plugin, CombatStateService combatState) {
         this.combatState = combatState;
         this.healthManager = healthManager;
+        this.magicShieldManager = magicShieldManager;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
         this.regionConfig = regionConfig;
@@ -108,21 +113,26 @@ public class DamagePipelineManager implements Listener {
         this.durabilityService = durabilityService;
         this.corpseKey = new NamespacedKey(plugin, RevivalManager.CORPSE_TAG);
 
-        // パイプラインのフェーズを順番に登録する
-        // 1. 基礎ダメージの設定
+        // パイプラインのフェーズを PoE / MythicLib 式の順番で登録する
+        // 1. 基礎ダメージ（物理 + フラット属性 / 深淵）
         pipeline.add(new DamagePhase.Base(statManager));
+        // 2. 属性変換 (物理 -> 雷 -> 氷 -> 火 -> 深淵 / 属性 -> 深淵)
+        pipeline.add(new DamagePhase.Conversion(statManager));
+        // 3. スケーリング (Increased 加算合算 × More 独立乗算)
+        pipeline.add(new DamagePhase.Scaling(statManager));
+        // 4. ポーション効果
         pipeline.add(new DamagePhase.PotionEffects());
-        // 2. クリティカルの判定
+        // 5. 回避（エントロピー式）・ブロック判定
+        pipeline.add(new DamagePhase.Avoidance(statManager, evasionEntropyTracker));
+        // 6. クリティカル判定
         pipeline.add(new DamagePhase.Critical(statManager));
-        // 3. 防御力による軽減
+        // 7. 防御・耐性・貫通（PoE アーマー式 + 属性/深淵耐性 + ペネトレーション）
         pipeline.add(new DamagePhase.Defense(statManager));
-        // 4. 装備アイテムの固有能力（パッシブ）の適用
+        // 8. 装備アイテム固有能力・特殊効果・セット効果
         pipeline.add(new ItemAbilityPhase(itemManager, pdcUtil));
-        // 5. 属性別ダメージ補正（火・氷などのパッシブ効果）
-        pipeline.add(new DamagePhase.ElementModifier(statManager));
         pipeline.add(new SpecialEffectPhase(specialEffectService, healthManager, manaManager));
         pipeline.add(new EquipmentSetPhase(equipmentSetService));
-        // 6. スキル「殉教」等の味方被ダメージ肩代わり効果の適用
+        // 9. スキル「殉教」等の味方被ダメージ肩代わり効果
         pipeline.add(new MartyrdomPhase(martyrdomSkill, healthManager, combatState));
     }
 
@@ -184,31 +194,8 @@ public class DamagePipelineManager implements Listener {
         }
         staggerService.applyStaggeredDamageMultiplier(context);
 
-        // 最終ダメージを仮想HPから減算し、フィードバックを再生
-        if (context.getDamage() > 0) {
-            recordCombat(context);
-            equipmentSetService.processResolvedAttackerEffects(context);
-            customMobManager.recordDamage(defender, attacker);
-            double healthBefore = defender instanceof Player ? healthManager.getHealth(defender) : -1.0;
-            healthManager.damage(defender, context.getDamage());
-            if (defender instanceof Player player && healthManager.getHealth(defender) < healthBefore) {
-                durabilityService.damageArmor(player);
-            }
-            indicatorService.show(context);
-            criticalHitFeedbackService.show(context);
-            staggerService.recordResolvedDamage(context);
-            
-            // 無敵時間を設定 (500ms = 0.5秒)
-            applyIFrame(iframeKey, now, DEFAULT_IFRAME_MILLIS);
-            
-            // 攻撃の方向（Yaw）を計算して視界の揺れに反映
-            float yaw = 0f;
-            if (attacker != null) {
-                org.bukkit.util.Vector dir = attacker.getLocation().toVector().subtract(defender.getLocation().toVector());
-                yaw = (float) (Math.atan2(dir.getZ(), dir.getX()) * 180 / Math.PI) - 90f;
-            }
-            feedbackService.playHurtFeedback(defender, yaw);
-        }
+        // 最終ダメージをマジックシールド（深淵/Trueは貫通）および仮想HPへ反映
+        applyResolvedDamage(context, attacker, defender, iframeKey, now, DEFAULT_IFRAME_MILLIS);
     }
 
     /**
@@ -253,7 +240,20 @@ public class DamagePipelineManager implements Listener {
         double finalDamage = maxHp * ratio;
 
         if (finalDamage > 0) {
-            healthManager.damage(defender, finalDamage);
+            boolean bypassesEs = switch (event.getCause()) {
+                case POISON, WITHER, VOID, STARVATION -> true;
+                default -> false;
+            };
+            double hpDamage;
+            if (bypassesEs) {
+                magicShieldManager.recordDamageTaken(defender);
+                hpDamage = finalDamage;
+            } else {
+                hpDamage = magicShieldManager.absorbDamage(defender, finalDamage);
+            }
+            if (hpDamage > 0) {
+                healthManager.damage(defender, hpDamage);
+            }
             feedbackService.playHurtFeedback(defender);
 
             // 環境ダメージ後も無敵時間を設定
@@ -317,6 +317,7 @@ public class DamagePipelineManager implements Listener {
         UUID playerId = event.getPlayer().getUniqueId();
         nextDamageTimeMap.keySet().removeIf(key ->
                 key.defenderId().equals(playerId) || playerId.equals(key.attackerId()));
+        evasionEntropyTracker.remove(playerId);
     }
 
     /**
@@ -446,23 +447,66 @@ public class DamagePipelineManager implements Listener {
         }
         staggerService.applyStaggeredDamageMultiplier(context);
 
-        if (context.getDamage() > 0) {
-            recordCombat(context);
-            equipmentSetService.processResolvedAttackerEffects(context);
-            customMobManager.recordDamage(defender, attacker);
-            double healthBefore = defender instanceof Player ? healthManager.getHealth(defender) : -1.0;
-            healthManager.damage(defender, context.getDamage());
-            if (defender instanceof Player player && healthManager.getHealth(defender) < healthBefore) {
-                durabilityService.damageArmor(player);
-            }
+        applyResolvedDamage(context, attacker, defender, iframeKey, now, iframeMillis);
+    }
+
+    private void applyResolvedDamage(DamageContext context, LivingEntity attacker, LivingEntity defender,
+                                     DamageIFrameKey iframeKey, long now, long iframeMillis) {
+        if (context.isEvaded()) {
             indicatorService.show(context);
-            criticalHitFeedbackService.show(context);
-            staggerService.recordResolvedDamage(context);
+            feedbackService.playEvadeFeedback(defender);
+            return;
+        }
+        if (context.getDamage() <= 0) {
+            return;
+        }
 
-            // 無敵時間を設定
-            applyIFrame(iframeKey, now, iframeMillis);
+        recordCombat(context);
+        equipmentSetService.processResolvedAttackerEffects(context);
+        customMobManager.recordDamage(defender, attacker);
 
-            // 攻撃の方向（Yaw）を計算して視界の揺れに反映
+        double esBefore = magicShieldManager.getMagicShield(defender);
+        double shieldable = context.getShieldableDamage();
+        double bypass = context.getMagicShieldBypassDamage();
+        double remainingAfterEs = shieldable > 0.0
+                ? magicShieldManager.absorbDamage(defender, shieldable)
+                : 0.0;
+        double esAbsorbed = Math.max(0.0, shieldable - remainingAfterEs);
+        context.setMagicShieldAbsorbed(esAbsorbed);
+        boolean esBroken = esBefore > 0.0 && esAbsorbed > 0.0
+                && magicShieldManager.getMagicShield(defender) <= 0.0;
+        if (bypass > 0.0) {
+            magicShieldManager.recordDamageTaken(defender);
+        }
+
+        double hpDamage = remainingAfterEs + bypass;
+        double healthBefore = defender instanceof Player ? healthManager.getHealth(defender) : -1.0;
+        if (hpDamage > 0.0) {
+            healthManager.damage(defender, hpDamage);
+        }
+        if (defender instanceof Player player && healthManager.getHealth(defender) < healthBefore) {
+            durabilityService.damageArmor(player);
+        }
+
+        indicatorService.show(context);
+        criticalHitFeedbackService.show(context);
+        staggerService.recordResolvedDamage(context);
+
+        // 無敵時間を設定
+        applyIFrame(iframeKey, now, iframeMillis);
+
+        if (context.isBlocked()) {
+            feedbackService.playBlockFeedback(defender);
+        }
+        if (esAbsorbed > 0.0) {
+            feedbackService.playMagicShieldHitFeedback(defender, esBroken);
+        }
+        if (bypass > 0.0 && esBefore > 0.0) {
+            feedbackService.playAbyssBypassFeedback(defender);
+        }
+
+        // HP に実ダメージが入ったときのみ赤点滅＋視界揺れ（ES全吸収時はシアン共鳴のみ）
+        if (hpDamage > 0.0) {
             float yaw = 0f;
             if (attacker != null) {
                 org.bukkit.util.Vector dir = attacker.getLocation().toVector().subtract(defender.getLocation().toVector());

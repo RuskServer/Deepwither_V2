@@ -19,6 +19,9 @@ public class GlacialFortressBoots implements CustomItem {
         this.baseStats.put(StatType.DEFENSE, 36.0);
         this.baseStats.put(StatType.HEALTH, 35.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 16.0);
+        this.baseStats.put(StatType.MAX_ELEMENTAL_RESISTANCE, 1.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 5.0);
     }
 
     @Override

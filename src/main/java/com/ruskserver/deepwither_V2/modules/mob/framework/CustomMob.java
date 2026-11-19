@@ -226,4 +226,12 @@ public abstract class CustomMob {
     public double getBaseMagicDefense() {
         return 0.0;
     }
+
+    /**
+     * このモブ固有の追加ステータス（属性耐性・弱点、回避、ブロック、マジックシールド、深淵ダメージ等）を返します。
+     * 負の値（例: -25.0 の炎耐性）を設定すると弱点として機能します。
+     */
+    public java.util.Map<com.ruskserver.deepwither_V2.core.stat.StatType, Double> getBaseStats() {
+        return java.util.Map.of();
+    }
 }

@@ -160,14 +160,24 @@ public class ModifierManager {
         return switch (stat) {
             case HEALTH -> 10.0;
             case MAX_MANA -> 20.0;
+            case MAX_MAGIC_SHIELD -> 15.0;
+            case MAGIC_SHIELD_RECHARGE_RATE -> 15.0;
             case ATTACK_DAMAGE, MAGIC_DAMAGE, RANGED_DAMAGE -> 8.0;
             case DEFENSE, MAGIC_DEFENSE -> 8.0;
+            case EVASION -> 10.0;
+            case BLOCK_CHANCE -> 5.0;
             case CRITICAL_CHANCE -> 4.0;
             case CRITICAL_DAMAGE -> 10.0;
             case ATTACK_SPEED -> 1.2;
             case SPEED -> 10.0;
             case COOLDOWN_REDUCTION -> 3.0;
-            case FIRE_DAMAGE, ICE_DAMAGE, LIGHTNING_DAMAGE -> 4.0;
+            case FIRE_DAMAGE, ICE_DAMAGE, LIGHTNING_DAMAGE, HOLY_DAMAGE, ABYSS_DAMAGE -> 4.0;
+            case FIRE_RESISTANCE, ICE_RESISTANCE, LIGHTNING_RESISTANCE, HOLY_RESISTANCE, ABYSS_RESISTANCE -> 12.0;
+            case MAX_ELEMENTAL_RESISTANCE -> 2.0;
+            case ARMOR_PENETRATION, ELEMENTAL_PENETRATION, ABYSS_PENETRATION -> 6.0;
+            case PHYS_TO_LIGHTNING_CONVERSION, PHYS_TO_ICE_CONVERSION, PHYS_TO_FIRE_CONVERSION,
+                 PHYS_TO_ABYSS_CONVERSION, ELEMENTAL_TO_ABYSS_CONVERSION -> 15.0;
+            case INCREASED_DAMAGE, INCREASED_ELEMENTAL_DAMAGE -> 10.0;
             case PHYSICAL_DAMAGE_REDUCTION -> 0.05;
         };
     }

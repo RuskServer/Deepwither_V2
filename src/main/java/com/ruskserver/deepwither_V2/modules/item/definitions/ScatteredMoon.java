@@ -20,6 +20,9 @@ public class ScatteredMoon implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 0.8);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 4.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
+        this.baseStats.put(StatType.ICE_DAMAGE, 20.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 16.0);
+        this.baseStats.put(StatType.INCREASED_ELEMENTAL_DAMAGE, 15.0);
     }
 
     @Override

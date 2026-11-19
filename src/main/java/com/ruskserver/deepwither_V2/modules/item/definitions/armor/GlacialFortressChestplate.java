@@ -20,6 +20,9 @@ public class GlacialFortressChestplate implements CustomItem {
         this.baseStats.put(StatType.HEALTH, 60.0);
         this.baseStats.put(StatType.ATTACK_DAMAGE, 14.0);
         this.baseStats.put(StatType.SPEED, -20.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 27.0);
+        this.baseStats.put(StatType.MAX_ELEMENTAL_RESISTANCE, 2.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 9.0);
     }
 
     @Override

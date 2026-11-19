@@ -20,6 +20,8 @@ public class RubySword03 implements CustomItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 1.6);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 145.0);
+        this.baseStats.put(StatType.FIRE_DAMAGE, 20.0);
+        this.baseStats.put(StatType.PHYS_TO_FIRE_CONVERSION, 35.0);
     }
 
     @Override

@@ -193,6 +193,16 @@ public class GhoulMob extends CustomMob {
     }
 
     @Override
+    public java.util.Map<com.ruskserver.deepwither_V2.core.stat.StatType, Double> getBaseStats() {
+        return java.util.Map.of(
+                com.ruskserver.deepwither_V2.core.stat.StatType.ABYSS_DAMAGE, 4.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.ABYSS_RESISTANCE, 20.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.FIRE_RESISTANCE, -20.0,
+                com.ruskserver.deepwither_V2.core.stat.StatType.HOLY_RESISTANCE, -25.0
+        );
+    }
+
+    @Override
     public void onAttack(LivingEntity victim, org.bukkit.event.entity.EntityDamageByEntityEvent event) {
         // バニラのダメージ処理はキャンセルされているため、自分でDamagePipelineに流す
         if (victim instanceof Player player) {

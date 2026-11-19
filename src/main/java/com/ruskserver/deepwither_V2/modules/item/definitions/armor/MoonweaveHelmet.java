@@ -21,6 +21,9 @@ public class MoonweaveHelmet implements CustomItem {
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 5.0);
         this.baseStats.put(StatType.MAGIC_DAMAGE, 3.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 28.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 11.0);
+        this.baseStats.put(StatType.ABYSS_RESISTANCE, 9.0);
     }
 
     @Override

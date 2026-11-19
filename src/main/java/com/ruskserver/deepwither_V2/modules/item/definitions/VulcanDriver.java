@@ -21,6 +21,9 @@ public class VulcanDriver implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 12.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 120.0);
         this.baseStats.put(StatType.SPEED, -10.0);
+        this.baseStats.put(StatType.FIRE_DAMAGE, 45.0);
+        this.baseStats.put(StatType.PHYS_TO_FIRE_CONVERSION, 50.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 15.0);
     }
 
     @Override

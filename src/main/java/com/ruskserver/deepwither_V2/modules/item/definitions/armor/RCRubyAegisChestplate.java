@@ -18,6 +18,10 @@ public class RCRubyAegisChestplate implements CustomItem {
         this.baseStats = new EnumMap<>(StatType.class);
         this.baseStats.put(StatType.DEFENSE, 22.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 42.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 78.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 30.0);
+        this.baseStats.put(StatType.MAX_ELEMENTAL_RESISTANCE, 3.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 8.0);
     }
 
     @Override

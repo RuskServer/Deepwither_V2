@@ -224,21 +224,7 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             mobLogic.setLevel(level);
             mobLogic.init(entity, this);
 
-            double baseAttackDamage = mobLogic.getBaseAttackDamage();
-            if (baseAttackDamage > 0) {
-                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE,
-                        "mob_base_attack", baseAttackDamage, ModifierType.ADDITIVE);
-            }
-            double baseDefense = mobLogic.getBaseDefense();
-            if (baseDefense > 0) {
-                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.DEFENSE,
-                        "mob_base_defense", baseDefense, ModifierType.ADDITIVE);
-            }
-            double baseMagicDefense = mobLogic.getBaseMagicDefense();
-            if (baseMagicDefense > 0) {
-                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.MAGIC_DEFENSE,
-                        "mob_base_magic_defense", baseMagicDefense, ModifierType.ADDITIVE);
-            }
+            applyBaseStats(entity, mobLogic);
 
             activeMobs.put(entity.getUniqueId(), mobLogic);
             if (mobLogic instanceof StaggerableBoss) combatState.registerBoss(entity);
@@ -264,26 +250,44 @@ public class CustomMobManager implements Listener, Startable, Stoppable {
             mobLogic.setMobId(id);
             mobLogic.init(entity, this);
 
-            double baseAttackDamage = mobLogic.getBaseAttackDamage();
-            if (baseAttackDamage > 0) {
-                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE,
-                        "mob_base_attack", baseAttackDamage, ModifierType.ADDITIVE);
-            }
-            double baseDefense = mobLogic.getBaseDefense();
-            if (baseDefense > 0) {
-                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.DEFENSE,
-                        "mob_base_defense", baseDefense, ModifierType.ADDITIVE);
-            }
-            double baseMagicDefense = mobLogic.getBaseMagicDefense();
-            if (baseMagicDefense > 0) {
-                statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.MAGIC_DEFENSE,
-                        "mob_base_magic_defense", baseMagicDefense, ModifierType.ADDITIVE);
-            }
+            applyBaseStats(entity, mobLogic);
 
             activeMobs.put(entity.getUniqueId(), mobLogic);
             if (mobLogic instanceof StaggerableBoss) combatState.registerBoss(entity);
         } catch (Exception e) {
             log.severe("[CustomMobManager] エンティティへのバインドに失敗しました (id=" + id + "): " + e.getMessage());
+        }
+    }
+
+    private void applyBaseStats(LivingEntity entity, CustomMob mobLogic) {
+        double baseAttackDamage = mobLogic.getBaseAttackDamage();
+        if (baseAttackDamage > 0) {
+            statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.ATTACK_DAMAGE,
+                    "mob_base_attack", baseAttackDamage, ModifierType.ADDITIVE);
+        }
+        double baseDefense = mobLogic.getBaseDefense();
+        if (baseDefense > 0) {
+            statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.DEFENSE,
+                    "mob_base_defense", baseDefense, ModifierType.ADDITIVE);
+        }
+        double baseMagicDefense = mobLogic.getBaseMagicDefense();
+        if (baseMagicDefense > 0) {
+            statManager.setModifier(entity.getUniqueId(), com.ruskserver.deepwither_V2.core.stat.StatType.MAGIC_DEFENSE,
+                    "mob_base_magic_defense", baseMagicDefense, ModifierType.ADDITIVE);
+        }
+        var extraStats = mobLogic.getBaseStats();
+        if (extraStats != null && !extraStats.isEmpty()) {
+            for (var entry : extraStats.entrySet()) {
+                if (entry.getKey() != null && entry.getValue() != null && entry.getValue() != 0.0) {
+                    statManager.setModifier(
+                            entity.getUniqueId(),
+                            entry.getKey(),
+                            "mob_base_" + entry.getKey().name().toLowerCase(),
+                            entry.getValue(),
+                            ModifierType.ADDITIVE
+                    );
+                }
+            }
         }
     }
 

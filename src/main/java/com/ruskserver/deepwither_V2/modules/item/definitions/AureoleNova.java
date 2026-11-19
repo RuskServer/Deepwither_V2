@@ -26,6 +26,10 @@ public class AureoleNova implements WandItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 1.4);
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 15.0);
         this.baseStats.put(StatType.MAX_MANA, 150.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 35.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 18.0);
+        this.baseStats.put(StatType.INCREASED_ELEMENTAL_DAMAGE, 25.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 80.0);
     }
 
     @Override

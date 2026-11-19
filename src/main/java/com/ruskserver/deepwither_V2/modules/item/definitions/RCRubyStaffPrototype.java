@@ -25,6 +25,9 @@ public class RCRubyStaffPrototype implements WandItem {
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 6.0);
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 130.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 12.0);
+        this.baseStats.put(StatType.INCREASED_ELEMENTAL_DAMAGE, 18.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 35.0);
     }
 
     @Override

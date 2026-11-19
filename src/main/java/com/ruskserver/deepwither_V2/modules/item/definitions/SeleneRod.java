@@ -31,6 +31,8 @@ public class SeleneRod implements WandItem {
         this.baseStats.put(StatType.ATTACK_SPEED, 1.0);
         // クールタイム短縮: 2%
         this.baseStats.put(StatType.COOLDOWN_REDUCTION, 2.0);
+        this.baseStats.put(StatType.HOLY_DAMAGE, 6.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 15.0);
     }
 
     @Override

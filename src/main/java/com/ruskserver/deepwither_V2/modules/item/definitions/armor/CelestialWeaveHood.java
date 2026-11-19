@@ -19,6 +19,9 @@ public class CelestialWeaveHood implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DAMAGE, 4.0);
         this.baseStats.put(StatType.MAGIC_DEFENSE, 20.0);
         this.baseStats.put(StatType.DEFENSE, 4.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 36.0);
+        this.baseStats.put(StatType.MAGIC_SHIELD_RECHARGE_RATE, 10.0);
+        this.baseStats.put(StatType.HOLY_RESISTANCE, 14.0);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
+import com.ruskserver.deepwither_V2.modules.combat.damage.DamageChannel;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import net.kyori.adventure.text.Component;
@@ -72,8 +73,10 @@ public class DamageIndicatorService implements Listener, Startable, Stoppable {
     }
 
     public void show(DamageContext context) {
-        if (context == null || context.getDamage() <= 0.0
-                || context.getType() == DamageType.ENVIRONMENTAL) {
+        if (context == null || context.getType() == DamageType.ENVIRONMENTAL) {
+            return;
+        }
+        if (!context.isEvaded() && context.getDamage() <= 0.0) {
             return;
         }
 
@@ -106,7 +109,7 @@ public class DamageIndicatorService implements Listener, Startable, Stoppable {
         int lane = countActive(viewer.getUniqueId(), defender.getUniqueId()) % LANE_OFFSETS.length;
         Vector right = screenRightVector(viewer, impact);
         Location spawnLocation = impact.clone().add(right.clone().multiply(LANE_OFFSETS[lane]));
-        float scale = context.isCritical() ? 0.82f : 0.68f;
+        float scale = context.isEvaded() ? 0.64f : (context.isCritical() ? 0.82f : 0.68f);
         Component text = buildText(context, incoming);
 
         TextDisplay display = impact.getWorld().spawn(spawnLocation, TextDisplay.class, spawned -> {
@@ -144,42 +147,73 @@ public class DamageIndicatorService implements Listener, Startable, Stoppable {
     }
 
     private Component buildText(DamageContext context, boolean incoming) {
-        String formattedDamage = formatDamage(context.getDamage());
-        if (incoming) {
-            return Component.text("−" + formattedDamage, NamedTextColor.RED)
-                    .decoration(TextDecoration.BOLD, context.isCritical());
+        if (context.isEvaded()) {
+            TextColor evadeColor = incoming ? TextColor.color(0x9EF4FF) : TextColor.color(0xC2CFD8);
+            return Component.text("EVADE", evadeColor).decoration(TextDecoration.ITALIC, true);
         }
 
-        TextColor damageColor = resolveDamageColor(context);
+        String formattedDamage = formatDamage(context.getDamage());
+        Component blockPrefix = context.isBlocked()
+                ? Component.text("🛡 ", TextColor.color(0x9CC4E4))
+                : Component.empty();
+
+        if (incoming) {
+            TextColor incomingColor;
+            if (context.getMagicShieldBypassDamage() > 0.0 && context.resolvePrimaryChannel() == DamageChannel.ABYSS) {
+                incomingColor = TextColor.color(0xC66BFF); // 深淵貫通は紫
+            } else if (context.getMagicShieldAbsorbed() > 0.0
+                    && context.getMagicShieldAbsorbed() + 1e-6 >= context.getDamage()) {
+                incomingColor = TextColor.color(0x5CE6FF); // マジックシールド全吸収はシアン
+            } else {
+                incomingColor = NamedTextColor.RED;
+            }
+            return blockPrefix.append(
+                    Component.text("−" + formattedDamage, incomingColor)
+                            .decoration(TextDecoration.BOLD, context.isCritical())
+            );
+        }
+
+        DamageChannel primary = context.resolvePrimaryChannel();
+        TextColor damageColor = resolveDamageColor(context, primary);
+        Component prefix = primary == DamageChannel.ABYSS
+                ? Component.text("❖ ", TextColor.color(0xD58CFF))
+                : Component.empty();
         Component number = Component.text(formattedDamage, damageColor)
                 .decoration(TextDecoration.BOLD, context.isCritical());
+        Component core = blockPrefix.append(prefix).append(number);
         if (!context.isCritical()) {
-            return number;
+            return core;
         }
         return Component.text("✦ ", NamedTextColor.GOLD)
                 .decoration(TextDecoration.BOLD, true)
-                .append(number)
+                .append(core)
                 .append(Component.text(" ✦", NamedTextColor.GOLD)
                         .decoration(TextDecoration.BOLD, true));
     }
 
-    private TextColor resolveDamageColor(DamageContext context) {
-        Set<String> tags = context.getTags();
-        if (containsIgnoreCase(tags, "fire")) {
-            return TextColor.color(0xFF7A24);
-        }
-        if (containsIgnoreCase(tags, "ice")) {
-            return TextColor.color(0x8FE7FF);
-        }
-        if (containsIgnoreCase(tags, "lightning")) {
-            return TextColor.color(0xFFF36B);
-        }
-        return switch (context.getType()) {
-            case PHYSICAL -> NamedTextColor.WHITE;
-            case RANGED -> NamedTextColor.YELLOW;
-            case MAGIC -> NamedTextColor.LIGHT_PURPLE;
-            case TRUE_DAMAGE -> NamedTextColor.AQUA;
-            case ENVIRONMENTAL -> NamedTextColor.GRAY;
+    private TextColor resolveDamageColor(DamageContext context, DamageChannel primary) {
+        return switch (primary) {
+            case FIRE -> TextColor.color(0xFF7A24);
+            case ICE -> TextColor.color(0x8FE7FF);
+            case LIGHTNING -> TextColor.color(0xFFF36B);
+            case HOLY -> TextColor.color(0xFFF2B2);
+            case ABYSS -> TextColor.color(0xB45CFF);
+            case TRUE -> TextColor.color(0x6EFFE1);
+            case PHYSICAL -> {
+                Set<String> tags = context.getTags();
+                if (containsIgnoreCase(tags, "fire")) yield TextColor.color(0xFF7A24);
+                if (containsIgnoreCase(tags, "ice")) yield TextColor.color(0x8FE7FF);
+                if (containsIgnoreCase(tags, "lightning") || containsIgnoreCase(tags, "thunder")) yield TextColor.color(0xFFF36B);
+                if (containsIgnoreCase(tags, "abyss") || containsIgnoreCase(tags, "void") || containsIgnoreCase(tags, "chaos")) yield TextColor.color(0xB45CFF);
+                if (containsIgnoreCase(tags, "holy") || containsIgnoreCase(tags, "light")) yield TextColor.color(0xFFF2B2);
+                yield switch (context.getType()) {
+                    case PHYSICAL -> NamedTextColor.WHITE;
+                    case RANGED -> NamedTextColor.YELLOW;
+                    case MAGIC -> NamedTextColor.LIGHT_PURPLE;
+                    case TRUE_DAMAGE -> TextColor.color(0x6EFFE1);
+                    case ENVIRONMENTAL -> NamedTextColor.GRAY;
+                };
+            }
         };
     }
 

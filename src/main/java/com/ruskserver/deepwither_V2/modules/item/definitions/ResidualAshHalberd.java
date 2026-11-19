@@ -20,6 +20,8 @@ public class ResidualAshHalberd implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 5.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 130.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 0.8);
+        this.baseStats.put(StatType.FIRE_DAMAGE, 18.0);
+        this.baseStats.put(StatType.PHYS_TO_FIRE_CONVERSION, 30.0);
     }
 
     @Override

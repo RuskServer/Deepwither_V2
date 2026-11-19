@@ -20,6 +20,9 @@ public class BalanceNeedle implements CustomItem {
         this.baseStats.put(StatType.CRITICAL_CHANCE, 8.0);
         this.baseStats.put(StatType.CRITICAL_DAMAGE, 100.0);
         this.baseStats.put(StatType.ATTACK_SPEED, 0.85);
+        this.baseStats.put(StatType.ARMOR_PENETRATION, 30.0);
+        this.baseStats.put(StatType.EVASION, 8.0);
+        this.baseStats.put(StatType.INCREASED_DAMAGE, 15.0);
     }
 
     @Override

@@ -20,6 +20,11 @@ public class AetheriumBulwarkChestplate implements CustomItem {
         this.baseStats.put(StatType.MAGIC_DEFENSE, 62.0);
         this.baseStats.put(StatType.HEALTH, 40.0);
         this.baseStats.put(StatType.SPEED, -20.0);
+        this.baseStats.put(StatType.BLOCK_CHANCE, 9.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 45.0);
+        this.baseStats.put(StatType.HOLY_RESISTANCE, 21.0);
+        this.baseStats.put(StatType.FIRE_RESISTANCE, 12.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 12.0);
     }
 
     @Override

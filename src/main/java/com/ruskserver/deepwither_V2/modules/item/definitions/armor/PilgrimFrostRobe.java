@@ -20,6 +20,10 @@ public class PilgrimFrostRobe implements CustomItem {
         this.baseStats.put(StatType.HEALTH, 40.0);
         this.baseStats.put(StatType.MAX_MANA, 100.0);
         this.baseStats.put(StatType.ICE_DAMAGE, 15.0);
+        this.baseStats.put(StatType.MAX_MAGIC_SHIELD, 75.0);
+        this.baseStats.put(StatType.ICE_RESISTANCE, 30.0);
+        this.baseStats.put(StatType.MAX_ELEMENTAL_RESISTANCE, 3.0);
+        this.baseStats.put(StatType.ELEMENTAL_PENETRATION, 8.0);
     }
 
     @Override
