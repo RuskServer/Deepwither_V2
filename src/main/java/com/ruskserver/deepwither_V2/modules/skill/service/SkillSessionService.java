@@ -122,53 +122,13 @@ public class SkillSessionService implements Startable, Stoppable {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (!isInSkillMode(player)) continue;
 
+            // 9スロットのアイコン・CD表示は PlayerHudService 側の自前スキルバー HUD で描画する。
+            // ActionBar は詠唱中キャンセル案内のみに留める。
             Skill castingSkill = castService.getCastingSkill(player);
             if (castingSkill != null) {
                 player.sendActionBar(Component.text("詠唱中: " + castingSkill.getDisplayName() + " (Fキーでキャンセル)", NamedTextColor.YELLOW));
-                continue;
             }
-
-            getActiveSkillData(player).ifPresent(data -> {
-                CharacterSkillSlotProvider.SkillSlotData slotData = data.get(CharacterSkillSlotProvider.KEY);
-                if (slotData == null) return;
-
-                Component bar = Component.text(manaManager.getCombatStatus(player) + "  ",
-                        manaManager.isInCombat(player) ? NamedTextColor.RED : NamedTextColor.AQUA);
-                for (int i = 0; i < CharacterSkillSlotProvider.SLOT_COUNT; i++) {
-                    String skillId = slotData.getSkill(i);
-                    if (skillId == null) continue;
-
-                    Skill skill = registry.get(skillId);
-                    Component prefix = Component.text("[" + (i + 1) + "] ", NamedTextColor.GRAY);
-                    if (skill == null) {
-                        bar = bar.append(prefix).append(Component.text("ERROR  ", NamedTextColor.RED));
-                        continue;
-                    }
-
-                    if (!skillTreeService.isSkillUnlocked(player, skill.getId())) {
-                        bar = bar.append(prefix).append(Component.text("LOCKED  ", NamedTextColor.DARK_GRAY));
-                        continue;
-                    }
-
-                    SkillContext context = new SkillContext(player, skill, skillTreeService.getSkillLevel(player, skill.getId()), manaManager, cooldownService);
-                    Component display = getActionBarDisplay(player, skill, context);
-                    bar = bar.append(prefix).append(display).append(Component.text("  "));
-                }
-                player.sendActionBar(bar);
-            });
         }
-    }
-
-    private Component getActionBarDisplay(Player player, Skill skill, SkillContext context) {
-        if (cooldownService.isOnCooldown(player.getUniqueId(), skill.getId())) {
-            double seconds = cooldownService.getRemaining(player.getUniqueId(), skill.getId()).toMillis() / 1000.0;
-            return Component.text(skill.getDisplayName(), NamedTextColor.RED)
-                    .append(Component.text(String.format(" (%.1fs)", seconds), NamedTextColor.DARK_RED));
-        }
-        if (manaManager.getMana(player) < skill.getManaCost(context)) {
-            return Component.text("x " + skill.getDisplayName(), NamedTextColor.BLUE);
-        }
-        return Component.text(skill.getDisplayName(), NamedTextColor.GREEN, TextDecoration.BOLD);
     }
 
     private java.util.Optional<CharacterData> getActiveSkillData(Player player) {

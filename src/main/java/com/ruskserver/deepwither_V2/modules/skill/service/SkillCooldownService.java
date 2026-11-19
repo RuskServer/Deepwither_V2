@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 public class SkillCooldownService implements PlayerLifecycleTask {
 
     private final Map<UUID, Map<String, Long>> cooldownUntilMillis = new HashMap<>();
+    private final Map<UUID, Map<String, Long>> cooldownDurationMillis = new HashMap<>();
 
     @Override
     public Set<PlayerLifecycleEventType> eventTypes() {
@@ -30,7 +31,10 @@ public class SkillCooldownService implements PlayerLifecycleTask {
 
     @Override
     public CompletableFuture<Void> run(PlayerLifecycleContext context) {
-        return context.runSync(() -> cooldownUntilMillis.remove(context.playerId()));
+        return context.runSync(() -> {
+            cooldownUntilMillis.remove(context.playerId());
+            cooldownDurationMillis.remove(context.playerId());
+        });
     }
 
     public boolean isOnCooldown(UUID playerId, String skillId) {
@@ -41,22 +45,41 @@ public class SkillCooldownService implements PlayerLifecycleTask {
         return Duration.ofMillis(Math.max(0L, getRemainingMillis(playerId, skillId)));
     }
 
+    public Duration getTotalDuration(UUID playerId, String skillId) {
+        Map<String, Long> durations = cooldownDurationMillis.get(playerId);
+        if (durations == null) return Duration.ZERO;
+        Long millis = durations.get(skillId);
+        return millis == null || millis <= 0L ? Duration.ZERO : Duration.ofMillis(millis);
+    }
+
     public void applyCooldown(UUID playerId, String skillId, Duration duration) {
         if (duration == null || duration.isZero() || duration.isNegative()) {
             clearCooldown(playerId, skillId);
             return;
         }
+        long millis = duration.toMillis();
         cooldownUntilMillis
                 .computeIfAbsent(playerId, ignored -> new HashMap<>())
-                .put(skillId, System.currentTimeMillis() + duration.toMillis());
+                .put(skillId, System.currentTimeMillis() + millis);
+        cooldownDurationMillis
+                .computeIfAbsent(playerId, ignored -> new HashMap<>())
+                .put(skillId, millis);
     }
 
     public void clearCooldown(UUID playerId, String skillId) {
         Map<String, Long> playerCooldowns = cooldownUntilMillis.get(playerId);
-        if (playerCooldowns == null) return;
-        playerCooldowns.remove(skillId);
-        if (playerCooldowns.isEmpty()) {
-            cooldownUntilMillis.remove(playerId);
+        if (playerCooldowns != null) {
+            playerCooldowns.remove(skillId);
+            if (playerCooldowns.isEmpty()) {
+                cooldownUntilMillis.remove(playerId);
+            }
+        }
+        Map<String, Long> durations = cooldownDurationMillis.get(playerId);
+        if (durations != null) {
+            durations.remove(skillId);
+            if (durations.isEmpty()) {
+                cooldownDurationMillis.remove(playerId);
+            }
         }
     }
 

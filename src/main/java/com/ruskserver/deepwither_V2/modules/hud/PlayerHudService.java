@@ -1,14 +1,28 @@
 package com.ruskserver.deepwither_V2.modules.hud;
 
 import com.ruskserver.deepwither_V2.Deepwither_V2;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterData;
+import com.ruskserver.deepwither_V2.core.database.character.CharacterDataRepository;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.core.lifecycle.Startable;
 import com.ruskserver.deepwither_V2.core.lifecycle.Stoppable;
+import com.ruskserver.deepwither_V2.modules.character.CharacterService;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.event.VirtualHealthChangeEvent;
 import com.ruskserver.deepwither_V2.modules.hud.EoaHudLayout.HudSnapshot;
+import com.ruskserver.deepwither_V2.modules.hud.EoaSkillBarLayout.SkillBarSnapshot;
+import com.ruskserver.deepwither_V2.modules.hud.EoaSkillBarLayout.SkillSlotSnapshot;
+import com.ruskserver.deepwither_V2.modules.hud.EoaSkillBarLayout.SlotState;
+import com.ruskserver.deepwither_V2.modules.skill.api.Skill;
+import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
+import com.ruskserver.deepwither_V2.modules.skill.provider.CharacterSkillSlotProvider;
+import com.ruskserver.deepwither_V2.modules.skill.service.SkillCastService;
+import com.ruskserver.deepwither_V2.modules.skill.service.SkillCooldownService;
+import com.ruskserver.deepwither_V2.modules.skill.service.SkillRegistry;
+import com.ruskserver.deepwither_V2.modules.skill.service.SkillSessionService;
+import com.ruskserver.deepwither_V2.modules.skilltree.service.SkillTreeService;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -22,7 +36,12 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,8 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * BetterHUD を置き換える自前 HUD 管理サービス。
  * <p>
  * プレイヤーごとに HUD 専用の透明 BossBar ({@link BossBar.Color#PINK}) を割り当て、
- * 仮想HP・バリア・マジックシールド(将来拡張用フック)・マナを {@code eoa:hud} フォントで描画する。
- * ActionBar は詠唱・対話 UI で使用されるため一切占有しない。
+ * 仮想HP・バリア・マジックシールド・マナを {@code eoa:hud} フォントで描画する。
+ * Fキーのスキルモード中は、同じ BossBar 内に 9 スロットのスキルバー（全スキル専用アイコン＋CDワイプ＋秒数）も重ねて描画する。
  */
 @Service
 public class PlayerHudService implements Startable, Stoppable, Listener {
@@ -41,6 +60,13 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
     private final Deepwither_V2 plugin;
     private final VirtualHealthManager healthManager;
     private final ManaManager manaManager;
+    private final SkillSessionService skillSessionService;
+    private final SkillRegistry skillRegistry;
+    private final SkillCastService skillCastService;
+    private final SkillCooldownService cooldownService;
+    private final SkillTreeService skillTreeService;
+    private final CharacterService characterService;
+    private final CharacterDataRepository characterDataRepository;
 
     private final Map<UUID, PlayerHudState> states = new ConcurrentHashMap<>();
     private BukkitTask updateTask;
@@ -49,11 +75,25 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
     public PlayerHudService(
             Deepwither_V2 plugin,
             VirtualHealthManager healthManager,
-            ManaManager manaManager
+            ManaManager manaManager,
+            SkillSessionService skillSessionService,
+            SkillRegistry skillRegistry,
+            SkillCastService skillCastService,
+            SkillCooldownService cooldownService,
+            SkillTreeService skillTreeService,
+            CharacterService characterService,
+            CharacterDataRepository characterDataRepository
     ) {
         this.plugin = plugin;
         this.healthManager = healthManager;
         this.manaManager = manaManager;
+        this.skillSessionService = skillSessionService;
+        this.skillRegistry = skillRegistry;
+        this.skillCastService = skillCastService;
+        this.cooldownService = cooldownService;
+        this.skillTreeService = skillTreeService;
+        this.characterService = characterService;
+        this.characterDataRepository = characterDataRepository;
     }
 
     @Override
@@ -106,7 +146,7 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
         }
     }
 
-    /** 即時更新が必要な処理（マナ消費・バリア変化など）から呼び出せる公開メソッド */
+    /** 即時更新が必要な処理（マナ消費・バリア変化・スキルモード切替など）から呼び出せる公開メソッド */
     public void refresh(Player player) {
         PlayerHudState state = states.get(player.getUniqueId());
         if (state == null) return;
@@ -134,10 +174,75 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
                 0.0,
                 0.0
         );
-        if (!snapshot.equals(state.lastSnapshot)) {
+        SkillBarSnapshot skillBar = skillSessionService.isInSkillMode(player)
+                ? buildSkillBarSnapshot(player)
+                : null;
+
+        if (!snapshot.equals(state.lastSnapshot) || !Objects.equals(skillBar, state.lastSkillBar)) {
             state.lastSnapshot = snapshot;
-            state.bossBar.name(EoaHudRenderer.render(snapshot));
+            state.lastSkillBar = skillBar;
+            state.bossBar.name(EoaHudRenderer.render(snapshot, skillBar));
         }
+    }
+
+    private SkillBarSnapshot buildSkillBarSnapshot(Player player) {
+        Optional<CharacterData> dataOpt = characterService.getCachedActiveCharacter(player.getUniqueId())
+                .flatMap(character -> characterDataRepository.get(character.characterId()));
+        CharacterSkillSlotProvider.SkillSlotData slotData = dataOpt
+                .map(data -> data.get(CharacterSkillSlotProvider.KEY))
+                .orElse(null);
+
+        Skill castingSkill = skillCastService.getCastingSkill(player);
+        String castingId = castingSkill != null ? castingSkill.getId() : null;
+        double currentMana = manaManager.getMana(player);
+        UUID playerId = player.getUniqueId();
+
+        List<SkillSlotSnapshot> slots = new ArrayList<>(CharacterSkillSlotProvider.SLOT_COUNT);
+        for (int i = 0; i < CharacterSkillSlotProvider.SLOT_COUNT; i++) {
+            String skillId = slotData != null ? slotData.getSkill(i) : null;
+            if (skillId == null || skillId.isBlank()) {
+                slots.add(SkillSlotSnapshot.empty());
+                continue;
+            }
+
+            Skill skill = skillRegistry.get(skillId);
+            if (skill == null) {
+                slots.add(SkillSlotSnapshot.empty());
+                continue;
+            }
+
+            if (!skillTreeService.isSkillUnlocked(player, skillId)) {
+                slots.add(SkillSlotSnapshot.locked(skillId));
+                continue;
+            }
+
+            if (skillId.equals(castingId)) {
+                slots.add(new SkillSlotSnapshot(skillId, SlotState.CASTING, 0, ""));
+                continue;
+            }
+
+            if (cooldownService.isOnCooldown(playerId, skillId)) {
+                long remMs = cooldownService.getRemaining(playerId, skillId).toMillis();
+                long totalMs = cooldownService.getTotalDuration(playerId, skillId).toMillis();
+                if (totalMs <= 0L) {
+                    SkillContext ctx = new SkillContext(
+                            player, skill, skillTreeService.getSkillLevel(player, skillId), manaManager, cooldownService);
+                    Duration baseCd = skill.getCooldown(ctx);
+                    totalMs = baseCd != null ? baseCd.toMillis() : remMs;
+                }
+                slots.add(SkillSlotSnapshot.cooldown(skillId, remMs, totalMs));
+                continue;
+            }
+
+            SkillContext ctx = new SkillContext(
+                    player, skill, skillTreeService.getSkillLevel(player, skillId), manaManager, cooldownService);
+            if (currentMana < skill.getManaCost(ctx)) {
+                slots.add(new SkillSlotSnapshot(skillId, SlotState.NO_MANA, 0, ""));
+            } else {
+                slots.add(new SkillSlotSnapshot(skillId, SlotState.READY, 0, ""));
+            }
+        }
+        return new SkillBarSnapshot(List.copyOf(slots));
     }
 
     private void attach(Player player) {
@@ -168,6 +273,7 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
         final BossBar bossBar;
         boolean visible;
         HudSnapshot lastSnapshot;
+        SkillBarSnapshot lastSkillBar;
 
         PlayerHudState(BossBar bossBar) {
             this.bossBar = bossBar;
