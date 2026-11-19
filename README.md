@@ -5,7 +5,7 @@
 **The High-Performance Modular MMO Engine (Codename: Deepwither_V2)**
 
 [![Java](https://img.shields.io/badge/Java-25-orange.svg?style=for-the-badge&logo=java)](#)
-[![Paper API](https://img.shields.io/badge/Paper-26.1.2-blue.svg?style=for-the-badge)](#)
+[![Paper API](https://img.shields.io/badge/Paper-26.3-blue.svg?style=for-the-badge)](#)
 [![Architecture](https://img.shields.io/badge/Architecture-Modular_Monolith-brightgreen.svg?style=for-the-badge)](#)
 [![Database](https://img.shields.io/badge/Database-H2_%2B_HikariCP-lightgrey.svg?style=for-the-badge)](#)
 
