@@ -41,15 +41,10 @@ class EoaHudRendererTest {
     @Test
     void skillBarTotalAdvanceAlwaysMatchesHotbarWidth() {
         SkillBarSnapshot bar = new SkillBarSnapshot(List.of(
-                new SkillSlotSnapshot("fireball", SlotState.READY, 0, ""),
-                SkillSlotSnapshot.cooldown("blizzard", 3400L, 8000L),
-                SkillSlotSnapshot.cooldown("chain_lightning", 12000L, 15000L),
-                new SkillSlotSnapshot("holy_nova", SlotState.CASTING, 0, ""),
-                new SkillSlotSnapshot("flame_pillar", SlotState.NO_MANA, 0, ""),
-                new SkillSlotSnapshot("blink", SlotState.READY, 0, ""),
-                new SkillSlotSnapshot("divine_shield", SlotState.READY, 0, ""),
-                SkillSlotSnapshot.locked("rain_of_arrows"),
-                SkillSlotSnapshot.empty()
+                new SkillSlotSnapshot(1, "fireball", SlotState.READY, 0, ""),
+                SkillSlotSnapshot.cooldown(2, "blizzard", 3400L, 8000L),
+                new SkillSlotSnapshot(3, "blink", SlotState.CASTING, 0, ""),
+                new SkillSlotSnapshot(5, "flame_pillar", SlotState.NO_MANA, 0, "")
         ));
 
         RenderedSkillBar rendered = EoaSkillBarLayout.build(bar);

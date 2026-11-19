@@ -6,18 +6,19 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Fキー スキルキャストモード時の 9 スロットスキルバー (アイコン + CD ワイプ + 秒数表示) レイアウト計算。
+ * Fキー スキルキャストモード時の 4 スロット中央スキルバー (アイコン + CD ワイプ + 秒数表示) レイアウト計算。
  * <p>
  * コードポイント・寸法は {@code EoA_pack/tools/skill_icons.py} および
  * {@code EoA_pack/contents/assets/minecraft/shaders/include/eoa_text_hud.glsl} と厳密に一致させる。
- * 全体の送り幅は常に {@link EoaHudLayout#TOTAL_WIDTH} (182 GUI px) に揃え、
- * 9 スロット (ピッチ 20px) がバニラホットバー 1..9 と 1対1 で垂直整列する。
+ * 4 スロット (幅 18px, ピッチ 22px, 合計幅 84px) を 182px の中央 (x=49..133) に配置し、
+ * シェーダー側で中央基準 1.45 倍 (約 26 GUI px/スロット) へ拡大描画する。
  */
 public final class EoaSkillBarLayout {
 
-    public static final int SLOT_COUNT = 9;
+    public static final int DISPLAY_SLOT_COUNT = 4;
     public static final int SLOT_SIZE = 18;
-    public static final int SLOT_PITCH = 20;
+    public static final int SLOT_PITCH = 22;     // 18px スロット + 4px ギャップ
+    public static final int START_X = 49;        // (182 - (4*18 + 3*4)) / 2 = (182 - 84) / 2 = 49
     public static final int ICON_STEPS = 16;
 
     private static final int SPACE_POS = 0xE500;
@@ -88,26 +89,27 @@ public final class EoaSkillBarLayout {
     }
 
     public record SkillSlotSnapshot(
+            int keyNumber,
             String skillId,
             SlotState state,
             int cdWipeStep,
             String cdText
     ) {
-        public static SkillSlotSnapshot empty() {
-            return new SkillSlotSnapshot(null, SlotState.EMPTY, 0, "");
+        public static SkillSlotSnapshot empty(int keyNumber) {
+            return new SkillSlotSnapshot(keyNumber, null, SlotState.EMPTY, 0, "");
         }
 
-        public static SkillSlotSnapshot locked(String skillId) {
-            return new SkillSlotSnapshot(skillId, SlotState.LOCKED, 0, "");
+        public static SkillSlotSnapshot locked(int keyNumber, String skillId) {
+            return new SkillSlotSnapshot(keyNumber, skillId, SlotState.LOCKED, 0, "");
         }
 
-        public static SkillSlotSnapshot cooldown(String skillId, long remainingMillis, long totalMillis) {
+        public static SkillSlotSnapshot cooldown(int keyNumber, String skillId, long remainingMillis, long totalMillis) {
             double ratio = totalMillis > 0L
                     ? Math.max(0.0, Math.min(1.0, (double) remainingMillis / totalMillis))
                     : 1.0;
             int step = Math.max(1, Math.min(ICON_STEPS, (int) Math.round(ratio * ICON_STEPS)));
             String text = formatCooldown(remainingMillis);
-            return new SkillSlotSnapshot(skillId, SlotState.COOLDOWN, step, text);
+            return new SkillSlotSnapshot(keyNumber, skillId, SlotState.COOLDOWN, step, text);
         }
     }
 
@@ -127,37 +129,36 @@ public final class EoaSkillBarLayout {
 
     public static RenderedSkillBar build(SkillBarSnapshot bar) {
         Cursor cursor = new Cursor();
-        StringBuilder slotBuf = new StringBuilder(128);
-        StringBuilder cdBuf = new StringBuilder(64);
+        StringBuilder slotBuf = new StringBuilder(96);
+        StringBuilder cdBuf = new StringBuilder(48);
 
         List<SkillSlotSnapshot> slots = bar.slots();
-        int count = Math.min(SLOT_COUNT, slots.size());
+        int count = Math.min(DISPLAY_SLOT_COUNT, slots.size());
 
-        // 1) スロット層 (アイコン -> CDワイプ/マナ不足幕 -> 枠 -> 左上キー番号)
-        for (int i = 0; i < SLOT_COUNT; i++) {
-            SkillSlotSnapshot slot = i < count ? slots.get(i) : SkillSlotSnapshot.empty();
-            int sx = 2 + i * SLOT_PITCH;
+        // 1) スロット層 (中央配置 4 スロット: アイコン -> CDワイプ/マナ不足幕 -> 枠 -> 左上キー番号)
+        for (int i = 0; i < DISPLAY_SLOT_COUNT; i++) {
+            SkillSlotSnapshot slot = i < count ? slots.get(i) : SkillSlotSnapshot.empty(i + 1);
+            int sx = START_X + i * SLOT_PITCH;
+            int keyIdx = Math.max(0, Math.min(8, slot.keyNumber() - 1));
 
             if (slot.state() == SlotState.EMPTY) {
                 cursor.moveTo(slotBuf, sx);
                 cursor.emit(slotBuf, SLOT_EMPTY, SLOT_SIZE);
                 cursor.moveTo(slotBuf, sx);
-                cursor.emit(slotBuf, (char) (KEY_BASE + i), SLOT_SIZE);
+                cursor.emit(slotBuf, (char) (KEY_BASE + keyIdx), SLOT_SIZE);
                 continue;
             }
             if (slot.state() == SlotState.LOCKED) {
                 cursor.moveTo(slotBuf, sx);
                 cursor.emit(slotBuf, SLOT_LOCKED, SLOT_SIZE);
                 cursor.moveTo(slotBuf, sx);
-                cursor.emit(slotBuf, (char) (KEY_BASE + i), SLOT_SIZE);
+                cursor.emit(slotBuf, (char) (KEY_BASE + keyIdx), SLOT_SIZE);
                 continue;
             }
 
-            // アイコン本体
             cursor.moveTo(slotBuf, sx);
             cursor.emit(slotBuf, iconGlyphFor(slot.skillId()), SLOT_SIZE);
 
-            // 状態オーバーレイ & 枠
             switch (slot.state()) {
                 case COOLDOWN -> {
                     int step = Math.max(1, Math.min(ICON_STEPS, slot.cdWipeStep()));
@@ -184,9 +185,8 @@ public final class EoaSkillBarLayout {
                 }
             }
 
-            // 左上キー番号 (1..9)
             cursor.moveTo(slotBuf, sx);
-            cursor.emit(slotBuf, (char) (KEY_BASE + i), SLOT_SIZE);
+            cursor.emit(slotBuf, (char) (KEY_BASE + keyIdx), SLOT_SIZE);
         }
 
         // 2) CD 秒数オーバーレイ層 (スロット下中央へ配置)
@@ -197,7 +197,7 @@ public final class EoaSkillBarLayout {
             }
             String text = slot.cdText();
             int textWidth = measureCdTextPixelWidth(text);
-            int sx = 2 + i * SLOT_PITCH;
+            int sx = START_X + i * SLOT_PITCH;
             int x = sx + (SLOT_SIZE - textWidth) / 2;
             for (int j = 0; j < text.length(); j++) {
                 char ch = text.charAt(j);
@@ -248,7 +248,7 @@ public final class EoaSkillBarLayout {
             } else if (c == SLOT_READY || c == SLOT_CD || c == SLOT_NOMANA || c == SLOT_CASTING
                     || c == SLOT_EMPTY || c == SLOT_LOCKED || c == OVERLAY_NOMANA
                     || (c >= CD_WIPE_BASE && c < CD_WIPE_BASE + ICON_STEPS)
-                    || (c >= KEY_BASE && c < KEY_BASE + SLOT_COUNT)
+                    || (c >= KEY_BASE && c < KEY_BASE + 9)
                     || c == ICON_FALLBACK
                     || (c >= ICON_BASE && c < ICON_BASE + SKILL_ICON_ORDER.size())) {
                 total += SLOT_SIZE + 1;

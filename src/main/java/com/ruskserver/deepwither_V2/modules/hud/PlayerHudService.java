@@ -197,27 +197,27 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
         double currentMana = manaManager.getMana(player);
         UUID playerId = player.getUniqueId();
 
-        List<SkillSlotSnapshot> slots = new ArrayList<>(CharacterSkillSlotProvider.SLOT_COUNT);
-        for (int i = 0; i < CharacterSkillSlotProvider.SLOT_COUNT; i++) {
+        List<SkillSlotSnapshot> slots = new ArrayList<>(EoaSkillBarLayout.DISPLAY_SLOT_COUNT);
+        boolean[] usedKey = new boolean[CharacterSkillSlotProvider.SLOT_COUNT];
+
+        // 装備済みスキル (最大 4 個) を実際のホットバーキー番号付きで収集
+        for (int i = 0; i < CharacterSkillSlotProvider.SLOT_COUNT && slots.size() < EoaSkillBarLayout.DISPLAY_SLOT_COUNT; i++) {
             String skillId = slotData != null ? slotData.getSkill(i) : null;
-            if (skillId == null || skillId.isBlank()) {
-                slots.add(SkillSlotSnapshot.empty());
-                continue;
-            }
+            if (skillId == null || skillId.isBlank()) continue;
 
             Skill skill = skillRegistry.get(skillId);
-            if (skill == null) {
-                slots.add(SkillSlotSnapshot.empty());
-                continue;
-            }
+            if (skill == null) continue;
+
+            usedKey[i] = true;
+            int keyNumber = i + 1;
 
             if (!skillTreeService.isSkillUnlocked(player, skillId)) {
-                slots.add(SkillSlotSnapshot.locked(skillId));
+                slots.add(SkillSlotSnapshot.locked(keyNumber, skillId));
                 continue;
             }
 
             if (skillId.equals(castingId)) {
-                slots.add(new SkillSlotSnapshot(skillId, SlotState.CASTING, 0, ""));
+                slots.add(new SkillSlotSnapshot(keyNumber, skillId, SlotState.CASTING, 0, ""));
                 continue;
             }
 
@@ -230,16 +230,23 @@ public class PlayerHudService implements Startable, Stoppable, Listener {
                     Duration baseCd = skill.getCooldown(ctx);
                     totalMs = baseCd != null ? baseCd.toMillis() : remMs;
                 }
-                slots.add(SkillSlotSnapshot.cooldown(skillId, remMs, totalMs));
+                slots.add(SkillSlotSnapshot.cooldown(keyNumber, skillId, remMs, totalMs));
                 continue;
             }
 
             SkillContext ctx = new SkillContext(
                     player, skill, skillTreeService.getSkillLevel(player, skillId), manaManager, cooldownService);
             if (currentMana < skill.getManaCost(ctx)) {
-                slots.add(new SkillSlotSnapshot(skillId, SlotState.NO_MANA, 0, ""));
+                slots.add(new SkillSlotSnapshot(keyNumber, skillId, SlotState.NO_MANA, 0, ""));
             } else {
-                slots.add(new SkillSlotSnapshot(skillId, SlotState.READY, 0, ""));
+                slots.add(new SkillSlotSnapshot(keyNumber, skillId, SlotState.READY, 0, ""));
+            }
+        }
+
+        // 4 スロット未満の時は未使用の 1..4 番スロットを空枠で補完
+        for (int i = 0; i < CharacterSkillSlotProvider.SLOT_COUNT && slots.size() < EoaSkillBarLayout.DISPLAY_SLOT_COUNT; i++) {
+            if (!usedKey[i]) {
+                slots.add(SkillSlotSnapshot.empty(i + 1));
             }
         }
         return new SkillBarSnapshot(List.copyOf(slots));
