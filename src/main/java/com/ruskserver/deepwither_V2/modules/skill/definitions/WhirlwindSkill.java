@@ -1,14 +1,19 @@
 package com.ruskserver.deepwither_V2.modules.skill.definitions;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.AnimeVfxHelper;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.List;
@@ -66,13 +71,22 @@ public class WhirlwindSkill implements Skill {
     public CastResult cast(SkillContext context) {
         var player = context.getCaster();
         var loc = player.getLocation().add(0, 1, 0);
+        var plugin = JavaPlugin.getPlugin(Deepwither_V2.class);
 
-        loc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc, 25, 1.5, 0.3, 1.5, 0);
+        // 高速回転・近接追従の渦斬撃 AoE + 足元衝撃波リング
+        AnimeVfxHelper.spawnSpinningMeleeAura(plugin, player, 3.6, Color.fromRGB(130, 232, 255), 14, 34.0);
+        AnimeVfxHelper.spawnShockwave(plugin, player.getLocation().add(0, 0.15, 0),
+                0.7, 3.6, Color.fromRGB(175, 242, 255), 10, new Vector(0, 1, 0));
+        loc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc, 10, 1.5, 0.3, 1.5, 0);
         loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 0.7f);
+        loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 1.35f);
 
         player.getNearbyEntities(3.5, 3.5, 3.5).forEach(entity -> {
             if (entity instanceof LivingEntity living && !entity.equals(player)) {
                 damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.25, getTags(), getId(), 500L);
+                AnimeVfxHelper.spawnHitSlashCross(plugin,
+                        living.getLocation().add(0, living.getHeight() * 0.55, 0),
+                        Color.fromRGB(165, 240, 255), 2.1, 5);
             }
         });
 

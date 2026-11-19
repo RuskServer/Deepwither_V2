@@ -11,6 +11,8 @@ import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
+import com.ruskserver.deepwither_V2.modules.skill.util.AnimeVfxHelper;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -90,25 +92,44 @@ public class MultiSlashSkill implements Skill {
                     return;
                 }
 
-                Location start = player.getEyeLocation();
-                Vector dir = start.getDirection().normalize();
-                Location center = start.clone().add(dir.clone().multiply(2.5));
+                Location origin = player.getLocation().add(0, 1.15, 0);
+                Vector rawDir = player.getEyeLocation().getDirection().setY(0);
+                final Vector dir = rawDir.lengthSquared() < 1e-6
+                        ? new Vector(0, 0, 1)
+                        : rawDir.normalize();
 
-                center.getWorld().playSound(center, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 1.2f + count * 0.1f);
+                boolean isFinisher = (count == MAX_HITS - 1);
+                double slashRadius = isFinisher ? 4.2 : 3.6;
 
-                for (int i = 0; i < 5; i++) {
-                    double offsetX = (Math.random() - 0.5) * 3.0;
-                    double offsetY = (Math.random() - 0.5) * 2.0;
-                    double offsetZ = (Math.random() - 0.5) * 3.0;
-                    Location slashLoc = center.clone().add(offsetX, offsetY, offsetZ);
-                    center.getWorld().spawnParticle(Particle.SWEEP_ATTACK, slashLoc, 1);
-                    center.getWorld().spawnParticle(Particle.CRIT, slashLoc, 5, 0.2, 0.2, 0.2, 0.1);
-                }
+                var plugin = JavaPlugin.getPlugin(Deepwither_V2.class);
+                double[] rollAngles = {-32.0, 32.0, -18.0, 42.0, 0.0};
+                Color slashColor = isFinisher
+                        ? Color.fromRGB(255, 170, 70)
+                        : Color.fromRGB(255, 232, 145);
 
-                center.getWorld().getNearbyEntities(center, 3.5, 2.5, 3.5).forEach(entity -> {
+                // プレイヤー中心から前方へ薙ぎ払う三日月斬撃（判定半径と完全一致）
+                AnimeVfxHelper.spawnCrescentSlash(plugin, origin, dir, slashRadius,
+                        slashColor, rollAngles[count % rollAngles.length], 5);
+
+                Location frontCenter = origin.clone().add(dir.clone().multiply(slashRadius * 0.55));
+                origin.getWorld().playSound(frontCenter, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.85f, 1.15f + count * 0.1f);
+
+                double radiusSq = slashRadius * slashRadius;
+                origin.getWorld().getNearbyEntities(origin, slashRadius, 2.5, slashRadius).forEach(entity -> {
                     if (entity instanceof LivingEntity living && !entity.equals(player)) {
+                        Vector toTarget = living.getLocation().toVector().subtract(origin.toVector()).setY(0);
+                        double distSq = toTarget.lengthSquared();
+                        if (distSq > radiusSq) return;
+                        // 前方約 200° の弧内のみヒット（背後の敵には当たらない）
+                        if (distSq > 0.25 && toTarget.normalize().dot(dir) < -0.17) return;
+
                         damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 0.35,
                                 getTags(), getId(), 0L, null, 0.3);
+                        Location hitCenter = living.getLocation().add(0, living.getHeight() * 0.55, 0);
+                        AnimeVfxHelper.spawnHitSlashCross(plugin, hitCenter, slashColor, isFinisher ? 2.6 : 1.9, 5);
+                        if (isFinisher) {
+                            AnimeVfxHelper.spawnImpactBurst(plugin, hitCenter, 1.4, Color.fromRGB(255, 200, 95), 5);
+                        }
                     }
                 });
 

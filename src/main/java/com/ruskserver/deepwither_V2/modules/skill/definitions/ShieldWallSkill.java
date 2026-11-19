@@ -1,12 +1,14 @@
 package com.ruskserver.deepwither_V2.modules.skill.definitions;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
-import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import com.ruskserver.deepwither_V2.modules.skill.util.AnimeVfxHelper;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -64,9 +66,11 @@ public class ShieldWallSkill implements Skill {
         loc.getWorld().spawnParticle(Particle.CRIT, loc, 20, 0.5, 0.5, 0.5, 0.1);
         loc.getWorld().playSound(loc, Sound.ITEM_SHIELD_BLOCK, 1.0f, 1.0f);
 
-        // バリアリング
-        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 1.5, Color.fromRGB(200, 200, 255), 20, 16);
-        TrailCircleHelper.spawnCircle(player.getLocation().add(0, 0.1, 0), 1.0, Color.fromRGB(255, 255, 255), 16, 12, new Vector(0, 1, 0), 45);
+        // 足元で二重に逆回転する追従四角シール + 展開衝撃波
+        var plugin = JavaPlugin.getPlugin(Deepwither_V2.class);
+        AnimeVfxHelper.spawnRotatingSquare(plugin, player, null, 1.75, Color.fromRGB(140, 210, 255), 120, 4.5, true);
+        AnimeVfxHelper.spawnShockwave(plugin, player.getLocation().add(0, 0.12, 0),
+                0.5, 2.6, Color.fromRGB(185, 230, 255), 10, new Vector(0, 1, 0));
 
         player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 120, 1, false, true));
 

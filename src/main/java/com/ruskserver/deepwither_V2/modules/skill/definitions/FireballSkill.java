@@ -6,7 +6,10 @@ import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
 import com.ruskserver.deepwither_V2.modules.skill.service.SkillProjectileService;
+import com.ruskserver.deepwither_V2.Deepwither_V2;
+import com.ruskserver.deepwither_V2.modules.skill.util.AnimeVfxHelper;
 import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -100,8 +103,9 @@ public class FireballSkill implements Skill {
         var eyeLoc = context.getEyeLocation();
         var dir = context.getDirection().clone();
 
-        TrailCircleHelper.spawnCircle(eyeLoc, 0.5, Color.fromRGB(255, 100, 0), 6, 8, dir, 0);
-        TrailCircleHelper.spawnCircle(eyeLoc, 0.3, Color.fromRGB(255, 200, 50), 5, 6, dir, 45);
+        var plugin = JavaPlugin.getPlugin(Deepwither_V2.class);
+        Color fireColor = Color.fromRGB(255, 110, 24);
+        AnimeVfxHelper.spawnProjectileMuzzle(plugin, eyeLoc.clone().add(dir.clone().multiply(0.5)), dir, 0.9, fireColor, 6);
         eyeLoc.getWorld().spawnParticle(Particle.FLAME, eyeLoc, 0, dir.getX(), dir.getY(), dir.getZ(), 0.2);
 
         SkillProjectile projectile = new SkillProjectile(
@@ -118,10 +122,9 @@ public class FireballSkill implements Skill {
                 var world = loc.getWorld();
                 world.spawnParticle(Particle.FLAME, loc, 3, 0.15, 0.15, 0.15, 0.02);
                 world.spawnParticle(Particle.SMOKE, loc, 1, 0.05, 0.05, 0.05, 0.01);
-                world.spawnParticle(Particle.GLOW, loc, 2, 0.1, 0.1, 0.1, 0);
-                world.spawnParticle(Particle.FLAME, loc, 0, dir.getX(), dir.getY(), dir.getZ(), 0.05);
-                TrailCircleHelper.spawnCircle(loc, 0.4, Color.fromRGB(255, 150, 50), 4, 6, dir, getTicksLived() * 30);
-                TrailCircleHelper.spawnCircle(loc, 0.6, Color.fromRGB(255, 100, 0), 4, 8, dir, getTicksLived() * 30 + 60);
+                if (getTicksLived() % 3 == 0) {
+                    AnimeVfxHelper.spawnProjectileSonicRing(plugin, loc, dir, 0.22, 0.95, fireColor, 5);
+                }
             }
 
             @Override
@@ -145,9 +148,7 @@ public class FireballSkill implements Skill {
                 world.spawnParticle(Particle.LAVA, loc, 5, 0.5, 0.5, 0.5, 0);
                 world.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
-                TrailCircleHelper.spawnCircle(loc, 1.0, Color.fromRGB(255, 150, 50), 8, 12);
-                TrailCircleHelper.spawnCircle(loc, 2.0, Color.fromRGB(255, 100, 0), 6, 16, new Vector(0, 1, 0), 30);
-                TrailCircleHelper.spawnCircle(loc, 3.0, Color.fromRGB(200, 50, 0), 5, 20);
+                AnimeVfxHelper.spawnProjectileImpact(plugin, loc, new Vector(0, 1, 0), 3.1, fireColor, 10);
 
                 for (int i = 0; i < 8; i++) {
                     double angle = Math.toRadians(i * 45);

@@ -1,5 +1,6 @@
 package com.ruskserver.deepwither_V2.modules.skill.definitions;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
@@ -10,8 +11,8 @@ import com.ruskserver.deepwither_V2.modules.skill.api.SkillCategory;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillContext;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTag;
 import com.ruskserver.deepwither_V2.modules.skill.api.SkillTargetType;
-import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
-import com.ruskserver.deepwither_V2.modules.skill.util.TrailHelper;
+import com.ruskserver.deepwither_V2.modules.skill.util.AnimeVfxHelper;
+import org.bukkit.plugin.java.JavaPlugin;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Color;
 import org.bukkit.FluidCollisionMode;
@@ -92,39 +93,29 @@ public class PowerShotSkill implements Skill {
         var dir = eyeLoc.getDirection();
 
         var trailColor = Color.fromRGB(180, 210, 255);
+        var plugin = JavaPlugin.getPlugin(Deepwither_V2.class);
 
-        // 発射エフェクト: マズルリング + ベクトルバースト
-        TrailCircleHelper.spawnCircle(eyeLoc, 0.5, trailColor, 6, 10, dir, 0);
-        TrailCircleHelper.spawnCircle(eyeLoc, 0.7, Color.fromRGB(200, 230, 255), 5, 12, dir, 30);
-        eyeLoc.getWorld().spawnParticle(Particle.ENCHANT, eyeLoc, 15, 0.2, 0.2, 0.2, 0.5);
-        for (int i = 0; i < 6; i++) {
-            double angle = Math.toRadians(i * 60);
-            double x = Math.cos(angle) * 0.4;
-            double z = Math.sin(angle) * 0.4;
-            eyeLoc.getWorld().spawnParticle(Particle.CRIT, eyeLoc, 0, x + dir.getX() * 0.3, 0.3 + dir.getY() * 0.3, z + dir.getZ() * 0.3, 0.15);
-        }
+        // 発射エフェクト: マズル衝撃波リング＋スクエア展開
+        AnimeVfxHelper.spawnProjectileMuzzle(plugin, eyeLoc.clone().add(dir.clone().multiply(0.7)), dir, 1.1, trailColor, 7);
 
-        // ビーム軌跡
+        // ビーム軌跡＋弾道ソニックリング
         var tLoc = target.getLocation().add(0, 1, 0);
         var beamDir = tLoc.toVector().subtract(eyeLoc.toVector());
         double beamLen = beamDir.length();
         beamDir.normalize();
-        TrailHelper.spawnBeam(eyeLoc, beamDir, beamLen, trailColor, 6, 0.3);
+        AnimeVfxHelper.spawnEnergyBeam(plugin, eyeLoc, beamDir, beamLen, 0.55, trailColor, 7);
+        int ringCount = Math.min(5, Math.max(1, (int) (beamLen / 4.5)));
+        for (int i = 1; i <= ringCount; i++) {
+            double dist = (beamLen * i) / (ringCount + 1);
+            Location ringLoc = eyeLoc.clone().add(beamDir.clone().multiply(dist));
+            AnimeVfxHelper.spawnProjectileSonicRing(plugin, ringLoc, beamDir, 0.25, 1.05, trailColor, 6);
+        }
         eyeLoc.getWorld().playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1.0f, 0.8f);
 
-        // ヒットエフェクト
-        tLoc.getWorld().spawnParticle(Particle.CRIT, tLoc, 25, 0.5, 0.5, 0.5, 0.4);
-        tLoc.getWorld().spawnParticle(Particle.SWEEP_ATTACK, tLoc, 10, 0.5, 0.3, 0.5, 0);
+        // ヒットエフェクト: 着弾衝撃波＋インパクト閃光
+        tLoc.getWorld().spawnParticle(Particle.CRIT, tLoc, 16, 0.4, 0.4, 0.4, 0.3);
         tLoc.getWorld().playSound(tLoc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.2f);
-
-        TrailCircleHelper.spawnCircle(tLoc, 1.0, trailColor, 8, 14);
-        TrailCircleHelper.spawnCircle(tLoc, 1.5, Color.fromRGB(200, 230, 255), 6, 18, new Vector(0, 1, 0), 30);
-        for (int i = 0; i < 8; i++) {
-            double angle = Math.toRadians(i * 45);
-            double x = Math.cos(angle) * 0.6;
-            double z = Math.sin(angle) * 0.6;
-            tLoc.getWorld().spawnParticle(Particle.CRIT, tLoc, 0, x, 0.4, z, 0.2);
-        }
+        AnimeVfxHelper.spawnProjectileImpact(plugin, tLoc, beamDir.clone().multiply(-1), 2.2, trailColor, 8);
 
         damagePipelineManager.processScaledDamage(player, target, DamageType.RANGED, 1.8, getTags(), getId(), 500L);
 

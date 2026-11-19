@@ -6,6 +6,8 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.AnimeVfxHelper;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -78,9 +80,11 @@ public class ShockwaveSkill implements Skill {
         var dir = context.getDirection().normalize();
 
         context.getCaster().playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.5f);
+        AnimeVfxHelper.spawnEnergyBeam(plugin, startLoc, dir, 8.0, 1.1, Color.fromRGB(155, 225, 255), 10);
 
         new BukkitRunnable() {
             double distance = 0;
+            int step = 0;
             final double maxDistance = 8.0;
             final java.util.Set<LivingEntity> hit = new java.util.HashSet<>();
 
@@ -89,16 +93,22 @@ public class ShockwaveSkill implements Skill {
                 if (distance >= maxDistance) { this.cancel(); return; }
 
                 Location current = startLoc.clone().add(dir.clone().multiply(distance));
+                if (step % 2 == 0) {
+                    AnimeVfxHelper.spawnShockwave(plugin, current, 0.45, 2.2, Color.fromRGB(145, 225, 255), 8, dir);
+                }
                 current.getWorld().spawnParticle(Particle.CRIT, current, 5, 0.5, 0.3, 0.5, 0.05);
 
                 current.getWorld().getNearbyEntities(current, 2.0, 2.0, 2.0).forEach(entity -> {
                     if (entity instanceof LivingEntity living && !entity.equals(player) && !hit.contains(living)) {
                         hit.add(living);
+                        AnimeVfxHelper.spawnImpactBurst(plugin, living.getLocation().add(0, 1.0, 0),
+                                1.6, Color.fromRGB(190, 240, 255), 6);
                         damagePipelineManager.processScaledDamage(player, living, DamageType.PHYSICAL, 1.0, getTags(), getId(), 500L);
                         living.setVelocity(dir.clone().multiply(1.5).setY(0.3));
                     }
                 });
 
+                step++;
                 distance += 0.8;
             }
         }.runTaskTimer(plugin, 0L, 1L);

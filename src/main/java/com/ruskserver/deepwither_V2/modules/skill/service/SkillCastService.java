@@ -39,16 +39,19 @@ public class SkillCastService implements Stoppable {
     private final SkillCooldownService cooldownService;
     private final SkillTreeService skillTreeService;
     private final StatManager statManager;
+    private final SkillCastVfxService castVfxService;
     private final Map<UUID, CastingState> casting = new HashMap<>();
 
     @Inject
     public SkillCastService(Deepwither_V2 plugin, ManaManager manaManager, SkillCooldownService cooldownService,
-                            SkillTreeService skillTreeService, StatManager statManager) {
+                            SkillTreeService skillTreeService, StatManager statManager,
+                            SkillCastVfxService castVfxService) {
         this.plugin = plugin;
         this.manaManager = manaManager;
         this.cooldownService = cooldownService;
         this.skillTreeService = skillTreeService;
         this.statManager = statManager;
+        this.castVfxService = castVfxService;
     }
 
     @Override
@@ -175,6 +178,7 @@ public class SkillCastService implements Stoppable {
             player.sendMessage(Component.text("マナが不足したため発動を中断しました。", NamedTextColor.RED));
             return;
         }
+        castVfxService.playOnCastSuccess(player, skill, context);
         applyCooldownAfterSuccess(player, skill, context);
 
         Bukkit.getPluginManager().callEvent(new SkillCastCompleteEvent(player, skill));

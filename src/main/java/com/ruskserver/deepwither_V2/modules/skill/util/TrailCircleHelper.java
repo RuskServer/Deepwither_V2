@@ -189,70 +189,16 @@ public final class TrailCircleHelper {
             throw new IllegalArgumentException("normal must not be zero");
         }
 
-        Location fixedCenter = center.clone();
-        Vector fixedNormal = normal.clone();
-        Basis basis = createBasis(fixedNormal, startAngleDeg);
-        Vector trailingCenterOffset = fixedNormal.clone().normalize().multiply(SHOCKWAVE_TRAILING_HEIGHT);
-        double largestRadius = Math.max(startRadius, endRadius);
-        int leadingPoints = Math.max(
-                minimumPoints,
-                Math.min(
-                        MAX_AUTOMATIC_SHOCKWAVE_POINTS,
-                        (int) Math.ceil(2.0 * Math.PI * largestRadius / MAX_SHOCKWAVE_SEGMENT_LENGTH)
-                )
+        // ItemDisplay (60fps補間) + 多層パーティクルによるアニメ風衝撃波へ委譲
+        return AnimeVfxHelper.spawnShockwave(
+                plugin,
+                center,
+                startRadius,
+                endRadius,
+                color,
+                expansionTicks,
+                normal
         );
-        int trailingPoints = Math.max(3, leadingPoints / 3);
-        double movementDirection = Math.signum(endRadius - startRadius);
-
-        return new BukkitRunnable() {
-            private int tick;
-
-            @Override
-            public void run() {
-                double currentProgress = (double) tick / expansionTicks;
-                double nextProgress = Math.min(1.0, (double) (tick + 1) / expansionTicks);
-                double currentRadius = interpolateRadius(
-                        startRadius, endRadius, easeOutCubic(currentProgress)
-                );
-                double nextRadius = interpolateRadius(
-                        startRadius, endRadius, easeOutCubic(nextProgress)
-                );
-
-                spawnRadialTransitionRing(
-                        fixedCenter,
-                        currentRadius,
-                        nextRadius,
-                        color,
-                        SHOCKWAVE_TRAIL_DURATION,
-                        leadingPoints,
-                        basis,
-                        0.0
-                );
-
-                if (movementDirection != 0.0) {
-                    double trailingOffset = -movementDirection * SHOCKWAVE_TRAILING_GAP;
-                    double trailingCurrentRadius = Math.max(0.05, currentRadius + trailingOffset);
-                    double trailingNextRadius = Math.max(0.05, nextRadius + trailingOffset);
-                    double angleOffset = 180.0 / trailingPoints;
-                    spawnRadialTransitionRing(
-                            fixedCenter.clone().add(trailingCenterOffset),
-                            trailingCurrentRadius,
-                            trailingNextRadius,
-                            color,
-                            SHOCKWAVE_TRAIL_DURATION + 1,
-                            trailingPoints,
-                            basis,
-                            angleOffset
-                    );
-                }
-
-                if (tick >= expansionTicks) {
-                    cancel();
-                    return;
-                }
-                tick++;
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
     }
 
     private static void spawnRadialTransitionRing(

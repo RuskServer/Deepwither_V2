@@ -5,7 +5,9 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Component;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
 import com.ruskserver.deepwither_V2.modules.skill.api.*;
+import com.ruskserver.deepwither_V2.modules.skill.util.AnimeVfxHelper;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Color;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -87,8 +89,14 @@ public class SanctuarySkill implements Skill {
         }
 
         final Location targetCenter = center.add(0, 0.5, 0);
+        final Location groundCenter = targetCenter.clone().subtract(0, 0.42, 0);
+        var plugin = JavaPlugin.getPlugin(Deepwither_V2.class);
 
-        targetCenter.getWorld().spawnParticle(Particle.END_ROD, targetCenter, 30, 2.5, 0.3, 2.5, 0.05);
+        // 回転する六芒星聖域魔法陣 + 内側逆回転四角シール
+        AnimeVfxHelper.spawnMagicCircle(plugin, null, groundCenter, 5.0, Color.fromRGB(255, 242, 168), 120, 1.8);
+        AnimeVfxHelper.spawnRotatingSquare(plugin, null, groundCenter.clone().add(0, 0.03, 0),
+                3.4, Color.fromRGB(255, 250, 210), 120, -2.4, false);
+        targetCenter.getWorld().spawnParticle(Particle.END_ROD, targetCenter, 20, 2.5, 0.3, 2.5, 0.05);
         targetCenter.getWorld().playSound(targetCenter, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 0.9f);
 
         new BukkitRunnable() {

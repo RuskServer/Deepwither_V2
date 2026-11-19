@@ -1,11 +1,14 @@
 package com.ruskserver.deepwither_V2.modules.combat.feedback;
 
+import com.ruskserver.deepwither_V2.Deepwither_V2;
 import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.di.annotations.Service;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageChannel;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageContext;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
+import com.ruskserver.deepwither_V2.modules.skill.util.AnimeVfxHelper;
 import com.ruskserver.deepwither_V2.modules.skill.util.TrailCircleHelper;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -71,6 +74,9 @@ public class CriticalHitFeedbackService {
         world.spawnParticle(Particle.FLASH, impact, 1, 0, 0, 0, 0, Color.WHITE);
         world.spawnParticle(Particle.DUST, impact, 5, 0.08, 0.08, 0.08, 0,
                 new Particle.DustOptions(color, 1.35f));
+        if (context.getType() == DamageType.PHYSICAL) {
+            AnimeVfxHelper.spawnHitSlashCross(JavaPlugin.getPlugin(Deepwither_V2.class), impact, color, 2.0, 5);
+        }
         TrailCircleHelper.spawnRadialBurstRing(
                 impact, 0.16, 0.82, color, 5, 10, normal, 18.0);
         spawnVectorSparks(world, impact, normal);
