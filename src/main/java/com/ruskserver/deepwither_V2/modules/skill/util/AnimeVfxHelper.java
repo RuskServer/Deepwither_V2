@@ -38,7 +38,9 @@ public final class AnimeVfxHelper {
         SPIN_VORTEX("vfx_spin_vortex"),
         IMPACT_BURST("vfx_impact_burst"),
         ABYSS_RIFT("vfx_abyss_rift"),
-        BEAM_RIBBON("vfx_beam_ribbon");
+        BEAM_RIBBON("vfx_beam_ribbon"),
+        FLAME_WALL("vfx_flame_wall"),
+        FROST_PILLAR("vfx_frost_pillar");
 
         private final Key itemModelKey;
 
@@ -757,6 +759,139 @@ public final class AnimeVfxHelper {
         spawnImpactBurst(plugin, impactLoc, Math.max(0.8, radius * 0.65), color, Math.max(4, durationTicks - 2));
     }
 
+    /**
+     * 専用 3D ボクセルモデル {@code eoa:vfx_flame_wall}（.mcmeta アニメーション炎テクスチャ）を使った「フレイムウォール」1セグメント。
+     * 噴出後は本体を上下に揺らさずどっしり固定し、テクスチャアニメーションと上昇する火の粉・煙パーティクルで自然な炎を表現する。
+     */
+    public static BukkitTask spawnFlameWallSegment(
+            Plugin plugin,
+            Location groundLoc,
+            float wallYawRad,
+            float widthScale,
+            float heightScale,
+            Color color,
+            int durationTicks) {
+        World world = groundLoc.getWorld();
+        if (world == null) return null;
+        int totalTicks = Math.max(12, durationTicks);
+        Location baseLoc = zeroRotation(groundLoc);
+
+        Quaternionf rot = new Quaternionf().rotateY(wallYawRad);
+        float wF = Math.max(0.6f, widthScale);
+        float hF = Math.max(0.8f, heightScale);
+
+        ItemDisplay wall = spawnDisplay(baseLoc, VfxShape.FLAME_WALL, null,
+                new Vector3f(wF, 0.08f, wF * 0.72f), new Quaternionf(rot), 2);
+
+        return new BukkitRunnable() {
+            private int tick = 0;
+
+            @Override
+            public void run() {
+                tick++;
+                if (tick > totalTicks || !wall.isValid()) {
+                    safeRemove(wall);
+                    cancel();
+                    return;
+                }
+
+                // 最初の4tickで出現・最後の6tickで収束。展開中は上下に伸縮させずどっしり固定！
+                if (tick <= 4) {
+                    float sy = Math.max(0.08f, (float) (hF * easeOutCubic(tick / 4.0)));
+                    applyTransformWithOffset(wall, new Vector3f(0.0f, 0.5f * sy, 0.0f),
+                            new Vector3f(wF, sy, wF * 0.72f), rot, 1);
+                } else if (totalTicks - tick < 6) {
+                    float sy = Math.max(0.05f, hF * ((totalTicks - tick) / 6.0f));
+                    applyTransformWithOffset(wall, new Vector3f(0.0f, 0.5f * sy, 0.0f),
+                            new Vector3f(wF, sy, wF * 0.72f), rot, 1);
+                }
+
+                // 浮遊する火の粉・上昇炎パーティクルのみ演出
+                if (tick % 3 == 0 && tick <= totalTicks - 4) {
+                    world.spawnParticle(Particle.FLAME, baseLoc.clone().add(0, 0.5 + hF * 0.55, 0),
+                            3, 0.55, 0.65, 0.55, 0.025);
+                    if (tick % 6 == 0) {
+                        world.spawnParticle(Particle.LAVA, baseLoc.clone().add(0, 0.35, 0),
+                                1, 0.40, 0.25, 0.40, 0.0);
+                        world.spawnParticle(Particle.SMOKE, baseLoc.clone().add(0, hF * 1.15, 0),
+                                1, 0.35, 0.20, 0.35, 0.02);
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    /**
+     * 専用 3D ボクセル氷晶モデル {@code eoa:vfx_frost_pillar} を使った「フロストピラー」1柱。
+     * 3 tick で地面から突き上げた後は固い氷柱として完全に静止し、周囲に冷気粉・氷晶パーティクルを漂わせたあと粉砕する。
+     */
+    public static BukkitTask spawnFrostPillarSpire(
+            Plugin plugin,
+            Location groundLoc,
+            float radiusScale,
+            float heightScale,
+            Color color,
+            int durationTicks) {
+        World world = groundLoc.getWorld();
+        if (world == null) return null;
+        int totalTicks = Math.max(14, durationTicks);
+        Location baseLoc = zeroRotation(groundLoc);
+        Color safeColor = color == null ? Color.fromRGB(115, 225, 255) : color;
+        Color coreColor = blendToWhite(safeColor, 0.60);
+
+        float rF = Math.max(0.6f, radiusScale);
+        float hF = Math.max(0.8f, heightScale);
+        float randomYaw = (float) (java.util.concurrent.ThreadLocalRandom.current().nextDouble() * Math.PI * 2.0);
+        Quaternionf rot = new Quaternionf().rotateY(randomYaw);
+
+        // 足元の氷結魔法陣＋突き上げ衝撃波
+        spawnMagicCircle(plugin, null, baseLoc.clone().add(0, 0.05, 0), rF * 1.15, safeColor, Math.min(totalTicks, 20), 6.0);
+        spawnShockwave(plugin, baseLoc.clone().add(0, 0.08, 0), 0.30, rF * 1.65, safeColor, 8, UP);
+
+        ItemDisplay spire = spawnDisplay(baseLoc, VfxShape.FROST_PILLAR, null,
+                new Vector3f(rF, 0.06f, rF), new Quaternionf(rot), 1);
+
+        return new BukkitRunnable() {
+            private int tick = 0;
+
+            @Override
+            public void run() {
+                tick++;
+                if (tick > totalTicks || !spire.isValid()) {
+                    // 終了時に氷結晶が砕け散る演出
+                    spawnImpactBurst(plugin, baseLoc.clone().add(0, hF * 0.85, 0), rF * 1.25, coreColor, 5);
+                    world.spawnParticle(Particle.SNOWFLAKE, baseLoc.clone().add(0, hF * 0.75, 0),
+                            16, 0.55, 0.65, 0.55, 0.08);
+                    world.playSound(baseLoc, org.bukkit.Sound.BLOCK_GLASS_BREAK, 0.45f, 1.55f);
+                    safeRemove(spire);
+                    cancel();
+                    return;
+                }
+
+                // 最初の3tickで素早く突き上げ、その後は固い氷柱としてピタッと静止（上下揺れなし）
+                if (tick <= 3) {
+                    float sy = Math.max(0.06f, (float) (hF * easeOutCubic(tick / 3.0)));
+                    applyTransformWithOffset(spire, new Vector3f(0.0f, 0.5f * sy, 0.0f),
+                            new Vector3f(rF, sy, rF), rot, 1);
+                } else if (totalTicks - tick < 4) {
+                    float sy = Math.max(0.10f, hF * ((totalTicks - tick) / 4.0f));
+                    applyTransformWithOffset(spire, new Vector3f(0.0f, 0.5f * sy, 0.0f),
+                            new Vector3f(rF, sy, rF), rot, 1);
+                }
+
+                // 漂う冷気粉・氷晶きらめき
+                if (tick % 3 == 0 && tick <= totalTicks - 3) {
+                    world.spawnParticle(Particle.SNOWFLAKE, baseLoc.clone().add(0, hF * 0.85, 0),
+                            3, 0.45, 0.65, 0.45, 0.02);
+                    if (tick % 6 == 0) {
+                        world.spawnParticle(Particle.END_ROD, baseLoc.clone().add(0, hF * 1.15, 0),
+                                1, 0.35, 0.45, 0.35, 0.01);
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+    }
+
     // --- 内部ヘルパー ---
 
     private static ItemDisplay spawnDisplay(
@@ -800,10 +935,15 @@ public final class AnimeVfxHelper {
     }
 
     private static void applyTransform(ItemDisplay display, Vector3f scale, Quaternionf rotation, int interpTicks) {
+        applyTransformWithOffset(display, new Vector3f(0, 0, 0), scale, rotation, interpTicks);
+    }
+
+    private static void applyTransformWithOffset(ItemDisplay display, Vector3f translation,
+                                                 Vector3f scale, Quaternionf rotation, int interpTicks) {
         display.setInterpolationDelay(0);
         display.setInterpolationDuration(Math.max(1, interpTicks));
         display.setTransformation(new Transformation(
-                new Vector3f(0, 0, 0),
+                translation,
                 rotation,
                 scale,
                 new Quaternionf()

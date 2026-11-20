@@ -134,14 +134,12 @@ public class SkillCastVfxService {
                 AnimeVfxHelper.spawnMagicCircle(plugin, null, feet, 4.8, Color.fromRGB(255, 248, 205), 18, 3.5);
             }
             case "flame_pillar" -> {
-                Location target = resolveGroundTarget(player, context, 10.0);
-                AnimeVfxHelper.spawnMagicCircle(plugin, null, target, 2.8, Color.fromRGB(255, 110, 30), 26, 4.5);
-                AnimeVfxHelper.spawnShockwave(plugin, target, 0.5, 3.2, Color.fromRGB(255, 170, 55), 10, UP);
+                // フレイムウォール本体は FlamePillarSkill 側で専用 3D VFX を展開、足元に詠唱印を表示
+                AnimeVfxHelper.spawnRotatingSquare(plugin, player, null, 1.5, Color.fromRGB(255, 110, 30), 16, 7.0, true);
             }
             case "ice_spike" -> {
-                Location target = resolveGroundTarget(player, context, 10.0);
-                AnimeVfxHelper.spawnMagicCircle(plugin, null, target, 2.8, Color.fromRGB(130, 230, 255), 24, -4.5);
-                AnimeVfxHelper.spawnShockwave(plugin, target, 0.5, 3.2, Color.fromRGB(185, 245, 255), 10, UP);
+                // フロストピラー本体は IceSpikeSkill 側で専用 3D 氷柱を連鎖展開、足元に氷結詠唱印を表示
+                AnimeVfxHelper.spawnRotatingSquare(plugin, player, null, 1.5, Color.fromRGB(130, 230, 255), 16, -7.0, true);
             }
             case "blizzard" -> {
                 Location target = resolveGroundTarget(player, context, 12.0);
