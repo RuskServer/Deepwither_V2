@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.core.di.annotations.Inject;
 import com.ruskserver.deepwither_V2.core.stat.StatType;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamagePipelineManager;
 import com.ruskserver.deepwither_V2.modules.combat.damage.DamageType;
+import com.ruskserver.deepwither_V2.modules.combat.melee.MeleeWeaponArchetype;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.api.CustomItem;
 import com.ruskserver.deepwither_V2.modules.item.api.WandItem;
@@ -139,6 +140,10 @@ public class CombatMeleeListener implements Listener {
         if (itemId == null) return null;
         CustomItem customItem = itemManager.getCustomItem(itemId);
         if (customItem == null) return null;
+        // 新近接戦闘システム（MeleeCombatService）対象の武器は二重攻撃・旧演出を防ぐため委譲する
+        if (MeleeWeaponArchetype.fromWeaponType(customItem.getWeaponType()) != null) {
+            return null;
+        }
         return CombatWeaponType.fromItem(customItem);
     }
 

@@ -70,8 +70,10 @@ public final class AnimeVfxHelper {
         World world = center.getWorld();
         if (world == null) return null;
         int totalTicks = Math.max(4, durationTicks);
-        Location fixedCenter = center.clone();
-        Quaternionf baseOrient = orientationFromNormal(normal == null || normal.lengthSquared() < 1e-6 ? UP : normal);
+        Location fixedCenter = zeroRotation(center);
+        Vector n = (normal == null || normal.lengthSquared() < 1e-6) ? UP.clone() : normal.clone().normalize();
+        Quaternionf baseOrient = orientationFromNormal(n);
+        Vector[] basis = orthonormalBasis(n);
         Color safeColor = color == null ? Color.WHITE : color;
         Color coreColor = blendToWhite(safeColor, 0.55);
 
@@ -80,7 +82,7 @@ public final class AnimeVfxHelper {
 
         ItemDisplay outerRing = spawnDisplay(fixedCenter, VfxShape.SHOCKWAVE_RING, safeColor,
                 new Vector3f(startScale, 1.0f, startScale), new Quaternionf(baseOrient), 1);
-        ItemDisplay innerCore = spawnDisplay(fixedCenter.clone().add(0, 0.04, 0), VfxShape.SHOCKWAVE_RING, coreColor,
+        ItemDisplay innerCore = spawnDisplay(fixedCenter.clone().add(n.clone().multiply(0.04)), VfxShape.SHOCKWAVE_RING, coreColor,
                 new Vector3f(startScale * 0.78f, 1.0f, startScale * 0.78f), new Quaternionf(baseOrient), 1);
 
         // 初動インパクト閃光＋放射火花
@@ -117,17 +119,25 @@ public final class AnimeVfxHelper {
                     applyTransform(innerCore, new Vector3f(coreScale, fadeThickness, coreScale), rotInner, 1);
                 }
 
-                // 地面を這う砂煙＋残光ダスト
+                // 法線平面に沿った砂煙＋残光ダスト
                 if (tick <= Math.max(2, totalTicks * 2 / 3) && tick % 2 == 1) {
                     double ringR = curScale * 0.45;
                     int dustCount = Math.min(18, Math.max(6, (int) (ringR * 2.5)));
                     Particle.DustTransition dust = new Particle.DustTransition(coreColor, safeColor, 1.15f);
                     for (int i = 0; i < dustCount; i++) {
                         double a = (Math.PI * 2.0 * i / dustCount) + tick * 0.25;
-                        Location p = fixedCenter.clone().add(Math.cos(a) * ringR, 0.08, Math.sin(a) * ringR);
+                        double ca = Math.cos(a);
+                        double sa = Math.sin(a);
+                        double ox = (basis[0].getX() * ca + basis[1].getX() * sa) * ringR + n.getX() * 0.06;
+                        double oy = (basis[0].getY() * ca + basis[1].getY() * sa) * ringR + n.getY() * 0.06;
+                        double oz = (basis[0].getZ() * ca + basis[1].getZ() * sa) * ringR + n.getZ() * 0.06;
+                        Location p = fixedCenter.clone().add(ox, oy, oz);
                         world.spawnParticle(Particle.DUST_COLOR_TRANSITION, p, 1, 0.06, 0.04, 0.06, 0, dust);
                         if (i % 3 == 0) {
-                            world.spawnParticle(Particle.CLOUD, p, 0, Math.cos(a) * 0.12, 0.04, Math.sin(a) * 0.12, 1.0);
+                            double vx = (basis[0].getX() * ca + basis[1].getX() * sa) * 0.12 + n.getX() * 0.04;
+                            double vy = (basis[0].getY() * ca + basis[1].getY() * sa) * 0.12 + n.getY() * 0.04;
+                            double vz = (basis[0].getZ() * ca + basis[1].getZ() * sa) * 0.12 + n.getZ() * 0.04;
+                            world.spawnParticle(Particle.CLOUD, p, 0, vx, vy, vz, 1.0);
                         }
                     }
                 }
@@ -138,7 +148,7 @@ public final class AnimeVfxHelper {
     /**
      * アニメ風・三日月斬撃アーク（高速スイング＋任意ロール傾き＋残光スパーク）。
      *
-     * @param rollDeg 斬撃の傾き角（0=水平薙ぎ払い, 35=斜め斬り, 90=縦斬り）
+     * @param rollDeg 斬撃の傾き角（0=水平薙ぎ払い, +26=右高→左低斜め斬り, +90=真上→真下縦斬り）
      */
     public static BukkitTask spawnCrescentSlash(
             Plugin plugin,
@@ -148,32 +158,58 @@ public final class AnimeVfxHelper {
             Color color,
             double rollDeg,
             int durationTicks) {
+        return spawnCrescentSlash(plugin, center, forwardDirection, radius, color, rollDeg, false, durationTicks);
+    }
+
+    /**
+     * アニメ風・三日月斬撃アーク（3D 視点ピッチ追従＋スイング方向明示指定版）。
+     *
+     * @param rollDeg      斬撃面の傾き角（+26=右高↔左低, +90=縦斬り）
+     * @param reverseSweep false=右→左 / 上→下, true=左→右
+     */
+    public static BukkitTask spawnCrescentSlash(
+            Plugin plugin,
+            Location center,
+            Vector forwardDirection,
+            double radius,
+            Color color,
+            double rollDeg,
+            boolean reverseSweep,
+            int durationTicks) {
         World world = center.getWorld();
         if (world == null) return null;
         int totalTicks = Math.max(3, durationTicks);
+        Location fixedCenter = zeroRotation(center);
         Color safeColor = color == null ? Color.WHITE : color;
         Color coreColor = blendToWhite(safeColor, 0.65);
 
-        Vector dir = (forwardDirection == null || forwardDirection.lengthSquared() < 1e-6)
+        Vector fullDir = (forwardDirection == null || forwardDirection.lengthSquared() < 1e-6)
                 ? new Vector(0, 0, 1)
-                : forwardDirection.clone().setY(0).normalize();
-        if (dir.lengthSquared() < 1e-6) dir = new Vector(0, 0, 1);
+                : forwardDirection.clone().normalize();
+        Vector horiz = fullDir.clone().setY(0);
+        if (horiz.lengthSquared() < 1e-6) horiz = new Vector(0, 0, 1);
+        else horiz.normalize();
 
-        float baseYaw = (float) Math.atan2(-dir.getZ(), dir.getX());
+        // ItemDisplay(yaw=0, pitch=0) は内部で 180° Y反転描画するため、モデルの +X 三日月刃先はローカル -X にある。
+        // rotateY(baseYaw) * (-1, 0, 0) = (-cos(y), 0, +sin(y)) = (horiz.x, 0, horiz.z) => baseYaw = atan2(horiz.z, -horiz.x)
+        // さらに rotateZ(-pitchRad) で視点の上下ピッチ角にも追従させる。
+        float baseYaw = (float) Math.atan2(horiz.getZ(), -horiz.getX());
+        float pitchRad = (float) Math.asin(Math.max(-0.92, Math.min(0.92, fullDir.getY())));
         float rollRad = (float) Math.toRadians(rollDeg);
-        float startSweep = (float) Math.toRadians(-65.0);
-        float endSweep = (float) Math.toRadians(70.0);
-        float baseScale = (float) Math.max(0.8, radius * 2.0);
+        float startSweep = (float) Math.toRadians(reverseSweep ? 65.0 : -65.0);
+        float endSweep = (float) Math.toRadians(reverseSweep ? -70.0 : 70.0);
+        float baseScale = (float) Math.max(1.2, radius * 2.60);
 
         Quaternionf initRot = new Quaternionf()
                 .rotateY(baseYaw)
+                .rotateZ(-pitchRad)
                 .rotateX(rollRad)
                 .rotateY(startSweep);
 
-        ItemDisplay blade = spawnDisplay(center, VfxShape.SLASH_CRESCENT, safeColor,
+        ItemDisplay blade = spawnDisplay(fixedCenter, VfxShape.SLASH_CRESCENT, safeColor,
+                new Vector3f(baseScale * 0.95f, 1.0f, baseScale * 0.95f), initRot, 1);
+        ItemDisplay core = spawnDisplay(fixedCenter.clone().add(0, 0.03, 0), VfxShape.SLASH_CRESCENT, coreColor,
                 new Vector3f(baseScale * 0.85f, 1.0f, baseScale * 0.85f), initRot, 1);
-        ItemDisplay core = spawnDisplay(center.clone().add(0, 0.03, 0), VfxShape.SLASH_CRESCENT, coreColor,
-                new Vector3f(baseScale * 0.72f, 1.0f, baseScale * 0.72f), initRot, 1);
 
         return new BukkitRunnable() {
             private int tick = 0;
@@ -190,21 +226,22 @@ public final class AnimeVfxHelper {
                 double p = (double) tick / totalTicks;
                 double eased = easeOutCubic(p);
                 float sweep = (float) (startSweep + (endSweep - startSweep) * eased);
-                float scale = (float) (baseScale * (0.9 + 0.25 * eased) * (p > 0.7 ? (1.0 - (p - 0.7) / 0.3 * 0.4) : 1.0));
+                float scale = (float) (baseScale * (0.95 + 0.33 * eased) * (p > 0.72 ? (1.0 - (p - 0.72) / 0.28 * 0.45) : 1.0));
 
                 Quaternionf rot = new Quaternionf()
                         .rotateY(baseYaw)
+                        .rotateZ(-pitchRad)
                         .rotateX(rollRad)
                         .rotateY(sweep);
 
                 applyTransform(blade, new Vector3f(scale, 1.0f, scale), rot, 1);
                 if (core.isValid()) {
-                    applyTransform(core, new Vector3f(scale * 0.86f, 1.0f, scale * 0.86f), rot, 1);
+                    applyTransform(core, new Vector3f(scale * 0.90f, 1.0f, scale * 0.90f), rot, 1);
                 }
 
-                // 刃先の軌跡に火花を散らす
-                Vector3f tipLocal = new Vector3f((float) (radius * 0.88), 0, 0).rotate(rot);
-                Location tipLoc = center.clone().add(tipLocal.x, tipLocal.y, tipLocal.z);
+                // 刃先の軌跡（ローカル -X 方向）に火花を散らす
+                Vector3f tipLocal = new Vector3f((float) (-radius * 0.95), 0, 0).rotate(rot);
+                Location tipLoc = fixedCenter.clone().add(tipLocal.x, tipLocal.y, tipLocal.z);
                 world.spawnParticle(Particle.DUST_COLOR_TRANSITION, tipLoc, 2, 0.12, 0.12, 0.12, 0,
                         new Particle.DustTransition(coreColor, safeColor, 1.1f));
                 world.spawnParticle(Particle.CRIT, tipLoc, 1, 0.1, 0.1, 0.1, 0.08);
@@ -332,8 +369,8 @@ public final class AnimeVfxHelper {
                     envelope = Math.max(0.05f, (totalTicks - tick) / 4.0f);
                 }
 
-                Location waist = caster.getLocation().add(0, 0.95, 0);
-                Location feet = caster.getLocation().add(0, 0.08, 0);
+                Location waist = zeroRotation(caster.getLocation().add(0, 0.95, 0));
+                Location feet = zeroRotation(caster.getLocation().add(0, 0.08, 0));
                 float angleRad = (float) Math.toRadians(tick * degreesPerTick);
                 float s = targetScale * envelope;
 
@@ -629,7 +666,7 @@ public final class AnimeVfxHelper {
 
         ItemDisplay ring = spawnDisplay(muzzleLoc, VfxShape.SHOCKWAVE_RING, safeColor,
                 new Vector3f(startScale, 1.0f, startScale), new Quaternionf(orient), 1);
-        ItemDisplay seal = spawnDisplay(muzzleLoc, VfxShape.SQUARE_SEAL, coreColor,
+        ItemDisplay seal = spawnDisplay(muzzleLoc.clone().add(direction.clone().normalize().multiply(0.05)), VfxShape.SQUARE_SEAL, coreColor,
                 new Vector3f(startScale * 0.7f, 1.0f, startScale * 0.7f), new Quaternionf(orient), 1);
 
         return new BukkitRunnable() {
@@ -730,8 +767,11 @@ public final class AnimeVfxHelper {
             Quaternionf initialRotation,
             int interpolationTicks) {
         ItemStack stack = createVfxItem(shape, color);
-        return location.getWorld().spawn(location, ItemDisplay.class, display -> {
+        // エンティティ自身の yaw/pitch が乗ると Transformation.leftRotation と二重回転・上下傾きバグになるため必ず 0 に固定
+        Location cleanLoc = zeroRotation(location);
+        return cleanLoc.getWorld().spawn(cleanLoc, ItemDisplay.class, display -> {
             display.setPersistent(false);
+            display.setRotation(0.0f, 0.0f);
             display.setItemStack(stack);
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
             display.setBrightness(new Display.Brightness(15, 15));
@@ -779,12 +819,24 @@ public final class AnimeVfxHelper {
         return new Quaternionf().rotationTo(new Vector3f(0, 1, 0), target);
     }
 
+    private static Location zeroRotation(Location loc) {
+        return new Location(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ(), 0.0f, 0.0f);
+    }
+
+    private static Vector[] orthonormalBasis(Vector normal) {
+        Vector n = normal.clone().normalize();
+        Vector ref = Math.abs(n.getY()) > 0.9 ? new Vector(1, 0, 0) : new Vector(0, 1, 0);
+        Vector t1 = n.clone().crossProduct(ref).normalize();
+        Vector t2 = n.clone().crossProduct(t1).normalize();
+        return new Vector[]{t1, t2};
+    }
+
     private static Location resolveAnchorFeet(Entity anchor, Location fixedCenter) {
         if (anchor != null) {
             if (!anchor.isValid() || anchor.isDead()) return null;
-            return anchor.getLocation().add(0, 0.06, 0);
+            return zeroRotation(anchor.getLocation().add(0, 0.06, 0));
         }
-        return fixedCenter == null ? null : fixedCenter.clone();
+        return fixedCenter == null ? null : zeroRotation(fixedCenter);
     }
 
     private static void spawnRadialSparks(World world, Location center, double startR, double endR, Color color, int count) {

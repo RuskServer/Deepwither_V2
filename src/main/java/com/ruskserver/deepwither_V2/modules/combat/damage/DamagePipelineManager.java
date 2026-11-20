@@ -16,6 +16,7 @@ import com.ruskserver.deepwither_V2.modules.combat.feedback.CriticalHitFeedbackS
 import com.ruskserver.deepwither_V2.modules.combat.health.MagicShieldManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.ManaManager;
 import com.ruskserver.deepwither_V2.modules.combat.health.VirtualHealthManager;
+import com.ruskserver.deepwither_V2.modules.combat.melee.MeleeGuardStateService;
 import com.ruskserver.deepwither_V2.modules.combat.stagger.BossStaggerService;
 import com.ruskserver.deepwither_V2.modules.item.ItemManager;
 import com.ruskserver.deepwither_V2.modules.item.modifier.SpecialEffectService;
@@ -64,6 +65,7 @@ public class DamagePipelineManager implements Listener {
 
     private final VirtualHealthManager healthManager;
     private final MagicShieldManager magicShieldManager;
+    private final MeleeGuardStateService meleeGuardStateService;
     private final CombatStateService combatState;
     private final StatManager statManager;
     private final CustomMobManager customMobManager;
@@ -86,6 +88,7 @@ public class DamagePipelineManager implements Listener {
 
     @Inject
     public DamagePipelineManager(VirtualHealthManager healthManager, MagicShieldManager magicShieldManager,
+                                 MeleeGuardStateService meleeGuardStateService,
                                  ManaManager manaManager, StatManager statManager,
                                  ItemManager itemManager, ItemPDCUtil pdcUtil, SpecialEffectService specialEffectService,
                                  CustomMobManager customMobManager, MobRegionConfig regionConfig,
@@ -100,6 +103,7 @@ public class DamagePipelineManager implements Listener {
         this.combatState = combatState;
         this.healthManager = healthManager;
         this.magicShieldManager = magicShieldManager;
+        this.meleeGuardStateService = meleeGuardStateService;
         this.statManager = statManager;
         this.customMobManager = customMobManager;
         this.regionConfig = regionConfig;
@@ -459,6 +463,21 @@ public class DamagePipelineManager implements Listener {
         }
         if (context.getDamage() <= 0) {
             return;
+        }
+
+        // ソウルライク ガード／ジャストパリィ判定
+        if (defender instanceof Player defendingPlayer && context.getType() != DamageType.ENVIRONMENTAL) {
+            UUID attackerId = attacker != null ? attacker.getUniqueId() : null;
+            MeleeGuardStateService.GuardOutcome guardOutcome =
+                    meleeGuardStateService.evaluateIncomingHit(defendingPlayer.getUniqueId(), attackerId, now);
+            if (guardOutcome == MeleeGuardStateService.GuardOutcome.JUST_PARRY) {
+                applyIFrame(iframeKey, now, 350L);
+                return;
+            }
+            if (guardOutcome == MeleeGuardStateService.GuardOutcome.GUARD_BLOCK) {
+                context.multiplyDamage(MeleeGuardStateService.GUARD_DAMAGE_MULTIPLIER);
+                context.setBlocked(true);
+            }
         }
 
         recordCombat(context);

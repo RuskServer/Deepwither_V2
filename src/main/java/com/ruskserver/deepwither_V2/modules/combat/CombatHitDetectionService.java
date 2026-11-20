@@ -66,8 +66,6 @@ public class CombatHitDetectionService implements Listener {
             rotation = SWORD_ROTATIONS[random.nextInt(SWORD_ROTATIONS.length)];
         }
 
-        profile.shape().spawnSlashEffect(origin, direction, reach, profile.visualType(), rotation);
-
         if (debugPlayers.contains(attacker.getUniqueId())) {
             profile.shape().drawDebug(origin, direction, reach, rotation);
         }
