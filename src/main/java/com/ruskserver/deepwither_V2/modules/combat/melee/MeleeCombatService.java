@@ -257,9 +257,9 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
         ComboStep step = archetype.getStep(stepIndex);
         double atkSpeed = Math.max(0.45, Math.min(2.6, statManager.getTotalStat(player, StatType.ATTACK_SPEED)));
         double speedScale = 1.0 / Math.max(0.55, atkSpeed);
-        int windup = Math.max(1, (int) Math.round(step.windupTicks() * speedScale));
-        int active = Math.max(2, step.activeTicks());
-        int recovery = Math.max(2, (int) Math.round(step.recoveryTicks() * speedScale));
+        int windup = Math.max(3, (int) Math.round(step.windupTicks() * speedScale));
+        int active = Math.max(4, step.activeTicks());
+        int recovery = Math.max(4, (int) Math.round(step.recoveryTicks() * speedScale));
 
         Color vfxColor = resolveWeaponVfxColor(customItem, archetype);
         ActiveSwing swing = new ActiveSwing(
@@ -278,13 +278,12 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
         // バニラ攻撃ゲージ低下による mainHandHeight 落下（持ち替えボブ）を防止するため ATTACK_SPEED を引き上げ
         ensureNoBobAttackSpeed(player);
 
-        // 1P 32フレーム区分フェーズ同期再生＋3P 刃先方向一致の振りかぶり
+        // 1P 32フレーム区分フェーズ同期再生＋3P 刃先方向一致の振りかぶり＋重厚な予備動作SE
         String fpSeq = MeleeFirstPersonAnimator.swingSequenceName(archetype, stepIndex, step);
         fpAnimator.playPhasedSwing(player, fpSeq, MeleeFirstPersonAnimator.SWING_FRAME_COUNT,
                 windup * 50L, active * 50L, recovery * 50L);
         apply3PSwingPhase(player, swing, fpSeq, SwingPhase3P.WINDUP, windup);
-        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_NODAMAGE, 0.5f,
-                archetype == MeleeWeaponArchetype.GREATSWORD || archetype == MeleeWeaponArchetype.HAMMER ? 0.65f : 1.15f);
+        MeleeSoundService.playWindup(player.getLocation(), archetype);
     }
 
     private void tryRaiseGuard(Player player, ItemStack weaponItem, MeleeWeaponArchetype archetype) {
@@ -303,7 +302,7 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
         displayAnimator.applyPoseQuat(player, weaponItem, 0.05f, 1.24f, 0.56f,
                 MeleeDisplayAnimator.slash3PQuat(-48f, 22f, 24f, 45f), 2, scaleFor(archetype));
         if (openedParryWindow) {
-            player.getWorld().playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_IRON, 0.65f, 1.45f);
+            MeleeSoundService.playGuardRaise(player.getLocation());
             AnimeVfxHelper.spawnRotatingSquare(plugin, player, null, 1.15, Color.fromRGB(165, 230, 255), 8, 9.0, false);
         }
     }
@@ -416,16 +415,9 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
             player.setVelocity(vel.add(forward.clone().multiply(step.stepForwardImpulse() * 0.45)));
         }
 
-        // スイング音（武器重量でピッチ変化）
-        float pitch = switch (swing.archetype) {
-            case DAGGER -> 1.55f;
-            case SWORD, SPEAR -> 1.15f;
-            case SCYTHE -> 0.92f;
-            case AXE -> 0.78f;
-            case GREATSWORD, HAMMER -> 0.62f;
-        };
+        // 武器種別＋コンボ段数＋空気裂きの多層スイングSE
         Location chest = player.getLocation().add(0, 1.15, 0);
-        player.getWorld().playSound(chest, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.9f, pitch);
+        MeleeSoundService.playSwing(chest, swing.archetype, swing.stepIndex, "thrust".equals(fpSeq));
 
         // 1P アニメーションの軌道・視点ピッチに完全同期した 32×32 アニメ斬撃 / 突き / 衝撃波 VFX
         Vector lookDir = player.getEyeLocation().getDirection();
@@ -451,7 +443,7 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
         else forward.normalize();
         Location slamLoc = player.getLocation().add(forward.clone().multiply(swing.step.reach() * 0.65)).add(0, 0.12, 0);
         AnimeVfxHelper.spawnShockwave(plugin, slamLoc, 0.55, swing.step.reach() * 1.15, swing.vfxColor, 10, UP);
-        player.getWorld().playSound(slamLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, 0.85f, 0.75f);
+        MeleeSoundService.playGroundSlam(slamLoc);
     }
 
     private enum SwingPhase3P {
@@ -563,13 +555,13 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
                 return;
             }
 
-            // ヒット演出: 2方向クロス斬線（✕）＋ヒットストップ
+            // ヒット演出: 武器種別の斬撃/刺突/打撃SE＋2方向クロス斬線（✕）＋ヒットストップ
+            MeleeSoundService.playHit(hitLoc, swing.archetype, step.thrust(), isRiposte);
             AnimeVfxHelper.spawnHitSlashCross(plugin, hitLoc,
                     isRiposte ? Color.fromRGB(255, 225, 95) : swing.vfxColor,
                     isRiposte ? 3.4 : 2.6, 6);
             if (isRiposte) {
                 AnimeVfxHelper.spawnImpactBurst(plugin, hitLoc, 2.0, Color.fromRGB(255, 230, 105), 6);
-                player.getWorld().playSound(hitLoc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.1f, 0.85f);
                 player.sendActionBar(Component.text("★ RIPOSTE! (1.6x)", NamedTextColor.GOLD, TextDecoration.BOLD));
             }
 
@@ -608,11 +600,10 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
             AnimeVfxHelper.spawnShockwave(plugin, clashLoc, 0.25, 2.2, Color.fromRGB(255, 232, 105), 8, dir);
             AnimeVfxHelper.spawnShockwave(plugin, defender.getLocation().add(0, 0.10, 0),
                     0.4, 2.8, Color.fromRGB(255, 225, 110), 9, UP);
-            defender.getWorld().playSound(clashLoc, Sound.BLOCK_ANVIL_PLACE, 0.65f, 1.85f);
-            defender.getWorld().playSound(clashLoc, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0f, 1.4f);
-            defender.getWorld().playSound(clashLoc, Sound.ITEM_SHIELD_BLOCK, 1.0f, 1.35f);
+            MeleeSoundService.playJustParry(clashLoc);
             defender.sendActionBar(Component.text("★ JUST PARRY!", NamedTextColor.GOLD, TextDecoration.BOLD));
         } else if (outcome == GuardOutcome.GUARD_BLOCK) {
+            MeleeSoundService.playGuardBlock(clashLoc);
             feedbackService.playBlockFeedback(defender);
             defender.sendActionBar(Component.text("🛡 GUARD", NamedTextColor.AQUA));
         }
@@ -643,6 +634,7 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
                         MeleeDisplayAnimator.slash3PQuat(36f, -52f, -46f, 0f), 2,
                         scaleFor(arch != null ? arch : MeleeWeaponArchetype.SWORD));
                 activeRecoils.put(attackerId, new RecoilState(18, "recoil", MeleeFirstPersonAnimator.RECOIL_FRAME_COUNT));
+                MeleeSoundService.playParriedRecoil(attackerPlayer.getLocation());
                 feedbackService.playHurtFeedback(attackerPlayer, 35f);
                 attackerPlayer.sendActionBar(Component.text("✖ PARRIED! (硬直)", NamedTextColor.RED, TextDecoration.BOLD));
             }
