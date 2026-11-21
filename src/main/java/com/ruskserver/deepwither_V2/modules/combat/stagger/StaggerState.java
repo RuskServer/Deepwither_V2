@@ -11,6 +11,7 @@ public final class StaggerState {
     private int ticksSinceGain;
     private int staggerTicksRemaining;
     private int immunityTicksRemaining;
+    private boolean riposteAvailable;
 
     public boolean add(double amount, StaggerProfile profile) {
         if (amount <= 0.0 || isStaggered() || isImmune()) {
@@ -25,6 +26,7 @@ public final class StaggerState {
 
         current = profile.maxStagger();
         staggerTicksRemaining = profile.staggerDurationTicks();
+        riposteAvailable = true;
         return true;
     }
 
@@ -35,6 +37,7 @@ public final class StaggerState {
                 current = 0.0;
                 immunityTicksRemaining = profile.recoveryImmunityTicks();
                 ticksSinceGain = 0;
+                riposteAvailable = false;
                 return TickResult.RECOVERED;
             }
             return TickResult.NONE;
@@ -59,6 +62,19 @@ public final class StaggerState {
         ticksSinceGain = 0;
         staggerTicksRemaining = 0;
         immunityTicksRemaining = Math.max(0, immunityTicks);
+        riposteAvailable = false;
+    }
+
+    public boolean consumeRiposte() {
+        if (!isStaggered() || !riposteAvailable) {
+            return false;
+        }
+        riposteAvailable = false;
+        return true;
+    }
+
+    public boolean isRiposteAvailable() {
+        return isStaggered() && riposteAvailable;
     }
 
     public double getCurrent() {

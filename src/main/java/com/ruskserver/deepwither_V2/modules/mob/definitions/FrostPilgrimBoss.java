@@ -57,16 +57,18 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
     private static final double PHASE_3_THRESHOLD = 0.30;
     private static final StaggerProfile STAGGER_PROFILE = new StaggerProfile(
             1500.0,
-            70,
+            110,
             160,
             60,
             6.0,
-            1.2,
+            1.6,
             300.0,
             1.0,
             0.85,
             0.75,
-            0.5
+            0.5,
+            0.04,
+            1.5
     );
 
     private static final int ICE_BOLT_COOLDOWN = 60;
@@ -203,7 +205,7 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
         bossBar.setVisible(false);
         staggerBar = Bukkit.createBossBar(
                 "§e§l体勢",
-                BarColor.BLUE,
+                BarColor.YELLOW,
                 BarStyle.SEGMENTED_10
         );
         staggerBar.setProgress(0.0);
@@ -228,7 +230,7 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
             return;
         }
 
-        if (ticksLived % 5 == 0) {
+        if (ticksLived % 5 == 0 || (staggerState.isStaggered() && ticksLived % 2 == 0)) {
             updateBossBar();
         }
 
@@ -692,28 +694,42 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
     }
 
     @Override
+    public Color getStaggerThemeColor() {
+        return ICE_BLUE;
+    }
+
+    @Override
+    public String getStaggerDisplayName() {
+        return "氷結の巡礼者";
+    }
+
+    @Override
+    public double getMaxHealthForStagger() {
+        return getMaxHealth();
+    }
+
+    @Override
     public void onStaggerStarted() {
         cancelCurrentActionForStagger();
         entity.setAI(false);
         entity.setVelocity(new Vector());
+        updateBossBar();
 
         Location loc = getLocation();
-        loc.getWorld().playSound(loc, Sound.ITEM_SHIELD_BREAK, 1.8f, 0.65f);
-        loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, 1.6f, 0.45f);
-        loc.getWorld().playSound(loc, Sound.ENTITY_IRON_GOLEM_DAMAGE, 1.1f, 0.7f);
+        loc.getWorld().playSound(loc, Sound.BLOCK_GLASS_BREAK, 1.5f, 0.45f);
         loc.getWorld().spawnParticle(
-                Particle.BLOCK, loc.clone().add(0, 1.0, 0),
-                55, 0.8, 1.0, 0.8, 0.15,
+                Particle.BLOCK, loc.clone().add(0, 1.1, 0),
+                75, 0.9, 1.0, 0.9, 0.22,
                 org.bukkit.Material.PACKED_ICE.createBlockData()
         );
         loc.getWorld().spawnParticle(
                 Particle.DUST, loc.clone().add(0, 1.0, 0),
-                35, 0.9, 0.9, 0.9, 0.0,
-                new Particle.DustOptions(ICE_WHITE, 1.4f)
+                40, 0.95, 0.95, 0.95, 0.0,
+                new Particle.DustOptions(ICE_WHITE, 1.5f)
         );
         TrailCircleHelper.spawnExpandingShockwave(
                 plugin, loc.clone().add(0, 0.15, 0),
-                0.5, 4.5, ICE_PALE, 8, 24
+                0.5, 5.2, ICE_PALE, 10, 28
         );
     }
 
@@ -1278,21 +1294,28 @@ public class FrostPilgrimBoss extends CustomMob implements StaggerableBoss {
         }
 
         if (staggerState.isStaggered()) {
-            double remaining = staggerState.getStaggerTicksRemaining()
+            int remainingTicks = staggerState.getStaggerTicksRemaining();
+            double remaining = remainingTicks
                     / (double) STAGGER_PROFILE.staggerDurationTicks();
             staggerBar.setProgress(Math.max(0.0, Math.min(1.0, remaining)));
-            staggerBar.setColor(BarColor.BLUE);
+            staggerBar.setColor((remainingTicks / 6) % 2 == 0 ? BarColor.WHITE : BarColor.YELLOW);
             staggerBar.setTitle(String.format(
-                    "§f§l✦ 体勢崩壊 §7— §c%.1f秒",
-                    staggerState.getStaggerTicksRemaining() / 20.0
+                    "§6§l✦ 体勢崩壊 §7— §f%.1f秒 §e(被ダメ %.1fx)",
+                    remainingTicks / 20.0,
+                    STAGGER_PROFILE.staggeredDamageMultiplier()
             ));
             return true;
         }
 
         double progress = staggerState.getCurrent() / STAGGER_PROFILE.maxStagger();
         staggerBar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
-        staggerBar.setColor(BarColor.BLUE);
-        staggerBar.setTitle(progress >= 0.8 ? "§c§l体勢 §7— §f崩壊寸前" : "§e§l体勢");
+        if (progress >= 0.8) {
+            staggerBar.setColor(BarColor.RED);
+            staggerBar.setTitle("§c§l体勢 §7— §f崩壊寸前！");
+        } else {
+            staggerBar.setColor(BarColor.YELLOW);
+            staggerBar.setTitle("§e§l体勢");
+        }
         return true;
     }
 

@@ -533,9 +533,15 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
             if (distSq > reachSq) continue;
             if (distSq > 0.36 && toTarget.normalize().dot(forward) < minCos) continue;
 
-            boolean isRiposte = guardStateService.consumeRiposteVulnerability(target.getUniqueId(), now);
-            double coeff = step.damageMultiplier() * (isRiposte ? MeleeGuardStateService.RIPOSTE_DAMAGE_MULTIPLIER : 1.0);
-            double staggerMult = step.staggerMultiplier() * (isRiposte ? 1.5 : 1.0);
+            boolean isParryRiposte = guardStateService.consumeRiposteVulnerability(target.getUniqueId(), now);
+            double staggerRiposteMult = isParryRiposte ? 1.0 : staggerService.consumeStaggerRiposte(target);
+            boolean isStaggerRiposte = staggerRiposteMult > 1.0;
+            boolean isRiposte = isParryRiposte || isStaggerRiposte;
+            double riposteMult = isParryRiposte
+                    ? MeleeGuardStateService.RIPOSTE_DAMAGE_MULTIPLIER
+                    : staggerRiposteMult;
+            double coeff = step.damageMultiplier() * riposteMult;
+            double staggerMult = step.staggerMultiplier() * (isParryRiposte ? 1.5 : 1.0);
 
             Location hitLoc = target.getLocation().add(0, target.getHeight() * 0.55, 0);
             damagePipeline.processScaledDamage(
@@ -559,17 +565,25 @@ public class MeleeCombatService implements Startable, Stoppable, Listener {
             MeleeSoundService.playHit(hitLoc, swing.archetype, step.thrust(), isRiposte);
             AnimeVfxHelper.spawnHitSlashCross(plugin, hitLoc,
                     isRiposte ? Color.fromRGB(255, 225, 95) : swing.vfxColor,
-                    isRiposte ? 3.4 : 2.6, 6);
-            if (isRiposte) {
+                    isStaggerRiposte ? 4.6 : (isRiposte ? 3.4 : 2.6),
+                    isStaggerRiposte ? 10 : 6);
+            if (isStaggerRiposte) {
+                hitLoc.getWorld().playSound(hitLoc, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.7f, 0.85f);
+                hitLoc.getWorld().playSound(hitLoc, Sound.BLOCK_ANVIL_LAND, 1.0f, 1.15f);
+                AnimeVfxHelper.spawnImpactBurst(plugin, hitLoc, 3.0, Color.fromRGB(255, 230, 105), 8);
+                AnimeVfxHelper.spawnShockwave(plugin, hitLoc, 0.7, 4.5, Color.fromRGB(255, 215, 80), 8, forward);
+                player.sendActionBar(Component.text("★ STAGGER RIPOSTE!! (致命の一撃)", NamedTextColor.GOLD, TextDecoration.BOLD));
+            } else if (isParryRiposte) {
                 AnimeVfxHelper.spawnImpactBurst(plugin, hitLoc, 2.0, Color.fromRGB(255, 230, 105), 6);
                 player.sendActionBar(Component.text("★ RIPOSTE! (1.6x)", NamedTextColor.GOLD, TextDecoration.BOLD));
             }
 
             if (!swing.hitstopTriggered) {
                 swing.hitstopTriggered = true;
-                swing.hitstopTicks = (swing.archetype == MeleeWeaponArchetype.GREATSWORD
+                swing.hitstopTicks = isStaggerRiposte ? 3
+                        : ((swing.archetype == MeleeWeaponArchetype.GREATSWORD
                         || swing.archetype == MeleeWeaponArchetype.HAMMER
-                        || swing.archetype == MeleeWeaponArchetype.AXE) ? 2 : 1;
+                        || swing.archetype == MeleeWeaponArchetype.AXE) ? 2 : 1);
             }
         }
     }
