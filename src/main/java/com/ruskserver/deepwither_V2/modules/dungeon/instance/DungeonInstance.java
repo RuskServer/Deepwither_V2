@@ -5,6 +5,7 @@ import com.ruskserver.deepwither_V2.modules.dungeon.generator.DoorConnection;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.DungeonLayout;
 import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
 import com.sk89q.worldedit.math.BlockVector3;
+import org.bukkit.Location;
 import org.bukkit.World;
 
 import java.util.ArrayList;
@@ -50,6 +51,8 @@ public class DungeonInstance {
     private final long effectiveTimeLimitMillis;
     /** ボス撃破後に有効化される脱出ポータルのワールド座標 */
     private BlockVector3 exitPortalPosition;
+    /** チェックポイント更新後のリスポーン地点（未設定時は入口スポーンを使用） */
+    private Location respawnLocation;
 
     public DungeonInstance(
             String instanceId,
@@ -278,6 +281,8 @@ public class DungeonInstance {
     public DungeonModifierContext getModifierContext() { return modifierContext; }
     public long getEffectiveTimeLimitMillis() { return effectiveTimeLimitMillis; }
     public BlockVector3 getExitPortalPosition() { return exitPortalPosition; }
+    public Location getRespawnLocation() { return respawnLocation; }
+    public void setRespawnLocation(Location respawnLocation) { this.respawnLocation = respawnLocation; }
 
     /**
      * ダンジョンが進行中か（ACTIVE のみ）を判定します。

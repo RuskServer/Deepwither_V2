@@ -316,7 +316,8 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
         DungeonInstance instance = getPlayerInstance(playerId);
         if (instance != null && instance.isActive()) {
-            event.setRespawnLocation(getEntrySpawnLocation(instance));
+            Location checkpoint = instance.getRespawnLocation();
+            event.setRespawnLocation(checkpoint != null ? checkpoint : getEntrySpawnLocation(instance));
         }
     }
 
@@ -558,6 +559,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
                 for (DoorConnection remainingDoor : instance.drainPendingDoors()) {
                     generator.sealDoor(instance.getWorld(), remainingDoor);
                 }
+                updateBossRoomCheckpoint(instance, door, result);
                 BlockVector3 bossPos = result.placementResult().bossSpawnWorldPos();
                 if (bossPos != null) {
                     pendingBossSpawns.put(instance.getInstanceId(),
@@ -588,6 +590,38 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         } catch (Exception e) {
             log.severe("[DungeonInstanceManager] ルーム生成例外: " + e.getMessage());
         }
+    }
+
+    private void updateBossRoomCheckpoint(DungeonInstance instance, DoorConnection door, GenerationResult result) {
+        BlockVector3 entryPos = result.placementResult().entryDoorWorldPos();
+        if (entryPos == null) {
+            entryPos = door.worldPosition();
+        }
+        float yaw = switch (door.door().direction()) {
+            case NORTH -> 180.0f;
+            case EAST -> -90.0f;
+            case SOUTH -> 0.0f;
+            case WEST -> 90.0f;
+        };
+        Location checkpoint = new Location(
+                instance.getWorld(),
+                entryPos.x() + 0.5,
+                entryPos.y(),
+                entryPos.z() + 0.5,
+                yaw,
+                0.0f
+        );
+        instance.setRespawnLocation(checkpoint);
+
+        for (UUID participantId : instance.getParticipants()) {
+            Player participant = plugin.getServer().getPlayer(participantId);
+            if (participant != null && participant.isOnline()) {
+                participant.sendMessage("§b§l✦ チェックポイント更新 §7— §fリスポーン地点がボス部屋入口に設定されました");
+                participant.playSound(participant.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 0.8f, 1.2f);
+            }
+        }
+        log.info("[DungeonInstanceManager] ボス部屋入口へリスポーン地点を更新: "
+                + instance.getInstanceId() + " at " + entryPos);
     }
 
     private boolean isBossRoom(DungeonInstance instance, GenerationResult result) {
