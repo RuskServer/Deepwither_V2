@@ -13,9 +13,12 @@ import com.ruskserver.deepwither_V2.modules.dungeon.generator.DungeonGenerator.G
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.DungeonLayout;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.LootService;
 import com.ruskserver.deepwither_V2.modules.dungeon.generator.MobSpawnService;
+import com.ruskserver.deepwither_V2.modules.dungeon.generator.VoidChunkGenerator;
 import com.ruskserver.deepwither_V2.modules.dungeon.modifier.DungeonModifierContext;
 import com.ruskserver.deepwither_V2.modules.dungeon.portal.DungeonPortalVisualHelper;
 import com.sk89q.worldedit.math.BlockVector3;
+import net.kyori.adventure.util.TriState;
+import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.GameRules;
 import org.bukkit.Location;
@@ -32,9 +35,6 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -56,6 +56,12 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
     /** プレイヤーが未接続ドアに近づいたとみなす距離（ブロック） */
     private static final double DOOR_PROXIMITY_RANGE = 4.0;
+    /** 全ダンジョンインスタンスで共有する単一 Void ワールド名（dungeon_ プレフィックス維持） */
+    private static final String SHARED_WORLD_NAME = "dungeon_realm";
+    /** インスタンスごとの空間スロット間隔（ブロック）。描画距離の十分外側へ隔離 */
+    private static final int SLOT_SPACING = 4096;
+    /** 2D グリッド1行あたりのスロット数（64x64 = 4,096 スロット） */
+    private static final int SLOT_GRID_WIDTH = 64;
 
     private final JavaPlugin plugin;
     private final DungeonDefinitionRegistry definitionRegistry;
@@ -81,6 +87,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     private final Map<String, PendingBossSpawn> pendingBossSpawns = new HashMap<>();
 
     private final AtomicInteger instanceCounter = new AtomicInteger(0);
+    private World sharedDungeonWorld;
 
     private int tickTaskId = -1;
 
@@ -106,80 +113,65 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
     @Override
     public void start() {
-        ensureTemplateWorldExists();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        ensureSharedDungeonWorld();
         tickTaskId = plugin.getServer().getScheduler()
                 .runTaskTimer(plugin, this::tick, 10L, 10L).getTaskId();
-        log.info("[DungeonInstanceManager] タイムアウトチェック + 逐次生成タイマーを開始しました。");
+        log.info("[DungeonInstanceManager] 共有ダンジョンワールド (" + SHARED_WORLD_NAME
+                + ", スロット間隔=" + SLOT_SPACING + ") + 逐次生成タイマーを開始しました。");
     }
 
     @org.bukkit.event.EventHandler
     public void onWorldInit(org.bukkit.event.world.WorldInitEvent event) {
         if (event.getWorld().getName().startsWith("dungeon_")) {
             event.getWorld().setKeepSpawnInMemory(false);
-            log.info("[DungeonInstanceManager] スポーンメモリ保持を無効化しました: " + event.getWorld().getName());
         }
     }
 
-    private void ensureTemplateWorldExists() {
-        File templateDir = new File(plugin.getDataFolder(), "dungeon_template");
-        if (templateDir.exists() && templateDir.isDirectory() && new File(templateDir, "level.dat").exists()) {
-            return;
+    private World ensureSharedDungeonWorld() {
+        if (sharedDungeonWorld != null && plugin.getServer().getWorld(SHARED_WORLD_NAME) != null) {
+            return sharedDungeonWorld;
         }
 
-        log.info("[DungeonInstanceManager] テンプレートワールドが存在しないため、新規生成します...");
-        templateDir.mkdirs();
-
-        String tempWorldName = "dungeon_template_temp";
-        org.bukkit.WorldCreator tempCreator = new org.bukkit.WorldCreator(tempWorldName)
-                .environment(org.bukkit.World.Environment.NORMAL)
-                .generator(new com.ruskserver.deepwither_V2.modules.dungeon.generator.VoidChunkGenerator());
-
-        org.bukkit.World tempWorld = plugin.getServer().createWorld(tempCreator);
-        if (tempWorld == null) {
-            log.severe("[DungeonInstanceManager] テンプレートワールドの仮生成に失敗しました。");
-            return;
+        World existing = plugin.getServer().getWorld(SHARED_WORLD_NAME);
+        if (existing != null) {
+            configureSharedDungeonWorld(existing);
+            sharedDungeonWorld = existing;
+            return existing;
         }
 
-        configureDungeonGameRules(tempWorld);
-        tempWorld.setTime(6000);
-        tempWorld.save();
-
-        plugin.getServer().unloadWorld(tempWorld, true);
-
-        File tempWorldFolder = new File(plugin.getServer().getWorldContainer(), tempWorldName);
-        if (tempWorldFolder.exists()) {
-            try {
-                copyDirectory(tempWorldFolder, templateDir);
-                new File(templateDir, "uid.dat").delete();
-                new File(templateDir, "session.lock").delete();
-            } catch (IOException e) {
-                log.log(java.util.logging.Level.SEVERE, "[DungeonInstanceManager] テンプレートのコピー中にエラーが発生しました", e);
-            }
-            deleteRecursively(tempWorldFolder);
+        // 前回クラッシュ等で残っていた古いフォルダがあればクリーンに削除してから起動
+        File oldFolder = new File(plugin.getServer().getWorldContainer(), SHARED_WORLD_NAME);
+        if (oldFolder.exists()) {
+            deleteRecursively(oldFolder);
         }
-        log.info("[DungeonInstanceManager] テンプレートワールドを生成・保存しました: " + templateDir.getAbsolutePath());
+
+        long startMs = System.currentTimeMillis();
+        WorldCreator creator = new WorldCreator(SHARED_WORLD_NAME)
+                .environment(World.Environment.NORMAL)
+                .generator(new VoidChunkGenerator())
+                .generateStructures(false)
+                .keepSpawnLoaded(TriState.FALSE);
+
+        World world = plugin.getServer().createWorld(creator);
+        if (world == null) {
+            log.severe("[DungeonInstanceManager] 共有ダンジョンワールドの生成に失敗しました: " + SHARED_WORLD_NAME);
+            return null;
+        }
+
+        configureSharedDungeonWorld(world);
+        sharedDungeonWorld = world;
+        log.info("[DungeonInstanceManager] 共有ダンジョンワールドを初期化しました: "
+                + SHARED_WORLD_NAME + " (" + (System.currentTimeMillis() - startMs) + "ms)");
+        return world;
     }
 
-    private void copyDirectory(File source, File destination) throws IOException {
-        if (source.isDirectory()) {
-            if (!destination.exists()) {
-                destination.mkdirs();
-            }
-            String[] files = source.list();
-            if (files != null) {
-                for (String file : files) {
-                    if (file.equals("uid.dat") || file.equals("session.lock")) {
-                        continue;
-                    }
-                    File srcFile = new File(source, file);
-                    File destFile = new File(destination, file);
-                    copyDirectory(srcFile, destFile);
-                }
-            }
-        } else {
-            Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
+    private void configureSharedDungeonWorld(World world) {
+        world.setAutoSave(false);
+        world.setKeepSpawnInMemory(false);
+        configureDungeonGameRules(world);
+        world.setTime(6000);
+        world.setDifficulty(org.bukkit.Difficulty.NORMAL);
     }
 
     @Override
@@ -190,7 +182,6 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         }
         for (DungeonInstance instance : new ArrayList<>(activeInstances.values())) {
             teleportParticipantsBack(instance);
-            deleteWorld(instance.getWorldName());
         }
         activeInstances.clear();
         playerToInstance.clear();
@@ -198,6 +189,7 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
         pendingRespawnLocations.clear();
         activeBosses.clear();
         pendingBossSpawns.clear();
+        destroySharedDungeonWorld();
     }
 
     // ========================================================================
@@ -226,47 +218,25 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
             return null;
         }
 
-        String instanceId = definitionId + "_" + instanceCounter.incrementAndGet();
-        String worldName = "dungeon_" + instanceId;
-
-        // テンプレートからワールドデータをコピー
-        File templateDir = new File(plugin.getDataFolder(), "dungeon_template");
-        File worldFolder = new File(plugin.getServer().getWorldContainer(), worldName);
-        try {
-            if (templateDir.exists() && templateDir.isDirectory()) {
-                copyDirectory(templateDir, worldFolder);
-            } else {
-                log.warning("[DungeonInstanceManager] テンプレートワールドが見つからないため、新規生成します。");
-            }
-        } catch (IOException e) {
-            log.log(java.util.logging.Level.SEVERE, "[DungeonInstanceManager] テンプレートのコピーに失敗しました", e);
-        }
-
-        creator.name(worldName);
-        World dungeonWorld = plugin.getServer().createWorld(creator);
+        long startMs = System.currentTimeMillis();
+        World dungeonWorld = ensureSharedDungeonWorld();
         if (dungeonWorld == null) {
-            log.severe("[DungeonInstanceManager] ワールド生成失敗: " + worldName);
-            deleteRecursively(worldFolder);
+            log.severe("[DungeonInstanceManager] 共有ダンジョンワールドの取得に失敗しました");
             return null;
         }
 
-        // ゲームルールを設定
-        configureDungeonGameRules(dungeonWorld);
-        dungeonWorld.setTime(6000);
-        dungeonWorld.setDifficulty(org.bukkit.Difficulty.NORMAL);
+        int slotIndex = instanceCounter.getAndIncrement();
+        String instanceId = definitionId + "_" + (slotIndex + 1);
+        int originX = (slotIndex % SLOT_GRID_WIDTH) * SLOT_SPACING;
+        int originZ = (slotIndex / SLOT_GRID_WIDTH) * SLOT_SPACING;
+        BlockVector3 origin = BlockVector3.at(originX, 64, originZ);
 
-        BlockVector3 origin = BlockVector3.at(0, 64, 0);
-
-        log.info("[DungeonInstanceManager] ダンジョン入口生成開始: " + instanceId);
-
-        // 入口ルームのみ生成
+        // 入口ルームのみ即時生成（共有 Void ワールド上の未使用スロットなのでワールド作成・コピー不要）
         DungeonGenerator.EntryResult entryResult = generator.generateEntry(definition, dungeonWorld, origin);
         DungeonLayout layout = entryResult.layout();
 
         if (layout.getPlacedRoomCount() == 0) {
             log.severe("[DungeonInstanceManager] 入口ルーム配置失敗: " + instanceId);
-            plugin.getServer().unloadWorld(dungeonWorld, false);
-            deleteRecursively(worldFolder);
             return null;
         }
 
@@ -280,13 +250,15 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
 
         // インスタンス生成（逐次生成用の未接続ドアを持たせる）
         DungeonInstance instance = new DungeonInstance(
-                instanceId, definition, layout, dungeonWorld, worldName, origin, effectiveLives,
+                instanceId, definition, layout, dungeonWorld, SHARED_WORLD_NAME, origin, effectiveLives,
                 entryResult.pendingDoors(), modifierContext
         );
         activeInstances.put(instanceId, instance);
 
+        long elapsedMs = System.currentTimeMillis() - startMs;
         log.info("[DungeonInstanceManager] ダンジョン入口生成完了: " + instanceId
-                + " (" + pendingDoorSummary(instance) + ")");
+                + " (" + elapsedMs + "ms, slot=#" + slotIndex + " at " + originX + ",64," + originZ
+                + ", " + pendingDoorSummary(instance) + ")");
         return instance;
     }
 
@@ -710,32 +682,79 @@ public class DungeonInstanceManager implements Startable, Stoppable, org.bukkit.
     }
 
     private void scheduleWorldDelete(DungeonInstance instance) {
-        String worldName = instance.getWorldName();
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            deleteWorld(worldName);
+            cleanupInstanceRegion(instance);
         }, 60L);
     }
 
-    private void deleteWorld(String worldName) {
-        World world = plugin.getServer().getWorld(worldName);
-        if (world == null) return;
-
-        World mainWorld = plugin.getServer().getWorlds().getFirst();
-        for (Player p : world.getPlayers()) {
-            p.teleport(mainWorld.getSpawnLocation());
+    /**
+     * 共有 Void ワールド上の該当インスタンス領域から残存エンティティを除去し、
+     * 使用チャンクを保存せず即座にアンロードしてメモリを解放します。
+     */
+    private void cleanupInstanceRegion(DungeonInstance instance) {
+        World world = instance.getWorld();
+        if (world == null || plugin.getServer().getWorld(world.getName()) == null) {
+            return;
         }
 
-        plugin.getServer().unloadWorld(world, false);
-        java.io.File worldFolder = new java.io.File(plugin.getServer().getWorldContainer(), worldName);
+        int minX = instance.getOrigin().x();
+        int maxX = instance.getOrigin().x();
+        int minZ = instance.getOrigin().z();
+        int maxZ = instance.getOrigin().z();
 
-        if (plugin.getServer().isStopping()) {
+        for (DungeonLayout.PlacedRoom room : instance.getLayout().getPlacedRooms()) {
+            BlockVector3[] aabb = DungeonLayout.computeAABB(room.origin(), room.schematic(), room.rotation());
+            minX = Math.min(minX, aabb[0].x());
+            minZ = Math.min(minZ, aabb[0].z());
+            maxX = Math.max(maxX, aabb[1].x());
+            maxZ = Math.max(maxZ, aabb[1].z());
+        }
+
+        int minChunkX = Math.floorDiv(minX, 16) - 2;
+        int maxChunkX = Math.floorDiv(maxX, 16) + 2;
+        int minChunkZ = Math.floorDiv(minZ, 16) - 2;
+        int maxChunkZ = Math.floorDiv(maxZ, 16) + 2;
+
+        int removedEntities = 0;
+        int unloadedChunks = 0;
+        for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+            for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
+                if (!world.isChunkLoaded(cx, cz)) {
+                    continue;
+                }
+                Chunk chunk = world.getChunkAt(cx, cz);
+                boolean hasPlayer = false;
+                for (Entity entity : chunk.getEntities()) {
+                    if (entity instanceof Player) {
+                        hasPlayer = true;
+                    } else {
+                        entity.remove();
+                        removedEntities++;
+                    }
+                }
+                if (!hasPlayer && world.unloadChunk(cx, cz, false)) {
+                    unloadedChunks++;
+                }
+            }
+        }
+        log.info("[DungeonInstanceManager] スロット解放完了: " + instance.getInstanceId()
+                + " (entities=" + removedEntities + ", unloadedChunks=" + unloadedChunks + ")");
+    }
+
+    private void destroySharedDungeonWorld() {
+        World world = plugin.getServer().getWorld(SHARED_WORLD_NAME);
+        sharedDungeonWorld = null;
+        if (world != null) {
+            World mainWorld = plugin.getServer().getWorlds().getFirst();
+            for (Player p : world.getPlayers()) {
+                p.teleport(mainWorld.getSpawnLocation());
+            }
+            plugin.getServer().unloadWorld(world, false);
+        }
+        File worldFolder = new File(plugin.getServer().getWorldContainer(), SHARED_WORLD_NAME);
+        if (worldFolder.exists()) {
             deleteRecursively(worldFolder);
-            log.info("[DungeonInstanceManager] ワールド削除完了: " + worldName);
-        } else {
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                deleteRecursively(worldFolder);
-                log.info("[DungeonInstanceManager] ワールド削除完了 (非同期): " + worldName);
-            });
+            log.info("[DungeonInstanceManager] 共有ダンジョンワールドを削除しました: " + SHARED_WORLD_NAME);
         }
     }
 

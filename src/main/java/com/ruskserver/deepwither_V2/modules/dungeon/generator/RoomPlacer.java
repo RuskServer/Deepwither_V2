@@ -12,6 +12,7 @@ import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.util.SideEffectSet;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -62,6 +63,10 @@ public class RoomPlacer {
                 .world(BukkitAdapter.adapt(world))
                 .build()) {
 
+            editSession.setTrackingHistory(false);
+            editSession.setReorderMode(EditSession.ReorderMode.FAST);
+            editSession.setSideEffectApplier(SideEffectSet.none());
+
             AffineTransform transform = new AffineTransform();
             if (rotation != 0) {
                 transform = transform.rotateY(-rotation);
@@ -72,7 +77,7 @@ public class RoomPlacer {
 
             Operations.complete(holder.createPaste(editSession)
                     .to(placementOrigin)
-                    .ignoreAirBlocks(false)
+                    .ignoreAirBlocks(true)
                     .build());
 
             log.fine("[RoomPlacer] 配置完了: " + schematic.schematicId()
